@@ -125,45 +125,29 @@ def ollama_generate(prompt: str) -> str:
         print(f"❌ Ollama error: {e}")
         return ""
 async def classify_reply_with_ai(message_content):
-   
-    """
-    Use Gemini AI to classify a DM reply as yes, no, or ambiguous.
-    Returns 'yes', 'no', or 'ambiguous' as a string.
-    """
     try:
         prompt = f"""
 You are a reply classifier for a Discord outreach bot.
-A content creator's assistant sent someone a DM asking if they're
-interested in joining a creator community.
 
 The person replied with: "{message_content}"
 
-Classify this reply as exactly one of these three options:
-- "yes" — if they seem interested, curious, or open to it
-- "no" — if they are not interested, want to be left alone, or are declining
-- "ambiguous" — if you genuinely can't tell, or they're asking a question back
-
-Reply with ONLY one word: yes, no, or ambiguous.
-No explanation, no punctuation, just the single word.
-        """
-
+Classify as exactly ONE word:
+yes
+no
+ambiguous
+"""
         loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: genai_client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
-        )
-
-        result = (response.text or "").strip().lower()
+        result = await loop.run_in_executor(None, lambda: ollama_generate(prompt))
+        result = (result or "").strip().lower()
 
         if result in ["yes", "no", "ambiguous"]:
-            log(f"🤖 Gemini classified reply as: {result}")
+            log(f"🤖 Local model classified reply as: {result}")
             return result
 
-        log(f"🤖 Gemini gave unexpected response: {result} — defaulting to ambiguous")
+        log(f"🤖 Local model unexpected response: {result} — defaulting to ambiguous")
         return "ambiguous"
-
     except Exception as e:
-        log(f"❌ Gemini error: {e} — falling back to keyword matching")
+        log(f"❌ Local model error: {e} — falling back to keyword matching")
         return None
 
 
@@ -1028,6 +1012,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
