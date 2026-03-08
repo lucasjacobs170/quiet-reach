@@ -5,7 +5,7 @@ from datetime import datetime, date
 import os
 from google import genai
 
-BOT_TOKEN='MTQ3OTE5Njk3MTI2MzcyMTQ4NA.GqqBAa.-TN4KbCqgHyTW6-bkEfnxYmEN91wCGpMaj7LW0'
+BOT_TOKEN=''
 OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
 DB_PATH='quiet_reach.db'
@@ -1015,6 +1015,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
