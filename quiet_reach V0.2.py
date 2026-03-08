@@ -6,11 +6,11 @@ import google.generativeai as genai
 
 from quiet_reach import handle_dm_reply
 
-BOT_TOKEN='MTQ3OTE5Njk3MTI2MzcyMTQ4NA.Gsm0oE.xqU_dc8I0hRZWB7kqruTtIJH9K3xyJ1J0KXihU'
+BOT_TOKEN=''
 OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
 DB_PATH='quiet_reach.db'
-GEMINI_API_KEY = 'AIzaSyBS6UGIkXzDMu0TN2zO2A8CMcKxQanEIhE'  # ← Paste your Gemini API key here
+GEMINI_API_KEY = ''  # ← Paste your Gemini API key here
 
 DM_OPENERS = [
     "Hey, I represent a cammer and content creator named Lucas Jacobs — are you interested in seeing more? 😏",
@@ -1179,3 +1179,4 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
