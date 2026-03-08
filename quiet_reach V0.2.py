@@ -46,7 +46,7 @@ def get_keywords(ln):
 def get_user(did):
     c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT*FROM users WHERE discord_id=?",(str(did),));u=k.fetchone();c.close();return u
 
-def upsert_user(did,un,lt,oo=0):
+def upsert_user(did,un,lt,opt_out=0):
     c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute('INSERT INTO users VALUES(?,?,?,?,?)ON CONFLICT(discord_id)DO UPDATE SET list_type=excluded.list_type,last_contacted=excluded.last_contacted,opt_out=excluded.opt_out',(str(did),un,lt,str(datetime.now()),oo));c.commit();c.close()
 
 def check_server_cap(sid):
@@ -90,6 +90,20 @@ genai.configure(api_key=GEMINI_API_KEY)
 gemini_model = genai.GenerativeModel('gemini-pro')
 
 async def classify_reply_with_ai(message_content):
+    ABOUT_LUCAS = f"""
+You are a helpful assistant for Lucas Jacobs.
+
+Goal:
+- Answer questions about Lucas and his content.
+- Be friendly and concise.
+
+Rules:
+- Do NOT invent links.
+- If the user asks for a link, ONLY give this Discord invite: {SERVER_INVITE}
+- If you don't know, say so and offer the Discord invite.
+"""
+
+async def generate_ai
     """
     Use Gemini AI to classify a DM reply as yes, no, or ambiguous.
     Returns 'yes', 'no', or 'ambiguous' as a string.
@@ -1177,5 +1191,6 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
