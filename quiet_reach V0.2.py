@@ -3,13 +3,14 @@ import discord, tkinter as tk, sqlite3, asyncio, threading, random
 from tkinter import ttk, scrolledtext, messagebox
 from datetime import datetime, date
 import os
-from google import genai
+import requests
 
 BOT_TOKEN=''
 OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
 DB_PATH='quiet_reach.db'
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")  # ← Paste your Gemini API key here
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 ABOUT_LUCAS = f"""
 You are a helpful assistant for Lucas Jacobs.
 
@@ -109,9 +110,20 @@ client=discord.Client(intents=intents);ui_log=None
 # ============================================================
 # 🤖 GEMINI AI SETUP
 # ============================================================
-genai_client = genai.Client(api_key=GEMINI_API_KEY)
-GEMINI_MODEL = "models/gemini-1.5-flash"
-
+def ollama_generate(prompt: str) -> str:
+    try:
+        r = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json={"model": OLLAMA_MODEL, "prompt": prompt, "stream": False},
+            timeout=90
+        )
+        r.raise_for_status()
+        data = r.json()
+        return (data.get("response") or "").strip()
+    except Exception as e:
+        # log() exists later; using print here is safest
+        print(f"❌ Ollama error: {e}")
+        return ""
 async def classify_reply_with_ai(message_content):
     """
     Use Gemini AI to classify a DM reply as yes, no, or ambiguous.
@@ -1015,6 +1027,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
