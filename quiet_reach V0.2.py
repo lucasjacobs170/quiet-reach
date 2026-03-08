@@ -164,12 +164,6 @@ Write the best possible reply now.
         log(f"❌ Local model reply error: {e}")
         return ""
 
-        log(f"🤖 Local model unexpected response: {result} — defaulting to ambiguous")
-        return "ambiguous"
-    except Exception as e:
-        log(f"❌ Local model error: {e} — falling back to keyword matching")
-        return None
-
 def log(m):
     print(m)
     if ui_log:ui_log(m)
@@ -1008,6 +1002,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
