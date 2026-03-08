@@ -121,9 +121,33 @@ def ollama_generate(prompt: str) -> str:
         data = r.json()
         return (data.get("response") or "").strip()
     except Exception as e:
-        # log() exists later; using print here is safest
         print(f"❌ Ollama error: {e}")
         return ""
+
+async def classify_reply_with_ai(user_message: str) -> str:
+    # quick keyword fallback first (no model call)
+    msg = (user_message or "").lower()
+    if any(w in msg for w in get_keywords("yes")):
+        return "yes"
+    if any(w in msg for w in get_keywords("no")):
+        return "no"
+
+    prompt = (
+        "Classify this message as YES or NO if it is clearly accepting/declining an offer. "
+        "If it is a question or anything else, return OTHER. "
+        "Reply with exactly one word: YES, NO, or OTHER.\n\n"
+        f"Message: {user_message}"
+    )
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, lambda: ollama_generate(prompt))
+    result = (result or "").strip().lower()
+
+    if result.startswith("yes"):
+        return "yes"
+    if result.startswith("no"):
+        return "no"
+    return "other"
+
 async def generate_ai_reply(user_message: str) -> str:
     try:
         prompt = f"""{ABOUT_LUCAS}
@@ -984,6 +1008,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
