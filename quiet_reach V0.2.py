@@ -209,7 +209,7 @@ async def send_outreach_dm(user, sid):
         log(f"🔒 Couldn't DM {user} — DMs closed")
     except Exception as e:
         log(f"❌ Error DMing {user}: {e}")
-
+        return
         # --- 🤖 AI CLASSIFICATION FIRST ---
         ai_result = await classify_reply_with_ai(message.content)
 
@@ -1177,5 +1177,6 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
