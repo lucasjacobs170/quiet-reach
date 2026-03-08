@@ -46,8 +46,19 @@ def get_keywords(ln):
 def get_user(did):
     c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT*FROM users WHERE discord_id=?",(str(did),));u=k.fetchone();c.close();return u
 
-def upsert_user(did,un,lt,opt_out=0):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute('INSERT INTO users VALUES(?,?,?,?,?)ON CONFLICT(discord_id)DO UPDATE SET list_type=excluded.list_type,last_contacted=excluded.last_contacted,opt_out=excluded.opt_out',(str(did),un,lt,str(datetime.now()),oo));c.commit();c.close()
+def upsert_user(did, un, lt, opt_out=0):
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute(
+        'INSERT INTO users VALUES(?,?,?,?,?) '
+        'ON CONFLICT(discord_id) DO UPDATE SET '
+        'list_type=excluded.list_type, '
+        'last_contacted=excluded.last_contacted, '
+        'opt_out=excluded.opt_out',
+        (str(did), un, lt, str(datetime.now()), opt_out)
+    )
+    c.commit()
+    c.close()
 
 def check_server_cap(sid):
     c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT dm_count FROM server_caps WHERE server_id=? AND date=?",(str(sid),str(date.today())));r=k.fetchone();c.close();return(r[0]if r else 0)>=5
@@ -1191,6 +1202,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
