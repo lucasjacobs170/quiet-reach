@@ -2,6 +2,7 @@
 import discord, tkinter as tk, sqlite3, asyncio, threading, random
 from tkinter import ttk, scrolledtext, messagebox
 from datetime import datetime, date
+import os
 from google import genai
 
 BOT_TOKEN='MTQ3OTE5Njk3MTI2MzcyMTQ4NA.GqqBAa.-TN4KbCqgHyTW6-bkEfnxYmEN91wCGpMaj7LW0'
@@ -1018,6 +1019,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
