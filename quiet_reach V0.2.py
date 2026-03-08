@@ -11,6 +11,16 @@ SERVER_INVITE='https://discord.gg/yAvVewhD3c'
 DB_PATH='quiet_reach.db'
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+KB_PATH = "lucas_kb.txt"
+
+def load_kb() -> str:
+    try:
+        with open(KB_PATH, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return ""
+
+LUCAS_KB = load_kb()
 ABOUT_LUCAS = f"""
 You are a helpful assistant for Lucas Jacobs.
 
@@ -148,14 +158,19 @@ async def classify_reply_with_ai(user_message: str) -> str:
         return "no"
     return "other"
 
-async def generate_ai_reply(user_message: str) -> str:
-    try:
-        prompt = f"""{ABOUT_LUCAS}
+prompt = f"""You are an assistant for Lucas Jacobs.
+
+You MUST follow the facts in KNOWLEDGE BASE.
+If the user asks for info not in the knowledge base, say you don't know.
+Do NOT invent links. Only allowed link is: {SERVER_INVITE}
+
+KNOWLEDGE BASE:
+{LUCAS_KB}
 
 User message:
 \"\"\"{user_message}\"\"\"
 
-Write the best possible reply now.
+Write the best possible reply now (friendly, concise).
 """
         loop = asyncio.get_event_loop()
         reply = await loop.run_in_executor(None, lambda: ollama_generate(prompt))
@@ -1002,6 +1017,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
