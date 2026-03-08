@@ -9,7 +9,18 @@ OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
 DB_PATH='quiet_reach.db'
 GEMINI_API_KEY = ''  # ← Paste your Gemini API key here
+ABOUT_LUCAS = f"""
+You are a helpful assistant for Lucas Jacobs.
 
+Goal:
+- Answer questions about Lucas and his content.
+- Be friendly and concise.
+
+Rules:
+- Do NOT invent links.
+- If the user asks for a link, ONLY give this Discord invite: {SERVER_INVITE}
+- If you don't know, say so and offer the Discord invite.
+"""
 DM_OPENERS = [
     "Hey, I represent a cammer and content creator named Lucas Jacobs — are you interested in seeing more? 😏",
     "Hi there! I'm reaching out on behalf of Lucas Jacobs, a content creator — would you be curious to check out what he's offering?",
@@ -101,20 +112,6 @@ genai.configure(api_key=GEMINI_API_KEY)
 gemini_model = genai.GenerativeModel('gemini-pro')
 
 async def classify_reply_with_ai(message_content):
-    ABOUT_LUCAS = f"""
-You are a helpful assistant for Lucas Jacobs.
-
-Goal:
-- Answer questions about Lucas and his content.
-- Be friendly and concise.
-
-Rules:
-- Do NOT invent links.
-- If the user asks for a link, ONLY give this Discord invite: {SERVER_INVITE}
-- If you don't know, say so and offer the Discord invite.
-"""
-
-async def generate_ai
     """
     Use Gemini AI to classify a DM reply as yes, no, or ambiguous.
     Returns 'yes', 'no', or 'ambiguous' as a string.
@@ -122,24 +119,21 @@ async def generate_ai
     try:
         prompt = f"""
 You are a reply classifier for a Discord outreach bot.
-A content creator's assistant sent someone a DM asking if they're 
+A content creator's assistant sent someone a DM asking if they're
 interested in joining a creator community.
 
 The person replied with: "{message_content}"
 
 Classify this reply as exactly one of these three options:
 - "yes" — if they seem interested, curious, or open to it
-- "no" — if they are not interested, want to be left alone, or are 
-  declining
-- "ambiguous" — if you genuinely can't tell, or they're asking a 
-  question back
+- "no" — if they are not interested, want to be left alone, or are declining
+- "ambiguous" — if you genuinely can't tell, or they're asking a question back
 
 Reply with ONLY one word: yes, no, or ambiguous.
 No explanation, no punctuation, just the single word.
         """
 
-        # Run in executor so it doesn't block the async bot
-        loop     = asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
             None,
             lambda: gemini_model.generate_content(prompt)
@@ -147,7 +141,6 @@ No explanation, no punctuation, just the single word.
 
         result = response.text.strip().lower()
 
-        # Safety check — make sure Gemini returned a valid answer
         if result in ['yes', 'no', 'ambiguous']:
             log(f"🤖 Gemini classified reply as: {result}")
             return result
@@ -156,8 +149,7 @@ No explanation, no punctuation, just the single word.
             return 'ambiguous'
 
     except Exception as e:
-        log(f"❌ Gemini error: {e} — falling back to keyword matching")
-        return None  # None means fall back to keyword matching
+        log(f"❌
 
 def log(m):
     print(m)
@@ -1202,6 +1194,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
