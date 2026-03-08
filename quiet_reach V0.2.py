@@ -4,11 +4,11 @@ from tkinter import ttk, scrolledtext, messagebox
 from datetime import datetime, date
 from google import genai
 
-BOT_TOKEN=''
+BOT_TOKEN='MTQ3OTE5Njk3MTI2MzcyMTQ4NA.GqqBAa.-TN4KbCqgHyTW6-bkEfnxYmEN91wCGpMaj7LW0'
 OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
 DB_PATH='quiet_reach.db'
-GEMINI_API_KEY = ''  # ← Paste your Gemini API key here
+GEMINI_API_KEY = 'AIzaSyBS6UGIkXzDMu0TN2zO2A8CMcKxQanEIhE'  # ← Paste your Gemini API key here
 ABOUT_LUCAS = f"""
 You are a helpful assistant for Lucas Jacobs.
 
@@ -1018,6 +1018,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
