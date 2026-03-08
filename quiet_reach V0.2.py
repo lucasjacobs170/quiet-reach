@@ -125,6 +125,7 @@ def ollama_generate(prompt: str) -> str:
         print(f"❌ Ollama error: {e}")
         return ""
 async def classify_reply_with_ai(message_content):
+   
     """
     Use Gemini AI to classify a DM reply as yes, no, or ambiguous.
     Returns 'yes', 'no', or 'ambiguous' as a string.
@@ -1027,6 +1028,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
