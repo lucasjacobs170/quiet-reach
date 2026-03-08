@@ -9,7 +9,18 @@ OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
 DB_PATH='quiet_reach.db'
 GEMINI_API_KEY = ''  # ← Paste your Gemini API key here
+ABOUT_LUCAS = f"""
+You are a helpful assistant for Lucas Jacobs.
 
+Goal:
+- Answer questions about Lucas and his content.
+- Be friendly and concise.
+
+Rules:
+- Do NOT invent links.
+- If the user asks for a link, ONLY give this Discord invite: {SERVER_INVITE}
+- If you don't know, say so and offer the Discord invite.
+"""
 DM_OPENERS = [
     "Hey, I represent a cammer and content creator named Lucas Jacobs — are you interested in seeing more? 😏",
     "Hi there! I'm reaching out on behalf of Lucas Jacobs, a content creator — would you be curious to check out what he's offering?",
@@ -133,7 +144,21 @@ No explanation, no punctuation, just the single word.
     except Exception as e:
         log(f"❌ Gemini error: {e} — falling back to keyword matching")
         return None  # None means fall back to keyword matching
+async def generate_ai_reply(user_message: str) -> str:
+    prompt = f"""{ABOUT_LUCAS}
 
+User message:
+\"\"\"{user_message}\"\"\"
+
+Write the best possible reply now.
+"""
+
+    loop = asyncio.get_event_loop()
+    response = await loop.run_in_executor(
+        None,
+        lambda: gemini_model.generate_content(prompt)
+    )
+    return (response.text or "").strip()
 def log(m):
     print(m)
     if ui_log:ui_log(m)
@@ -1177,6 +1202,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
