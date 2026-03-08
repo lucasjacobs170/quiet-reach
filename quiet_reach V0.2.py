@@ -139,17 +139,42 @@ No explanation, no punctuation, just the single word.
             lambda: gemini_model.generate_content(prompt)
         )
 
-        result = response.text.strip().lower()
+        result = (response.text or "").strip().lower()
 
-        if result in ['yes', 'no', 'ambiguous']:
+        if result in ["yes", "no", "ambiguous"]:
             log(f"🤖 Gemini classified reply as: {result}")
             return result
-        else:
-            log(f"🤖 Gemini gave unexpected response: {result} — defaulting to ambiguous")
-            return 'ambiguous'
+
+        log(f"🤖 Gemini gave unexpected response: {result} — defaulting to ambiguous")
+        return "ambiguous"
 
     except Exception as e:
-        log(f"❌
+        log(f"❌ Gemini error: {e} — falling back to keyword matching")
+        return None
+
+
+async def generate_ai_reply(user_message: str) -> str:
+    """
+    Use Gemini AI to generate a helpful reply about Lucas.
+    """
+    try:
+        prompt = f"""{ABOUT_LUCAS}
+
+User message:
+\"\"\"{user_message}\"\"\"
+
+Write the best possible reply now.
+"""
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            None,
+            lambda: gemini_model.generate_content(prompt)
+        )
+        return (response.text or "").strip()
+
+    except Exception as e:
+        log(f"❌ Gemini reply error: {e}")
+        return ""
 
 def log(m):
     print(m)
@@ -1194,6 +1219,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
