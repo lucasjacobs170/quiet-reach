@@ -108,7 +108,6 @@ client=discord.Client(intents=intents);ui_log=None
 # ============================================================
 # 🤖 GEMINI AI SETUP
 # ============================================================
-genai.configure(api_key=GEMINI_API_KEY)
 genai_client = genai.Client(api_key=GEMINI_API_KEY)
 GEMINI_MODEL = "gemini-1.5-flash"
 
@@ -1254,6 +1253,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
