@@ -124,25 +124,21 @@ def ollama_generate(prompt: str) -> str:
         # log() exists later; using print here is safest
         print(f"❌ Ollama error: {e}")
         return ""
-async def classify_reply_with_ai(message_content):
+async def generate_ai_reply(user_message: str) -> str:
     try:
-        prompt = f"""
-You are a reply classifier for a Discord outreach bot.
+        prompt = f"""{ABOUT_LUCAS}
 
-The person replied with: "{message_content}"
+User message:
+\"\"\"{user_message}\"\"\"
 
-Classify as exactly ONE word:
-yes
-no
-ambiguous
+Write the best possible reply now.
 """
         loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, lambda: ollama_generate(prompt))
-        result = (result or "").strip().lower()
-
-        if result in ["yes", "no", "ambiguous"]:
-            log(f"🤖 Local model classified reply as: {result}")
-            return result
+        reply = await loop.run_in_executor(None, lambda: ollama_generate(prompt))
+        return (reply or "").strip()
+    except Exception as e:
+        log(f"❌ Local model reply error: {e}")
+        return ""
 
         log(f"🤖 Local model unexpected response: {result} — defaulting to ambiguous")
         return "ambiguous"
@@ -1012,6 +1008,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
