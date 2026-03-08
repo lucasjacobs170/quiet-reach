@@ -109,7 +109,11 @@ client=discord.Client(intents=intents);ui_log=None
 # 🤖 GEMINI AI SETUP
 # ============================================================
 genai_client = genai.Client(api_key=GEMINI_API_KEY)
-GEMINI_MODEL = "gemini-pro"
+GEMINI_MODEL = "models/gemini-1.5-flash"
+print("=== Available models for this key ===")
+for m in genai_client.models.list():
+    print(m.name)
+print("=== End models ===")
 
 async def classify_reply_with_ai(message_content):
     """
@@ -1014,6 +1018,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
