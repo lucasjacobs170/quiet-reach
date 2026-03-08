@@ -146,30 +146,6 @@ Write the best possible reply now.
         log(f"❌ Local model error: {e} — falling back to keyword matching")
         return None
 
-
-async def generate_ai_reply(user_message: str) -> str:
-    """
-    Use Gemini AI to generate a helpful reply about Lucas.
-    """
-    try:
-        prompt = f"""{ABOUT_LUCAS}
-
-User message:
-\"\"\"{user_message}\"\"\"
-
-Write the best possible reply now.
-"""
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: genai_client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
-        )
-        return (response.text or "").strip()
-
-    except Exception as e:
-        log(f"❌ Gemini reply error: {e}")
-        return ""
-
 def log(m):
     print(m)
     if ui_log:ui_log(m)
@@ -1008,6 +984,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
