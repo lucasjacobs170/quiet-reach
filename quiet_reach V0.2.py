@@ -4,8 +4,6 @@ from tkinter import ttk, scrolledtext, messagebox
 from datetime import datetime, date
 import google.generativeai as genai
 
-from quiet_reach import handle_dm_reply
-
 BOT_TOKEN=''
 OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
@@ -1179,4 +1177,5 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
