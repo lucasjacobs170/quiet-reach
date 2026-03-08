@@ -511,7 +511,7 @@ async def send_outreach_dm(user, sid):
                         loop = asyncio.get_event_loop()
                         response = await loop.run_in_executor(
                             None,
-                            lambda: gemini_model.generate_content(prompt)
+                            lambda: genai_client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
                         )
                         reply = response.text.strip()
                         if len(reply) <= 2000:
@@ -1253,6 +1253,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
