@@ -108,7 +108,7 @@ def get_stats():
 intents=discord.Intents.default();intents.message_content=True;intents.members=True;intents.presences=True
 client=discord.Client(intents=intents);ui_log=None
 # ============================================================
-# 🤖 GEMINI AI SETUP
+# 🤖 OLLAMA AI SETUP
 # ============================================================
 def ollama_generate(prompt: str) -> str:
     try:
@@ -1012,6 +1012,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
