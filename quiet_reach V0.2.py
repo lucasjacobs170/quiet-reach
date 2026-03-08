@@ -179,7 +179,41 @@ Write the best possible reply now.
 def log(m):
     print(m)
     if ui_log:ui_log(m)
+async def handle_dm_reply(message):
+    user_id = message.author.id
+    username = str(message.author)
+    content = message.content.strip()
+    content_lower = content.lower().strip()
 
+    # Opt-out
+    if content_lower in ["stop", "remove", "opt out", "optout"]:
+        upsert_user(user_id, username, "neutral", opt_out=1)
+        await message.channel.send(random.choice(OPT_OUT_RESPONSES))
+        log(f"🛑 {username} opted out")
+        return
+
+    # First try AI classification
+    ai_result = await classify_reply_with_ai(content)
+
+    if ai_result == "yes":
+        upsert_user(user_id, username, "warm")
+        await message.channel.send(random.choice(YES_RESPONSES))
+        log(f"🔥 {username} added to WARM list")
+        return
+
+    if ai_result == "no":
+        upsert_user(user_id, username, "cold")
+        await message.channel.send(random.choice(NO_RESPONSES))
+        log(f"❄️ {username} added to COLD list")
+        return
+
+    # Otherwise: AI answers their question
+    reply = await generate_ai_reply(content)
+    if not reply:
+        reply = f"I’m not sure, but here’s the Discord invite: {SERVER_INVITE}"
+
+    await message.channel.send(reply)
+    log(f"🤖 AI replied to {username}")
 @client.event
 async def on_ready():log(f"🚀 Quiet Reach is alive! Logged in as {client.user}")
 
@@ -1219,6 +1253,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
