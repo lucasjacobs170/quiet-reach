@@ -2,7 +2,7 @@
 import discord, tkinter as tk, sqlite3, asyncio, threading, random
 from tkinter import ttk, scrolledtext, messagebox
 from datetime import datetime, date
-import google.generativeai as genai
+from google import genai
 
 BOT_TOKEN=''
 OWNER_ID=434809771124719616
@@ -109,9 +109,8 @@ client=discord.Client(intents=intents);ui_log=None
 # 🤖 GEMINI AI SETUP
 # ============================================================
 genai.configure(api_key=GEMINI_API_KEY)
-for m in genai.list_models():
-    print(m.name)
-gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+genai_client = genai.Client(api_key=GEMINI_API_KEY)
+GEMINI_MODEL = "gemini-1.5-flash"
 
 async def classify_reply_with_ai(message_content):
     """
@@ -138,7 +137,7 @@ No explanation, no punctuation, just the single word.
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
             None,
-            lambda: gemini_model.generate_content(prompt)
+            lambda: genai_client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
         )
 
         result = (response.text or "").strip().lower()
@@ -170,7 +169,7 @@ Write the best possible reply now.
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
             None,
-            lambda: gemini_model.generate_content(prompt)
+            lambda: genai_client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
         )
         return (response.text or "").strip()
 
@@ -1255,6 +1254,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
