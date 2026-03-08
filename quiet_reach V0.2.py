@@ -286,101 +286,6 @@ async def send_outreach_dm(user, sid):
     except Exception as e:
         log(f"❌ Error DMing {user}: {e}")
 
-        # --- 🤖 AI CLASSIFICATION FIRST ---
-        ai_result = await classify_reply_with_ai(message.content)
-
-        if ai_result == 'yes':
-            upsert_user(user_id, username, 'warm')
-            await message.channel.send(random.choice(YES_RESPONSES))
-            log(f"🔥 {username} added to WARM list (AI classified)")
-            try:
-                owner = await client.fetch_user(OWNER_ID)
-                await owner.send(
-                    f"🔥 New warm lead! {username} (ID: {user_id}) said yes!"
-                )
-            except Exception as e:
-                log(f"❌ Couldn't notify owner: {e}")
-            return
-
-        elif ai_result == 'no':
-            upsert_user(user_id, username, 'cold')
-            await message.channel.send(random.choice(NO_RESPONSES))
-            log(f"❄️ {username} added to COLD list (AI classified)")
-            return
-
-        else:
-            # AI was ambiguous or failed — fall back to keyword matching
-            if any(word in content for word in yes_words):
-                upsert_user(user_id, username, 'warm')
-                await message.channel.send(random.choice(YES_RESPONSES))
-                log(f"🔥 {username} added to WARM list (keyword match)")
-                try:
-                    owner = await client.fetch_user(OWNER_ID)
-                    await owner.send(
-                        f"🔥 New warm lead! {username} (ID: {user_id}) said yes!"
-                    )
-                except Exception as e:
-                    log(f"❌ Couldn't notify owner: {e}")
-                return
-
-            if any(word in content for word in no_words):
-                upsert_user(user_id, username, 'cold')
-                await message.channel.send(random.choice(NO_RESPONSES))
-                log(f"❄️ {username} added to COLD list (keyword match)")
-                return
-
-            # Ambiguous
-            add_ambiguous(user_id, username, message.content)
-            log(f"😐 Ambiguous reply from {username} — forwarding to owner")
-            try:
-                owner = await client.fetch_user(OWNER_ID)
-                await owner.send(
-                    f"⚠️ Ambiguous reply from **{username}** (ID: `{user_id}`):\n"
-                    f"💬 \"{message.content}\"\n\n"
-                    f"Reply with:\n"
-                    f"`warm {user_id}` → move to warm list\n"
-                    f"`cold {user_id}` → move to cold list\n"
-                    f"`ignore {user_id}` → leave in neutral"
-                )
-            except Exception as e:
-                log(f"❌ Couldn't notify owner: {e}")
-
-    async def handle_owner_command(message):
-        async def handle_dm_reply(message):
-            """Handle replies from users who received our outreach DM."""
-            user_id = message.author.id
-            username = str(message.author)
-            content = message.content.lower().strip()
-            # Check if THIS is the owner sending commands
-            if user_id == OWNER_ID:
-                parts = content.split()
-                if len(parts) == 2 and parts[0] in ['warm', 'cold', 'ignore']:
-                    await handle_owner_command(message)
-                    return
-                # If not a command format, still process as normal reply
-                # This lets owner test yes/no responses too
-
-            # Smart owner check — only route to commands if it looks like one
-            if user_id == OWNER_ID:
-                parts = content.split()
-                if len(parts) == 2 and parts[0] in ['warm', 'cold', 'ignore']:
-                    await handle_owner_command(message)
-                    return
-                elif content in ['!stats', '!help']:
-                    await handle_owner_command(message)
-                    return
-                # Otherwise fall through to normal yes/no handling
-
-            yes_words = get_keywords('yes')
-            no_words = get_keywords('no')
-
-            # Opt-out
-            if content in ['stop', 'remove', 'opt out', 'optout']:
-                upsert_user(user_id, username, 'neutral', opt_out=1)
-                await message.channel.send(random.choice(OPT_OUT_RESPONSES))
-                log(f"🛑 {username} opted out")
-                return
-
             # --- 🤖 AI CLASSIFICATION FIRST ---
             ai_result = await classify_reply_with_ai(message.content)
 
@@ -1253,6 +1158,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
