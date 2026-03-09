@@ -157,8 +157,9 @@ async def classify_reply_with_ai(user_message: str) -> str:
     if result.startswith("no"):
         return "no"
     return "other"
-
-prompt = f"""You are an assistant for Lucas Jacobs.
+async def generate_ai_reply(user_message: str) -> str:
+    try:
+        prompt = f"""You are an assistant for Lucas Jacobs.
 
 You MUST follow the facts in KNOWLEDGE BASE.
 If the user asks for info not in the knowledge base, say you don't know.
@@ -178,7 +179,6 @@ Write the best possible reply now (friendly, concise).
     except Exception as e:
         log(f"❌ Local model reply error: {e}")
         return ""
-
 def log(m):
     print(m)
     if ui_log:ui_log(m)
@@ -1017,6 +1017,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
