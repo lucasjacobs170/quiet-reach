@@ -157,8 +157,9 @@ async def classify_reply_with_ai(user_message: str) -> str:
     if result.startswith("no"):
         return "no"
     return "other"
+
 async def generate_ai_reply(user_message: str) -> str:
-    try:
+   try:
         prompt = f"""You are an assistant for Lucas Jacobs.
 
 You MUST follow the facts in KNOWLEDGE BASE.
@@ -1017,6 +1018,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
