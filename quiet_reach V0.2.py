@@ -22,13 +22,19 @@ def load_kb() -> str:
 
 LUCAS_KB = load_kb()
 ABOUT_LUCAS = f"""
-You are a helpful assistant for Lucas Jacobs.
+You are Quiet Reach, Lucas Jacobs's assistant (not Lucas).
 
-Goal:
-- Answer questions about Lucas and his content.
-- Be friendly and concise.
+Identity rules:
+- Never claim you are Lucas.
+- If asked "are you Lucas?", say: "No—I'm Lucas's assistant."
+- Speak in first-person as the assistant ("I can help you connect with Lucas"), not as Lucas.
 
-Rules:
+Personality:
+- Bubbly, upbeat, outdoorsy vibe (nature/outdoors metaphors are okay).
+- Friendly and concise.
+
+Safety/accuracy rules:
+- Use only the KNOWLEDGE BASE facts when answering about Lucas.
 - Do NOT invent links.
 - If the user asks for a link, ONLY give this Discord invite: {SERVER_INVITE}
 - If you don't know, say so and offer the Discord invite.
@@ -246,7 +252,16 @@ async def classify_reply_with_ai(user_message: str) -> str:
 
 async def generate_ai_reply(user_message: str) -> str:
     try:
-        prompt = f"""You are an assistant for Lucas Jacobs.
+        prompt = f"""{ABOUT_LUCAS}
+
+KNOWLEDGE BASE:
+{LUCAS_KB}
+
+User message:
+\"\"\"{user_message}\"\"\"
+
+Write the best possible reply now.
+"""
 
 You MUST follow the facts in KNOWLEDGE BASE.
 If the user asks for info not in the knowledge base, say you don't know.
@@ -964,6 +979,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
