@@ -68,10 +68,6 @@ def load_config():
         return {}
 
 def save_config(cfg: dict):
-    def apply_config(cfg: dict):
-    """Apply config values into globals used by the bot."""
-    global BOT_TOKEN
-    BOT_TOKEN = (cfg.get("BOT_TOKEN") or "").strip()
     """Persist config to CONFIG_PATH."""
     try:
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
@@ -79,7 +75,12 @@ def save_config(cfg: dict):
     except Exception as e:
         log(f"⚠️ Config save failed: {e}")
 
-):   
+def apply_config(cfg: dict):
+    """Apply config values into globals used by the bot."""
+    global BOT_TOKEN
+    BOT_TOKEN = (cfg.get("BOT_TOKEN") or "").strip()
+
+def login_dialog(root):
     """
     Always prompt on startup.
     Prefills values from saved config, saves on Continue.
@@ -108,15 +109,13 @@ def save_config(cfg: dict):
     btns = tk.Frame(win, bg="#1a1a2e")
     btns.pack(padx=16, pady=(0, 14), fill="x")
 
-    new_cfg = {
-    "BOT_TOKEN": token_var.get().strip(),
-}
+    def on_continue():
+        new_cfg = {"BOT_TOKEN": token_var.get().strip()}
         save_config(new_cfg)
         apply_config(new_cfg)
         win.destroy()
 
     def on_cancel():
-        # Apply whatever is saved (may be empty); allows app to open but bot won't start.
         apply_config(cfg)
         win.destroy()
 
@@ -130,7 +129,6 @@ def save_config(cfg: dict):
         bg="#444455", fg="white", relief="flat", padx=12, pady=6
     ).pack(side="right", padx=8)
 
-    # Modal behavior (forces decision on launch)
     win.transient(root)
     win.grab_set()
     token_ent.focus_set()
@@ -1104,6 +1102,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
