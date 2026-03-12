@@ -251,8 +251,7 @@ async def classify_reply_with_ai(user_message: str) -> str:
     return "other"
 
 async def generate_ai_reply(user_message: str) -> str:
-    try:
-        prompt = f"""{ABOUT_LUCAS}
+    prompt = f"""{ABOUT_LUCAS}
 
 KNOWLEDGE BASE:
 {LUCAS_KB}
@@ -260,7 +259,7 @@ KNOWLEDGE BASE:
 User message:
 \"\"\"{user_message}\"\"\"
 
-Write the best possible reply now.
+Write the best possible reply now (friendly, concise).
 """
 
 You MUST follow the facts in KNOWLEDGE BASE.
@@ -979,6 +978,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
