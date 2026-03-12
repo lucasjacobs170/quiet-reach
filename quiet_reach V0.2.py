@@ -68,6 +68,10 @@ def load_config():
         return {}
 
 def save_config(cfg: dict):
+    def apply_config(cfg: dict):
+    """Apply config values into globals used by the bot."""
+    global BOT_TOKEN
+    BOT_TOKEN = (cfg.get("BOT_TOKEN") or "").strip()
     """Persist config to CONFIG_PATH."""
     try:
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
@@ -75,7 +79,7 @@ def save_config(cfg: dict):
     except Exception as e:
         log(f"⚠️ Config save failed: {e}")
 
-def login_dialog(root):
+):   
     """
     Always prompt on startup.
     Prefills values from saved config, saves on Continue.
@@ -101,19 +105,12 @@ def login_dialog(root):
     token_ent = tk.Entry(form, textvariable=token_var, width=48, show="•")
     token_ent.grid(row=1, column=0, pady=(2, 10))
 
-    tk.Label(form, text="Gemini GEMINI_API_KEY", bg="#1a1a2e", fg="#cccccc").grid(row=2, column=0, sticky="w")
-    key_var = tk.StringVar(value=cfg.get("GEMINI_API_KEY", ""))
-    key_ent = tk.Entry(form, textvariable=key_var, width=48, show="•")
-    key_ent.grid(row=3, column=0, pady=(2, 10))
-
     btns = tk.Frame(win, bg="#1a1a2e")
     btns.pack(padx=16, pady=(0, 14), fill="x")
 
-    def on_continue():
-        new_cfg = {
-            "BOT_TOKEN": token_var.get().strip(),
-            "GEMINI_API_KEY": key_var.get().strip(),
-        }
+    new_cfg = {
+    "BOT_TOKEN": token_var.get().strip(),
+}
         save_config(new_cfg)
         apply_config(new_cfg)
         win.destroy()
@@ -701,7 +698,7 @@ class QuietReachUI:
             return
         if not BOT_TOKEN:
             messagebox.showerror("Token Missing!", "Enter BOT_TOKEN in the Login dialog.")
-    return
+            return
         self.bot_running = True
         self.start_btn.config(state='disabled')
         self.stop_btn.config(state='normal')
@@ -1107,6 +1104,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
