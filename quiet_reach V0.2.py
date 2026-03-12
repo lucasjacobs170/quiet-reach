@@ -261,7 +261,6 @@ User message:
 
 Write the best possible reply now (friendly, concise).
 """
-
 You MUST follow the facts in KNOWLEDGE BASE.
 If the user asks for info not in the knowledge base, say you don't know.
 Do NOT invent links. Only allowed link is: {SERVER_INVITE}
@@ -978,6 +977,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
