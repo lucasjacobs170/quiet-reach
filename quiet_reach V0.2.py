@@ -268,7 +268,6 @@ Do NOT invent links. Only allowed link is: {SERVER_INVITE}
 KNOWLEDGE BASE:
 {LUCAS_KB}
 
-User message:
 \"\"\"{user_message}\"\"\"
 
 Write the best possible reply now (friendly, concise).
@@ -977,6 +976,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
