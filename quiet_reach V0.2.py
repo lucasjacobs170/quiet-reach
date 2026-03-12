@@ -85,7 +85,7 @@ def login_dialog(root):
     Prefills values from saved config, saves on Continue.
     """
     cfg = load_config()
-
+    log("🔐 Login dialog opened (waiting for input)")
     win = tk.Toplevel(root)
     win.title("Quiet Reach — Login")
     win.configure(bg="#1a1a2e")
@@ -959,6 +959,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
