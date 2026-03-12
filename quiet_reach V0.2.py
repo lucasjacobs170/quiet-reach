@@ -1,6 +1,6 @@
 # 🤫 QUIET REACH v1.2
-import discord, tkinter as tk, sqlite3, asyncio, threading, random
-from tkinter import ttk, scrolledtext, messagebox
+import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, json
+from tkinter import ttk, scrolledtext, messagebox, simpledialog
 from datetime import datetime, date
 import os
 import requests
@@ -9,6 +9,7 @@ BOT_TOKEN=''
 OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
 DB_PATH='quiet_reach.db'
+CONFIG_PATH='quiet_reach_config.json'
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 KB_PATH = "lucas_kb.txt"
@@ -51,6 +52,101 @@ YES_RESPONSES=[f"Yesss okay! 🎉 Here's an invite to Lucas's server, come hang:
 NO_RESPONSES=["Totally cool, no worries at all! 👌","All good! Sorry to bother 😊 have a great day!","No worries at all! Take care 💙","Totally understand! Have a good one 👋","All good, no hard feelings! 😊","Haha fair enough! Sorry to slide in 😅 take care!","No worries! Hope you have an amazing day 🌟","Understood! Sorry for the interruption 😊💙"]
 OPT_OUT_RESPONSES=["Done! You've been opted out — I won't message you again. Take care! 💙","Of course! Removing you now — sorry for the bother 😊 take care!","Got it! You won't hear from me again. Have a great one 💙","Absolutely! All done — sorry if I bothered you 😊 take care!"]
 
+# ============================================================
+# 🔐 CONFIG / LOGIN (local, per-machine)
+# ============================================================
+
+def load_config():
+    """Load config from CONFIG_PATH (if present)."""
+    if not os.path.exists(CONFIG_PATH):
+        return {}
+    try:
+        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f) or {}
+    except Exception as e:
+        log(f"⚠️ Config load failed: {e}")
+        return {}
+
+def save_config(cfg: dict):
+    """Persist config to CONFIG_PATH."""
+    try:
+        with open(CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2)
+    except Exception as e:
+        log(f"⚠️ Config save failed: {e}")
+
+def apply_config(cfg: dict):
+    """Apply config values into globals used by the bot."""
+    global BOT_TOKEN, GEMINI_API_KEY
+    BOT_TOKEN = (cfg.get("BOT_TOKEN") or "").strip()
+    GEMINI_API_KEY = (cfg.get("GEMINI_API_KEY") or "").strip()
+
+    # Initialize Gemini model after key is available (safe if blank)
+    init_gemini()
+
+def login_dialog(root):
+    """
+    Always prompt on startup.
+    Prefills values from saved config, saves on Continue.
+    """
+    cfg = load_config()
+
+    win = tk.Toplevel(root)
+    win.title("Quiet Reach — Login")
+    win.configure(bg="#1a1a2e")
+    win.resizable(False, False)
+
+    tk.Label(
+        win, text="Bot Login / Setup",
+        font=("Helvetica", 14, "bold"),
+        bg="#1a1a2e", fg="white"
+    ).pack(padx=16, pady=(14, 6))
+
+    form = tk.Frame(win, bg="#1a1a2e")
+    form.pack(padx=16, pady=8)
+
+    tk.Label(form, text="Discord BOT_TOKEN", bg="#1a1a2e", fg="#cccccc").grid(row=0, column=0, sticky="w")
+    token_var = tk.StringVar(value=cfg.get("BOT_TOKEN", ""))
+    token_ent = tk.Entry(form, textvariable=token_var, width=48, show="•")
+    token_ent.grid(row=1, column=0, pady=(2, 10))
+
+    tk.Label(form, text="Gemini GEMINI_API_KEY", bg="#1a1a2e", fg="#cccccc").grid(row=2, column=0, sticky="w")
+    key_var = tk.StringVar(value=cfg.get("GEMINI_API_KEY", ""))
+    key_ent = tk.Entry(form, textvariable=key_var, width=48, show="•")
+    key_ent.grid(row=3, column=0, pady=(2, 10))
+
+    btns = tk.Frame(win, bg="#1a1a2e")
+    btns.pack(padx=16, pady=(0, 14), fill="x")
+
+    def on_continue():
+        new_cfg = {
+            "BOT_TOKEN": token_var.get().strip(),
+            "GEMINI_API_KEY": key_var.get().strip(),
+        }
+        save_config(new_cfg)
+        apply_config(new_cfg)
+        win.destroy()
+
+    def on_cancel():
+        # Apply whatever is saved (may be empty); allows app to open but bot won't start.
+        apply_config(cfg)
+        win.destroy()
+
+    tk.Button(
+        btns, text="Continue", command=on_continue,
+        bg="#27ae60", fg="white", relief="flat", padx=12, pady=6
+    ).pack(side="right")
+
+    tk.Button(
+        btns, text="Cancel", command=on_cancel,
+        bg="#444455", fg="white", relief="flat", padx=12, pady=6
+    ).pack(side="right", padx=8)
+
+    # Modal behavior (forces decision on launch)
+    win.transient(root)
+    win.grab_set()
+    token_ent.focus_set()
+    root.wait_window(win)
 def setup_database():
     c=sqlite3.connect(DB_PATH);k=c.cursor()
     k.execute('CREATE TABLE IF NOT EXISTS users(discord_id TEXT PRIMARY KEY,username TEXT,list_type TEXT DEFAULT "neutral",last_contacted TEXT,opt_out INTEGER DEFAULT 0)')
@@ -612,10 +708,9 @@ class QuietReachUI:
     def start_bot(self):
         if self.bot_running:
             return
-        if BOT_TOKEN == 'YOUR_BOT_TOKEN_HERE':
-            messagebox.showerror("Token Missing!",
-                "Replace YOUR_BOT_TOKEN_HERE with your bot token!")
-            return
+        if not BOT_TOKEN:
+    messagebox.showerror("Token Missing!", "Enter BOT_TOKEN in the Login dialog.")
+    return
         self.bot_running = True
         self.start_btn.config(state='disabled')
         self.stop_btn.config(state='normal')
@@ -1016,8 +1111,12 @@ class QuietReachUI:
 if __name__ == "__main__":
     setup_database()
     root = tk.Tk()
+    root.withdraw()          # hide main window during login
+    login_dialog(root)       # always prompt on launch
+    root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
