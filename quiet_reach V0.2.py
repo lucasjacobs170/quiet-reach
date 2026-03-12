@@ -87,9 +87,15 @@ def login_dialog(root):
     cfg = load_config()
     log("🔐 Login dialog opened (waiting for input)")
     win = tk.Toplevel(root)
+    win.update_idletasks()
+    win.lift()
+    win.attributes("-topmost", True)
+    win.after(250, lambda: win.attributes("-topmost", False))
+    win.focus_force()
     win.title("Quiet Reach — Login")
     win.configure(bg="#1a1a2e")
     win.resizable(False, False)
+    win.geometry("520x220+200+200")
 
     tk.Label(
         win, text="Bot Login / Setup",
@@ -128,7 +134,6 @@ def login_dialog(root):
         bg="#444455", fg="white", relief="flat", padx=12, pady=6
     ).pack(side="right", padx=8)
 
-    win.transient(root)
     win.grab_set()
     token_ent.focus_set()
     root.wait_window(win)
@@ -959,6 +964,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
