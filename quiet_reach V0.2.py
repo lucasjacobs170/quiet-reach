@@ -75,15 +75,6 @@ def save_config(cfg: dict):
     except Exception as e:
         log(f"⚠️ Config save failed: {e}")
 
-def apply_config(cfg: dict):
-    """Apply config values into globals used by the bot."""
-    global BOT_TOKEN, GEMINI_API_KEY
-    BOT_TOKEN = (cfg.get("BOT_TOKEN") or "").strip()
-    GEMINI_API_KEY = (cfg.get("GEMINI_API_KEY") or "").strip()
-
-    # Initialize Gemini model after key is available (safe if blank)
-    init_gemini()
-
 def login_dialog(root):
     """
     Always prompt on startup.
@@ -709,7 +700,7 @@ class QuietReachUI:
         if self.bot_running:
             return
         if not BOT_TOKEN:
-    messagebox.showerror("Token Missing!", "Enter BOT_TOKEN in the Login dialog.")
+            messagebox.showerror("Token Missing!", "Enter BOT_TOKEN in the Login dialog.")
     return
         self.bot_running = True
         self.start_btn.config(state='disabled')
@@ -1116,6 +1107,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
