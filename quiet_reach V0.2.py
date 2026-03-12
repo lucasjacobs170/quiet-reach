@@ -1,6 +1,6 @@
 # 🤫 QUIET REACH v1.2
 import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, json
-from tkinter import ttk, scrolledtext, messagebox, simpledialog
+from tkinter import ttk, scrolledtext, messagebox
 from datetime import datetime, date
 import requests
 
@@ -959,6 +959,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
