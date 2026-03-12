@@ -2,7 +2,6 @@
 import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, json
 from tkinter import ttk, scrolledtext, messagebox, simpledialog
 from datetime import datetime, date
-import os
 import requests
 
 BOT_TOKEN=''
@@ -394,148 +393,6 @@ class QuietReachUI:
         global ui_log
         ui_log = self.append_log
 
-    def build_ui(self):
-
-            # HEADER
-            header_frame = tk.Frame(self.root, bg='#1a1a2e')
-            header_frame.pack(fill='x', padx=20, pady=(15, 5))
-
-            tk.Label(
-                header_frame, text="🤫 Quiet Reach",
-                font=('Helvetica', 24, 'bold'),
-                bg='#1a1a2e', fg='white'
-            ).pack(side='left')
-
-            self.status_label = tk.Label(
-                header_frame, text="⚫ Offline",
-                font=('Helvetica', 12),
-                bg='#1a1a2e', fg='#aaaaaa'
-            )
-            self.status_label.pack(side='right', padx=10)
-
-            # DIVIDER
-            tk.Frame(self.root, bg='#4a90d9', height=2).pack(
-                fill='x', padx=20, pady=5
-            )
-
-            # MAIN AREA
-            main_frame = tk.Frame(self.root, bg='#1a1a2e')
-            main_frame.pack(fill='both', expand=True, padx=20, pady=10)
-
-            # ---- LEFT SIDE: SCROLLABLE BUTTON PANEL ----
-            # Wrap buttons in a canvas so they scroll if window is small
-            btn_canvas = tk.Canvas(main_frame, bg='#1a1a2e',
-                                   width=220, highlightthickness=0)
-            btn_scrollbar = ttk.Scrollbar(main_frame, orient='vertical',
-                                          command=btn_canvas.yview)
-            btn_scroll_frame = tk.Frame(btn_canvas, bg='#1a1a2e')
-
-            btn_scroll_frame.bind(
-                '<Configure>',
-                lambda e: btn_canvas.configure(
-                    scrollregion=btn_canvas.bbox('all')
-                )
-            )
-            btn_canvas.create_window((0, 0), window=btn_scroll_frame, anchor='nw')
-            btn_canvas.configure(yscrollcommand=btn_scrollbar.set)
-            btn_canvas.pack(side='left', fill='y', padx=(0, 5))
-            btn_scrollbar.pack(side='left', fill='y', padx=(0, 10))
-
-            # Button factory helper
-            def make_button(parent, text, command, color='#4a90d9', fg='white'):
-                btn = tk.Button(
-                    parent, text=text, command=command,
-                    bg=color, fg=fg,
-                    font=('Helvetica', 10, 'bold'),
-                    relief='flat', cursor='hand2',
-                    padx=10, pady=8, width=20,
-                    activebackground='#357abd',
-                    activeforeground='white'
-                )
-                btn.pack(pady=3, padx=5)
-                btn.bind('<Enter>', lambda e, b=btn: b.config(bg='#357abd'))
-                btn.bind('<Leave>', lambda e, b=btn, c=color: b.config(bg=c))
-                return btn
-
-            def section_label(text, color='#4a90d9'):
-                tk.Label(
-                    btn_scroll_frame, text=text,
-                    font=('Helvetica', 10, 'bold'),
-                    bg='#1a1a2e', fg=color
-                ).pack(pady=(10, 3))
-                tk.Frame(
-                    btn_scroll_frame, bg=color, height=1
-                ).pack(fill='x', padx=5, pady=(0, 5))
-
-            # BOT CONTROLS
-            section_label("⚙️ Bot Controls")
-            self.start_btn = make_button(
-                btn_scroll_frame, "▶  Start Bot", self.start_bot, '#27ae60'
-            )
-            self.stop_btn = make_button(
-                btn_scroll_frame, "⏹  Stop Bot", self.stop_bot, '#e74c3c'
-            )
-            self.stop_btn.config(state='disabled')
-
-            # LISTS
-            section_label("📋 View Lists")
-            make_button(btn_scroll_frame, "🔥  Warm List",
-                        lambda: self.view_list('warm'))
-            make_button(btn_scroll_frame, "❄️  Cold List",
-                        lambda: self.view_list('cold'))
-            make_button(btn_scroll_frame, "😐  Neutral List",
-                        lambda: self.view_list('neutral'))
-
-            # TOOLS
-            section_label("🛠️ Tools")
-            make_button(btn_scroll_frame, "🔍  Review Ambiguous",
-                        self.review_ambiguous)
-            make_button(btn_scroll_frame, "✏️  Edit Keywords",
-                        self.edit_keywords)
-            make_button(btn_scroll_frame, "📊  Stats",
-                        self.show_stats)
-
-            # RESET TOOLS
-            section_label("🔄 Reset Tools", '#e74c3c')
-            make_button(btn_scroll_frame, "🔄  Reset Warm",
-                        self.reset_warm, '#c0392b')
-            make_button(btn_scroll_frame, "🔄  Reset Cold",
-                        self.reset_cold, '#c0392b')
-            make_button(btn_scroll_frame, "🔄  Reset Neutral",
-                        self.reset_neutral, '#c0392b')
-            make_button(btn_scroll_frame, "🔄  Reset Ambiguous",
-                        self.reset_ambiguous, '#c0392b')
-            make_button(btn_scroll_frame, "🔄  Reset Server Caps",
-                        self.reset_caps, '#c0392b')
-            make_button(btn_scroll_frame, "💀  WIPE ALL DATA",
-                        self.reset_all, '#7b241c')
-
-            # ---- RIGHT SIDE: LOG AREA ----
-            log_frame = tk.Frame(main_frame, bg='#1a1a2e')
-            log_frame.pack(side='right', fill='both', expand=True)
-
-            tk.Label(
-                log_frame, text="📡 Live Log",
-                font=('Helvetica', 11, 'bold'),
-                bg='#1a1a2e', fg='#4a90d9'
-            ).pack(anchor='w', pady=(0, 5))
-
-            self.log_area = scrolledtext.ScrolledText(
-                log_frame,
-                bg='#0d0d1a', fg='#00ff88',
-                font=('Courier', 10),
-                relief='flat', state='disabled',
-                wrap='word', padx=10, pady=10
-            )
-            self.log_area.pack(fill='both', expand=True)
-
-            # FOOTER
-            tk.Label(
-                self.root,
-                text="Running on discord.py  |  Made with 💙  |  Quiet Reach v1.2",
-                font=('Helvetica', 8),
-                bg='#1a1a2e', fg='#555577'
-            ).pack(pady=(5, 10))
     def build_ui(self):
 
         # HEADER
@@ -1102,6 +959,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
