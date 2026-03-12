@@ -251,23 +251,13 @@ async def classify_reply_with_ai(user_message: str) -> str:
     return "other"
 
 async def generate_ai_reply(user_message: str) -> str:
-    prompt = f"""{ABOUT_LUCAS}
+    try:
+        prompt = f"""{ABOUT_LUCAS}
 
 KNOWLEDGE BASE:
 {LUCAS_KB}
 
 User message:
-\"\"\"{user_message}\"\"\"
-
-Write the best possible reply now (friendly, concise).
-"""
-You MUST follow the facts in KNOWLEDGE BASE.
-If the user asks for info not in the knowledge base, say you don't know.
-Do NOT invent links. Only allowed link is: {SERVER_INVITE}
-
-KNOWLEDGE BASE:
-{LUCAS_KB}
-
 \"\"\"{user_message}\"\"\"
 
 Write the best possible reply now (friendly, concise).
@@ -976,6 +966,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
