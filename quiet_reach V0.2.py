@@ -12,6 +12,12 @@ CONFIG_PATH='quiet_reach_config.json'
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 KB_PATH = "lucas_kb.txt"
+# Keyword / engagement mode
+KEYWORD_MODE_ENABLED = True
+
+# Public engagement pacing
+PUBLIC_TOUCH_COOLDOWN_SECONDS = 60 * 30   # 30 minutes per user
+NUDGE_AFTER_TOUCHES = 2                   # after N touches, start nudging opt-in
 
 def load_kb() -> str:
     try:
@@ -148,6 +154,17 @@ def setup_database():
     k.execute('CREATE TABLE IF NOT EXISTS users(discord_id TEXT PRIMARY KEY,username TEXT,list_type TEXT DEFAULT "neutral",last_contacted TEXT,opt_out INTEGER DEFAULT 0)')
     k.execute('CREATE TABLE IF NOT EXISTS server_caps(server_id TEXT,date TEXT,dm_count INTEGER DEFAULT 0,PRIMARY KEY(server_id,date))')
     k.execute('CREATE TABLE IF NOT EXISTS keywords(word TEXT PRIMARY KEY,list_name TEXT)')
+   k.execute('CREATE TABLE IF NOT EXISTS dm_optins('
+              'discord_id TEXT PRIMARY KEY,'
+              'username TEXT,'
+              'opted_in INTEGER DEFAULT 0,'
+              'opted_in_at TEXT)')
+
+    k.execute('CREATE TABLE IF NOT EXISTS public_touches('
+              'discord_id TEXT PRIMARY KEY,'
+              'username TEXT,'
+              'touches INTEGER DEFAULT 0,'
+              'last_touch TEXT)')
     k.execute("SELECT COUNT(*)FROM keywords")
     if k.fetchone()[0]==0:
         for w,l in[('thirsty','trigger'),('live','trigger'),('of','trigger'),('cam','trigger'),('preview','trigger'),('link','trigger'),('yes','yes'),('yep','yes'),('sure','yes'),('yeah','yes'),('ok','yes'),('interested','yes'),('tell me more','yes'),('lmk','yes'),('facts','yes'),('no','no'),('nah','no'),('pass','no'),('no thanks','no'),('not interested','no'),('stop','no'),('leave me alone','no'),('nope','no')]:
@@ -206,6 +223,41 @@ def get_stats():
     k.execute("SELECT COUNT(*)FROM users WHERE list_type='neutral'");n=k.fetchone()[0]
     k.execute("SELECT SUM(dm_count)FROM server_caps");t=k.fetchone()[0]or 0
     k.execute("SELECT COUNT(*)FROM ambiguous");p=k.fetchone()[0];c.close();return w,co,n,t,p
+    def get_opt_in(did: int) -> bool:
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("SELECT opted_in FROM dm_optins WHERE discord_id=?", (str(did),))
+    row = k.fetchone()
+    c.close()
+    return bool(row and row[0] == 1)
+
+def set_opt_in(did: int, username: str, opted_in: int = 1):
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute(
+        "INSERT INTO dm_optins(discord_id, username, opted_in, opted_in_at) "
+        "VALUES(?,?,?,?) "
+        "ON CONFLICT(discord_id) DO UPDATE SET "
+        "username=excluded.username, opted_in=excluded.opted_in, opted_in_at=excluded.opted_in_at",
+        (str(did), username, int(opted_in), str(datetime.now()))
+    )
+    c.commit()
+    c.close()
+
+def get_touches(did: int) -> int:
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("SELECT touches FROM public_touches WHERE discord_id=?", (str(did),))
+    row = k.fetchone()
+    c.close()
+    return int(row[0]) if row else 0
+
+def record_touch(did: int, username: str) -> int:
+    """Increment touch counter; return new touches count."""
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute(
+        "INSERT INTO public_touches
 
 intents=discord.Intents.default();intents.message_content=True;intents.members=True;intents.presences=True
 client=discord.Client(intents=intents);ui_log=None
@@ -966,6 +1018,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
