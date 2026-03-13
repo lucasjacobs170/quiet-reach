@@ -437,6 +437,44 @@ async def handle_dm_reply(message):
 
     await message.channel.send(reply)
     log(f"🤖 AI replied to {username}")
+# --- Anti-spam pacing (channel-level) ---
+CHANNEL_REPLY_COOLDOWN_SECONDS = 90  # 1.5 minutes per channel
+_last_channel_reply = {}            # channel_id -> datetime
+
+def can_channel_reply(channel_id: int) -> bool:
+    last = _last_channel_reply.get(channel_id)
+    if not last:
+        return True
+    return (datetime.now() - last).total_seconds() >= CHANNEL_REPLY_COOLDOWN_SECONDS
+
+def mark_channel_replied(channel_id: int):
+    _last_channel_reply[channel_id] = datetime.now()
+
+async def is_reply_to_bot(message) -> bool:
+    """
+    True only if the user is replying to a message authored by this bot.
+    Prevents the bot from responding to every random reply-thread in the channel.
+    """
+    if not message.reference or not message.reference.message_id:
+        return False
+
+    # If Discord already resolved the referenced message, use it
+    resolved = message.reference.resolved
+    try:
+        if resolved and getattr(resolved, "author", None) and client.user:
+            return resolved.author.id == client.user.id
+    except Exception:
+        pass
+
+    # Otherwise fetch the referenced message
+    try:
+        if client.user:
+            replied_msg = await message.channel.fetch_message(message.reference.message_id)
+            return replied_msg.author.id == client.user.id
+    except Exception:
+        return False
+
+    return False
 def looks_like_question(text: str) -> bool:
     t = (text or "").strip().lower()
     if not t:
@@ -520,12 +558,21 @@ async def on_message(message):
         return
 
     # If they reply to the bot or mention it, answer publicly (no DM needed)
-    if (client.user and client.user.mentioned_in(message)) or (message.reference is not None):
+    is_mention = bool(client.user and client.user.mentioned_in(message))
+    is_reply = await is_reply_to_bot(message)
+
+    if is_mention or is_reply:
+        # If it's not a direct mention, respect channel cooldown
+        if (not is_mention) and (not can_channel_reply(message.channel.id)):
+            return
+
         if not can_public_touch(message.author.id):
             return
+
         touches = record_touch(message.author.id, str(message.author))
         reply_text = await build_public_response(message.content, touches)
         await message.reply(reply_text, mention_author=False)
+        mark_channel_replied(message.channel.id)
         return
     
     # If keyword mode is disabled, stop here (still allows opt-in/out above)
@@ -560,7 +607,10 @@ async def on_message(message):
             touches = record_touch(message.author.id, str(message.author))
 
             reply_text = await build_public_response(message.content, touches)
+            if not can_channel_reply(message.channel.id):
+                return
             await message.reply(reply_text, mention_author=False)
+            mark_channel_replied(message.channel.id)
             return
 
         # Opted-in -> DM allowed
@@ -1214,6 +1264,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
