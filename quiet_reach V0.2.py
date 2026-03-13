@@ -357,12 +357,32 @@ def ollama_generate(prompt: str) -> str:
         print(f"❌ Ollama error: {e}")
         return ""
 
+import re
+
+def has_keyword(msg: str, kw: str) -> bool:
+    msg = (msg or "").lower()
+    kw = (kw or "").lower().strip()
+    if not kw:
+        return False
+
+    # For multi-word phrases, allow substring match
+    if " " in kw:
+        return kw in msg
+
+    # For single words, require word boundaries (prevents "no" matching "know")
+    return re.search(rf"\b{re.escape(kw)}\b", msg) is not None
+    
 async def classify_reply_with_ai(user_message: str) -> str:
+    msg = (user_message or "").strip().lower()
+
+    # If it's clearly a question / info request, do NOT classify as yes/no
+    if looks_like_question(msg) or "about lucas" in msg or "who is lucas" in msg:
+        return "other"
+
     # quick keyword fallback first (no model call)
-    msg = (user_message or "").lower()
-    if any(w in msg for w in get_keywords("yes")):
+    if any(has_keyword(msg, w) for w in get_keywords("yes")):
         return "yes"
-    if any(w in msg for w in get_keywords("no")):
+    if any(has_keyword(msg, w) for w in get_keywords("no")):
         return "no"
 
     prompt = (
@@ -416,8 +436,21 @@ async def handle_dm_reply(message):
         return
 
     # First try AI classification
-    ai_result = await classify_reply_with_ai(content)
+    # If they are asking for info, skip YES/NO classification entirely
+    if looks_like_question(content) or "lucas" in content_lower:
+        ai_result = "other"
+    else:
+        ai_result = await classify_reply_with_ai(content)
+    reply = await generate_ai_reply(content)
+    if not reply:
+        reply = "I don’t have that detail yet. If you want, I can share the server link."
 
+    # Soft option to get the invite
+    reply += f"\n\nIf you want to join the server, say `link`."
+    await message.channel.send(reply)
+    if content_lower in ["link", "server", "invite"]:
+        await message.channel.send(f"Here you go: {SERVER_INVITE}")
+        return
     if ai_result == "yes":
         upsert_user(user_id, username, "warm")
         await message.channel.send(random.choice(YES_RESPONSES))
