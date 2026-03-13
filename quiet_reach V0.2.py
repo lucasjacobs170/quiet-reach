@@ -1,7 +1,7 @@
 # 🤫 QUIET REACH v1.2
 import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, json
 from tkinter import ttk, scrolledtext, messagebox
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import requests
 
 BOT_TOKEN=''
@@ -449,7 +449,6 @@ def can_channel_reply(channel_id: int) -> bool:
 
 def mark_channel_replied(channel_id: int):
     _last_channel_reply[channel_id] = datetime.now()
-from datetime import datetime, date, timedelta
 
 # --- Lightweight conversation follow-ups (per user, per channel) ---
 FOLLOWUP_WINDOW_SECONDS = 120         # 2 minutes to keep chatting
@@ -597,6 +596,8 @@ async def on_message(message):
 
     # If we recently engaged this user in this channel, allow a short multi-turn convo
     if can_followup(message.channel.id, message.author.id):
+    if not can_channel_reply(message.channel.id):
+        return
         consume_followup(message.channel.id, message.author.id)
 
         reply = await generate_ai_reply(message.content)
