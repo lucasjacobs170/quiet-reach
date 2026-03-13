@@ -600,18 +600,17 @@ async def on_message(message):
             return
 
         # Not opted in -> public touch + nudge (with cooldown)
-        if not get_opt_in(message.author.id):
-            if not can_public_touch(message.author.id):
-                return
+        if not can_public_touch(message.author.id):
+    return
 
-            touches = record_touch(message.author.id, str(message.author))
+if not can_channel_reply(message.channel.id):
+    return
 
-            if not can_channel_reply(message.channel.id):
-                return
-            reply_text = await build_public_response(message.content, touches)
-            await message.reply(reply_text, mention_author=False)
-            mark_channel_replied(message.channel.id)
-            return
+touches = record_touch(message.author.id, str(message.author))
+reply_text = await build_public_response(message.content, touches)
+await message.reply(reply_text, mention_author=False)
+mark_channel_replied(message.channel.id)
+return
 
         # Opted-in -> DM allowed
         await send_outreach_dm(message.author, message.guild.id)
@@ -1264,6 +1263,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
