@@ -606,9 +606,9 @@ async def on_message(message):
 
             touches = record_touch(message.author.id, str(message.author))
 
-            reply_text = await build_public_response(message.content, touches)
             if not can_channel_reply(message.channel.id):
                 return
+            reply_text = await build_public_response(message.content, touches)
             await message.reply(reply_text, mention_author=False)
             mark_channel_replied(message.channel.id)
             return
@@ -1264,6 +1264,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
