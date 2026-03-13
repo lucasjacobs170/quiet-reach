@@ -567,8 +567,7 @@ PUBLIC_SMALLTALK = [
 ]
 
 def optin_footer() -> str:
-    # keep it light + optional
-    return " (If you *want* a DM, type `!optin` — otherwise ask me here.)"
+    return " Want details? DM me, or type `!optin` and I’ll DM you."
 
 async def build_public_response(user_text: str, touches: int) -> str:
     """
