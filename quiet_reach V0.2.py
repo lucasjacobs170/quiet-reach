@@ -154,18 +154,18 @@ def setup_database():
     k.execute('CREATE TABLE IF NOT EXISTS users(discord_id TEXT PRIMARY KEY,username TEXT,list_type TEXT DEFAULT "neutral",last_contacted TEXT,opt_out INTEGER DEFAULT 0)')
     k.execute('CREATE TABLE IF NOT EXISTS server_caps(server_id TEXT,date TEXT,dm_count INTEGER DEFAULT 0,PRIMARY KEY(server_id,date))')
     k.execute('CREATE TABLE IF NOT EXISTS keywords(word TEXT PRIMARY KEY,list_name TEXT)')
-   k.execute('CREATE TABLE IF NOT EXISTS dm_optins('
-              'discord_id TEXT PRIMARY KEY,'
-              'username TEXT,'
-              'opted_in INTEGER DEFAULT 0,'
-              'opted_in_at TEXT)')
+    k.execute('CREATE TABLE IF NOT EXISTS dm_optins('
+               'discord_id TEXT PRIMARY KEY,'
+               'username TEXT,'
+               'opted_in INTEGER DEFAULT 0,'
+               'opted_in_at TEXT)')
 
-    k.execute('CREATE TABLE IF NOT EXISTS public_touches('
-              'discord_id TEXT PRIMARY KEY,'
-              'username TEXT,'
-              'touches INTEGER DEFAULT 0,'
-              'last_touch TEXT)')
-    k.execute("SELECT COUNT(*)FROM keywords")
+     k.execute('CREATE TABLE IF NOT EXISTS public_touches('
+               'discord_id TEXT PRIMARY KEY,'
+               'username TEXT,'
+               'touches INTEGER DEFAULT 0,'
+               'last_touch TEXT)')
+     k.execute("SELECT COUNT(*)FROM keywords")
     if k.fetchone()[0]==0:
         for w,l in[('thirsty','trigger'),('live','trigger'),('of','trigger'),('cam','trigger'),('preview','trigger'),('link','trigger'),('yes','yes'),('yep','yes'),('sure','yes'),('yeah','yes'),('ok','yes'),('interested','yes'),('tell me more','yes'),('lmk','yes'),('facts','yes'),('no','no'),('nah','no'),('pass','no'),('no thanks','no'),('not interested','no'),('stop','no'),('leave me alone','no'),('nope','no')]:
             k.execute("INSERT INTO keywords VALUES(?,?)",(w,l))
@@ -223,7 +223,7 @@ def get_stats():
     k.execute("SELECT COUNT(*)FROM users WHERE list_type='neutral'");n=k.fetchone()[0]
     k.execute("SELECT SUM(dm_count)FROM server_caps");t=k.fetchone()[0]or 0
     k.execute("SELECT COUNT(*)FROM ambiguous");p=k.fetchone()[0];c.close();return w,co,n,t,p
-    def get_opt_in(did: int) -> bool:
+def get_opt_in(did: int) -> bool:
     c = sqlite3.connect(DB_PATH)
     k = c.cursor()
     k.execute("SELECT opted_in FROM dm_optins WHERE discord_id=?", (str(did),))
@@ -257,7 +257,7 @@ def record_touch(did: int, username: str) -> int:
     c = sqlite3.connect(DB_PATH)
     k = c.cursor()
     k.execute(
-        "INSERT INTO public_touches
+        "INSERT INTO public_touches)
 
 intents=discord.Intents.default();intents.message_content=True;intents.members=True;intents.presences=True
 client=discord.Client(intents=intents);ui_log=None
@@ -1018,6 +1018,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
