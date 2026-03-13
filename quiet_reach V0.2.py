@@ -293,6 +293,20 @@ def get_touches(did: int) -> int:
     c.close()
     return int(row[0]) if row else 0
 
+def can_public_touch(did: int) -> bool:
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("SELECT last_touch FROM public_touches WHERE discord_id=?", (str(did),))
+    row = k.fetchone()
+    c.close()
+    if not row or not row[0]:
+        return True
+    try:
+        last = datetime.fromisoformat(row[0])
+    except Exception:
+        return True
+    return (datetime.now() - last).total_seconds() >= PUBLIC_TOUCH_COOLDOWN_SECONDS
+
 def record_touch(did: int, username: str) -> int:
     """Increment touch counter; return new touches count."""
     now = datetime.now().isoformat()
@@ -429,6 +443,19 @@ async def on_ready():log(f"🚀 Quiet Reach is alive! Logged in as {client.user}
 @client.event
 async def on_message(message):
     if message.author==client.user:return
+    # In-server opt-in / opt-out commands
+    raw = message.content.strip().lower()
+
+    if raw in ["!optin", "!opt-in", "!dmme", "!dm me"]:
+        set_opt_in(message.author.id, str(message.author), 1)
+        await message.reply("Got it — you’re opted in. I’ll DM you.", mention_author=False)
+        await send_outreach_dm(message.author, message.guild.id)
+        return
+
+    if raw in ["!optout", "!opt-out", "!nodm", "!no dm"]:
+        set_opt_in(message.author.id, str(message.author), 0)
+        await message.reply("Done — no DMs from me.", mention_author=False)
+        return
     if isinstance(message.channel,discord.DMChannel):await handle_dm_reply(message);return
     content=message.content.lower();tw=get_keywords('trigger')
     if any(w in content for w in tw):
@@ -437,10 +464,32 @@ async def on_message(message):
         u=get_user(message.author.id)
         if u and u[4]==1:log(f"🚫 Skipped — {message.author} opted out");return
         if user_on_cooldown(message.author.id):log(f"🚫 Skipped — {message.author} on cooldown");return
-        await send_outreach_dm(public engagement + opt-in capture)
+        # Server-safe path: only DM if opted-in
+        if not get_opt_in(message.author.id):
+            # TODO: optionally add a can_public_touch() check (Step C)
+            touches = record_touch(message.author.id, str(message.author))
+
+            if touches < NUDGE_AFTER_TOUCHES:
+                await message.channel.send(
+                    f"Hey {message.author.mention} — I’m Lucas’s assistant. "
+                    f"If you want, you can opt-in for a DM by typing `!optin`."
+                )
+            else:
+                await message.channel.send(
+                    f"{message.author.mention} If you want me to DM you details, type `!optin`. "
+                    f"If not, no worries—I'll keep it in-server."
+                )
+            return
+
+        # Opted-in: DM allowed
+        await send_outreach_dm(message.author, message.guild.id)
+        return
 
 
 async def send_outreach_dm(user, sid):
+    if not get_opt_in(user.id):
+        log(f"🚫 DM blocked (not opted-in): {user}")
+        return
     """Send outreach DM and notify owner."""
     opener = random.choice(DM_OPENERS)
     try:
@@ -1083,6 +1132,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
