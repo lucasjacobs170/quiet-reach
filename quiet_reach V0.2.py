@@ -615,9 +615,6 @@ async def on_message(message):
         if (not is_mention) and (not can_public_touch(message.author.id)):
             return
 
-        if not can_public_touch(message.author.id):
-            return
-
         touches = record_touch(message.author.id, str(message.author))
         reply_text = await build_public_response(message.content, touches)
         await message.reply(reply_text, mention_author=False)
