@@ -449,7 +449,7 @@ def can_channel_reply(channel_id: int) -> bool:
 
 def mark_channel_replied(channel_id: int):
     _last_channel_reply[channel_id] = datetime.now()
-from datetime import timedelta  # add up top near your other datetime imports
+from datetime import datetime, date, timedelta
 
 # --- Lightweight conversation follow-ups (per user, per channel) ---
 FOLLOWUP_WINDOW_SECONDS = 120         # 2 minutes to keep chatting
