@@ -443,6 +443,9 @@ async def on_ready():log(f"🚀 Quiet Reach is alive! Logged in as {client.user}
 @client.event
 async def on_message(message):
     if message.author==client.user:return
+    if isinstance(message.channel, discord.DMChannel):
+    await handle_dm_reply(message)
+    return
     # In-server opt-in / opt-out commands
     raw = message.content.strip().lower()
 
@@ -468,7 +471,8 @@ async def on_message(message):
         if not get_opt_in(message.author.id):
             # TODO: optionally add a can_public_touch() check (Step C)
             touches = record_touch(message.author.id, str(message.author))
-
+    if not can_public_touch(message.author.id):
+        return
             if touches < NUDGE_AFTER_TOUCHES:
                 await message.channel.send(
                     f"Hey {message.author.mention} — I’m Lucas’s assistant. "
@@ -1132,6 +1136,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
