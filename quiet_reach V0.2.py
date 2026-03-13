@@ -372,7 +372,7 @@ async def on_message(message):
         u=get_user(message.author.id)
         if u and u[4]==1:log(f"🚫 Skipped — {message.author} opted out");return
         if user_on_cooldown(message.author.id):log(f"🚫 Skipped — {message.author} on cooldown");return
-        await send_outreach_dm(message.author,message.guild.id)
+        await send_outreach_dm(public engagement + opt-in capture)
 
 
 async def send_outreach_dm(user, sid):
@@ -1018,6 +1018,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
