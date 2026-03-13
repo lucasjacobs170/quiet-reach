@@ -449,7 +449,48 @@ def can_channel_reply(channel_id: int) -> bool:
 
 def mark_channel_replied(channel_id: int):
     _last_channel_reply[channel_id] = datetime.now()
+from datetime import timedelta  # add up top near your other datetime imports
 
+# --- Lightweight conversation follow-ups (per user, per channel) ---
+FOLLOWUP_WINDOW_SECONDS = 120         # 2 minutes to keep chatting
+FOLLOWUP_MAX_TURNS = 3               # up to 3 back-and-forth replies
+FOLLOWUP_TURN_COOLDOWN_SECONDS = 8   # minimum spacing between bot replies to same user
+
+_followups = {}  # (channel_id, user_id) -> {"expires": dt, "remaining": int, "last_turn": dt|None}
+
+def start_followup(channel_id: int, user_id: int):
+    _followups[(channel_id, user_id)] = {
+        "expires": datetime.now() + timedelta(seconds=FOLLOWUP_WINDOW_SECONDS),
+        "remaining": FOLLOWUP_MAX_TURNS,
+        "last_turn": None,
+    }
+
+def can_followup(channel_id: int, user_id: int) -> bool:
+    key = (channel_id, user_id)
+    s = _followups.get(key)
+    if not s:
+        return False
+
+    if datetime.now() > s["expires"] or s["remaining"] <= 0:
+        _followups.pop(key, None)
+        return False
+
+    last_turn = s["last_turn"]
+    if last_turn and (datetime.now() - last_turn).total_seconds() < FOLLOWUP_TURN_COOLDOWN_SECONDS:
+        return False
+
+    return True
+
+def consume_followup(channel_id: int, user_id: int):
+    key = (channel_id, user_id)
+    s = _followups.get(key)
+    if not s:
+        return
+    s["remaining"] -= 1
+    s["last_turn"] = datetime.now()
+    # extend the window a bit as long as they're actively chatting
+    s["expires"] = datetime.now() + timedelta(seconds=FOLLOWUP_WINDOW_SECONDS)
+    
 async def is_reply_to_bot(message) -> bool:
     """
     True only if the user is replying to a message authored by this bot.
@@ -552,6 +593,22 @@ async def on_message(message):
         await send_outreach_dm(message.author, message.guild.id)
         return
 
+# If we recently engaged this user in this channel, allow a short multi-turn convo
+if can_followup(message.channel.id, message.author.id):
+    if not can_channel_reply(message.channel.id):
+        return
+
+    consume_followup(message.channel.id, message.author.id)
+
+    # Use AI to answer naturally (less rigid than the canned smalltalk)
+    reply = await generate_ai_reply(message.content)
+    if not reply:
+        reply = "Tell me what you’re looking for and I’ll point you the right way."
+
+    await message.reply(reply, mention_author=False)
+    mark_channel_replied(message.channel.id)
+    return
+    
     if raw in ["!optout", "!opt-out", "!nodm", "!no dm"]:
         set_opt_in(message.author.id, str(message.author), 0)
         await message.reply("Done — no DMs from me.", mention_author=False)
@@ -573,6 +630,7 @@ async def on_message(message):
         reply_text = await build_public_response(message.content, touches)
         await message.reply(reply_text, mention_author=False)
         mark_channel_replied(message.channel.id)
+        start_followup(message.channel.id, message.author.id)
         return
     
     # If keyword mode is disabled, stop here (still allows opt-in/out above)
