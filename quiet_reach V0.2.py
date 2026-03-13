@@ -594,10 +594,11 @@ async def on_message(message):
         await message.reply("Done — no DMs from me.", mention_author=False)
         return
 
-    # If we recently engaged this user in this channel, allow a short multi-turn convo
+     # If we recently engaged this user in this channel, allow a short multi-turn convo
     if can_followup(message.channel.id, message.author.id):
-    if not can_channel_reply(message.channel.id):
-        return
+        if not can_channel_reply(message.channel.id):
+            return
+
         consume_followup(message.channel.id, message.author.id)
 
         reply = await generate_ai_reply(message.content)
@@ -605,8 +606,7 @@ async def on_message(message):
             reply = "Tell me what you’re looking for and I’ll point you the right way."
 
         await message.reply(reply, mention_author=False)
-        # NOTE: consider NOT marking channel cooldown here if you want rapid back-and-forth
-        # mark_channel_replied(message.channel.id)
+        mark_channel_replied(message.channel.id)
         return
 
     # If they reply to the bot or mention it, answer publicly (no DM needed)
