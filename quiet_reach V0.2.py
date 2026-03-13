@@ -437,6 +437,60 @@ async def handle_dm_reply(message):
 
     await message.channel.send(reply)
     log(f"🤖 AI replied to {username}")
+def looks_like_question(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    if "?" in t:
+        return True
+    starters = ("who", "what", "when", "where", "why", "how", "can", "do", "is", "are", "does")
+    return t.startswith(starters)
+
+PUBLIC_SMALLTALK = [
+    "Ooo good question.",
+    "Love that you asked.",
+    "Okay wait—yes.",
+    "Real quick:",
+    "Alright, trail-guide mode on:",
+]
+
+def optin_footer() -> str:
+    # keep it light + optional
+    return " (If you *want* a DM, type `!optin` — otherwise ask me here.)"
+
+async def build_public_response(user_text: str, touches: int) -> str:
+    """
+    Returns a public reply that feels conversational:
+    - If they asked a question -> answer it using generate_ai_reply()
+    - Otherwise -> light engagement + invite a question
+    """
+    msg = (user_text or "").strip()
+
+    # If it's a question (or early touches), answer with AI using KB
+    if looks_like_question(msg):
+        ai = await generate_ai_reply(msg)
+        if ai:
+            return f"{ai}{optin_footer()}"
+        return f"I'm not 100% sure on that, but I can try to help here.{optin_footer()}"
+
+    # Not a question: make it more organic + varied by touch count
+    prefix = random.choice(PUBLIC_SMALLTALK)
+
+    if touches <= 1:
+        return (
+            f"{prefix} I’m Lucas’s assistant. What were you looking for—"
+            f"preview, schedule, or the server link?{optin_footer()}"
+        )
+    elif touches < NUDGE_AFTER_TOUCHES:
+        return (
+            f"{prefix} Tell me what you’re into / what you’re looking for and I’ll point you right."
+            f"{optin_footer()}"
+        )
+    else:
+        return (
+            f"{prefix} Want me to keep it here in chat, or DM you details?"
+            f" (Type `!optin` if DM.)"
+        )
 @client.event
 async def on_ready():log(f"🚀 Quiet Reach is alive! Logged in as {client.user}")
 
@@ -465,6 +519,15 @@ async def on_message(message):
         await message.reply("Done — no DMs from me.", mention_author=False)
         return
 
+    # If they reply to the bot or mention it, answer publicly (no DM needed)
+    if (client.user and client.user.mentioned_in(message)) or (message.reference is not None):
+        if not can_public_touch(message.author.id):
+            return
+        touches = record_touch(message.author.id, str(message.author))
+        reply_text = await build_public_response(message.content, touches)
+        await message.reply(reply_text, mention_author=False)
+        return
+    
     # If keyword mode is disabled, stop here (still allows opt-in/out above)
     if not KEYWORD_MODE_ENABLED:
         return
@@ -496,16 +559,8 @@ async def on_message(message):
 
             touches = record_touch(message.author.id, str(message.author))
 
-            if touches < NUDGE_AFTER_TOUCHES:
-                await message.channel.send(
-                    f"Hey {message.author.mention} — I’m Lucas’s assistant. "
-                    f"If you want, you can opt-in for a DM by typing `!optin`."
-                )
-            else:
-                await message.channel.send(
-                    f"{message.author.mention} If you want me to DM you details, type `!optin`. "
-                    f"If not, no worries—I'll keep it in-server."
-                )
+            reply_text = await build_public_response(message.content, touches)
+            await message.reply(reply_text, mention_author=False)
             return
 
         # Opted-in -> DM allowed
@@ -1159,6 +1214,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
