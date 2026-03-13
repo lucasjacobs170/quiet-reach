@@ -425,7 +425,7 @@ def log(m):
 async def handle_dm_reply(message):
     user_id = message.author.id
     username = str(message.author)
-    content = message.content.strip()
+    content = (message.content or "").strip()
     content_lower = content.lower().strip()
 
     # Opt-out
@@ -435,22 +435,23 @@ async def handle_dm_reply(message):
         log(f"🛑 {username} opted out")
         return
 
-    # First try AI classification
-    # If they are asking for info, skip YES/NO classification entirely
-    if looks_like_question(content) or "lucas" in content_lower:
-        ai_result = "other"
-    else:
-        ai_result = await classify_reply_with_ai(content)
-    reply = await generate_ai_reply(content)
-    if not reply:
-        reply = "I don’t have that detail yet. If you want, I can share the server link."
-
-    # Soft option to get the invite
-    reply += f"\n\nIf you want to join the server, say `link`."
-    await message.channel.send(reply)
+    # If they just want the link, give it (and stop)
     if content_lower in ["link", "server", "invite"]:
         await message.channel.send(f"Here you go: {SERVER_INVITE}")
         return
+
+    # If they are asking for info about Lucas, answer with AI (KB-grounded)
+    if looks_like_question(content) or ("lucas" in content_lower):
+        reply = await generate_ai_reply(content)
+        if not reply:
+            reply = "I don’t have that detail yet. If you want, ask me a more specific question about Lucas."
+        reply += "\n\nIf you want to join the server, say `link`."
+        await message.channel.send(reply)
+        return
+
+    # Otherwise try classification for YES/NO
+    ai_result = await classify_reply_with_ai(content)
+
     if ai_result == "yes":
         upsert_user(user_id, username, "warm")
         await message.channel.send(random.choice(YES_RESPONSES))
@@ -463,11 +464,11 @@ async def handle_dm_reply(message):
         log(f"❄️ {username} added to COLD list")
         return
 
-    # Otherwise: AI answers their question
+    # Fallback: conversational AI
     reply = await generate_ai_reply(content)
     if not reply:
-        reply = f"I’m not sure, but here’s the Discord invite: {SERVER_INVITE}"
-
+        reply = "Got you. What do you want to know about Lucas?"
+    reply += "\n\nIf you want to join the server, say `link`."
     await message.channel.send(reply)
     log(f"🤖 AI replied to {username}")
 # --- Anti-spam pacing (channel-level) ---
