@@ -571,9 +571,6 @@ async def build_public_response(user_text: str, touches: int) -> str:
             f" (Type `!optin` if DM.)"
         )
 @client.event
-async def on_ready():log(f"🚀 Quiet Reach is alive! Logged in as {client.user}")
-
-@client.event
 async def on_message(message):
     # Ignore self
     if message.author == client.user:
@@ -593,25 +590,22 @@ async def on_message(message):
         await send_outreach_dm(message.author, message.guild.id)
         return
 
-# If we recently engaged this user in this channel, allow a short multi-turn convo
-if can_followup(message.channel.id, message.author.id):
-    if not can_channel_reply(message.channel.id):
-        return
-
-    consume_followup(message.channel.id, message.author.id)
-
-    # Use AI to answer naturally (less rigid than the canned smalltalk)
-    reply = await generate_ai_reply(message.content)
-    if not reply:
-        reply = "Tell me what you’re looking for and I’ll point you the right way."
-
-    await message.reply(reply, mention_author=False)
-    mark_channel_replied(message.channel.id)
-    return
-    
     if raw in ["!optout", "!opt-out", "!nodm", "!no dm"]:
         set_opt_in(message.author.id, str(message.author), 0)
         await message.reply("Done — no DMs from me.", mention_author=False)
+        return
+
+    # If we recently engaged this user in this channel, allow a short multi-turn convo
+    if can_followup(message.channel.id, message.author.id):
+        consume_followup(message.channel.id, message.author.id)
+
+        reply = await generate_ai_reply(message.content)
+        if not reply:
+            reply = "Tell me what you’re looking for and I’ll point you the right way."
+
+        await message.reply(reply, mention_author=False)
+        # NOTE: consider NOT marking channel cooldown here if you want rapid back-and-forth
+        # mark_channel_replied(message.channel.id)
         return
 
     # If they reply to the bot or mention it, answer publicly (no DM needed)
@@ -632,7 +626,7 @@ if can_followup(message.channel.id, message.author.id):
         mark_channel_replied(message.channel.id)
         start_followup(message.channel.id, message.author.id)
         return
-    
+
     # If keyword mode is disabled, stop here (still allows opt-in/out above)
     if not KEYWORD_MODE_ENABLED:
         return
@@ -661,7 +655,6 @@ if can_followup(message.channel.id, message.author.id):
         if not get_opt_in(message.author.id):
             if not can_public_touch(message.author.id):
                 return
-
             if not can_channel_reply(message.channel.id):
                 return
 
@@ -669,6 +662,7 @@ if can_followup(message.channel.id, message.author.id):
             reply_text = await build_public_response(message.content, touches)
             await message.reply(reply_text, mention_author=False)
             mark_channel_replied(message.channel.id)
+            start_followup(message.channel.id, message.author.id)  # <-- you were missing this
             return
 
         # Opted-in -> DM allowed
