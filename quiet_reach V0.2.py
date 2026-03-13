@@ -150,27 +150,68 @@ def login_dialog(root):
     token_ent.focus_set()
     root.wait_window(win)
 def setup_database():
-    c=sqlite3.connect(DB_PATH);k=c.cursor()
-    k.execute('CREATE TABLE IF NOT EXISTS users(discord_id TEXT PRIMARY KEY,username TEXT,list_type TEXT DEFAULT "neutral",last_contacted TEXT,opt_out INTEGER DEFAULT 0)')
-    k.execute('CREATE TABLE IF NOT EXISTS server_caps(server_id TEXT,date TEXT,dm_count INTEGER DEFAULT 0,PRIMARY KEY(server_id,date))')
-    k.execute('CREATE TABLE IF NOT EXISTS keywords(word TEXT PRIMARY KEY,list_name TEXT)')
-    k.execute('CREATE TABLE IF NOT EXISTS dm_optins('
-               'discord_id TEXT PRIMARY KEY,'
-               'username TEXT,'
-               'opted_in INTEGER DEFAULT 0,'
-               'opted_in_at TEXT)')
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
 
-     k.execute('CREATE TABLE IF NOT EXISTS public_touches('
-               'discord_id TEXT PRIMARY KEY,'
-               'username TEXT,'
-               'touches INTEGER DEFAULT 0,'
-               'last_touch TEXT)')
-     k.execute("SELECT COUNT(*)FROM keywords")
-    if k.fetchone()[0]==0:
-        for w,l in[('thirsty','trigger'),('live','trigger'),('of','trigger'),('cam','trigger'),('preview','trigger'),('link','trigger'),('yes','yes'),('yep','yes'),('sure','yes'),('yeah','yes'),('ok','yes'),('interested','yes'),('tell me more','yes'),('lmk','yes'),('facts','yes'),('no','no'),('nah','no'),('pass','no'),('no thanks','no'),('not interested','no'),('stop','no'),('leave me alone','no'),('nope','no')]:
-            k.execute("INSERT INTO keywords VALUES(?,?)",(w,l))
-    k.execute('CREATE TABLE IF NOT EXISTS ambiguous(id INTEGER PRIMARY KEY AUTOINCREMENT,discord_id TEXT,username TEXT,message TEXT,timestamp TEXT)')
-    c.commit();c.close();print("✅ Database ready!")
+    k.execute(
+        'CREATE TABLE IF NOT EXISTS users('
+        'discord_id TEXT PRIMARY KEY,'
+        'username TEXT,'
+        'list_type TEXT DEFAULT "neutral",'
+        'last_contacted TEXT,'
+        'opt_out INTEGER DEFAULT 0)'
+    )
+
+    k.execute(
+        'CREATE TABLE IF NOT EXISTS server_caps('
+        'server_id TEXT,'
+        'date TEXT,'
+        'dm_count INTEGER DEFAULT 0,'
+        'PRIMARY KEY(server_id,date))'
+    )
+
+    k.execute('CREATE TABLE IF NOT EXISTS keywords(word TEXT PRIMARY KEY, list_name TEXT)')
+
+    k.execute(
+        'CREATE TABLE IF NOT EXISTS dm_optins('
+        'discord_id TEXT PRIMARY KEY,'
+        'username TEXT,'
+        'opted_in INTEGER DEFAULT 0,'
+        'opted_in_at TEXT)'
+    )
+
+    k.execute(
+        'CREATE TABLE IF NOT EXISTS public_touches('
+        'discord_id TEXT PRIMARY KEY,'
+        'username TEXT,'
+        'touches INTEGER DEFAULT 0,'
+        'last_touch TEXT)'
+    )
+
+    k.execute("SELECT COUNT(*) FROM keywords")
+    if k.fetchone()[0] == 0:
+        for w, l in [
+            ('thirsty','trigger'),('live','trigger'),('of','trigger'),('cam','trigger'),
+            ('preview','trigger'),('link','trigger'),
+            ('yes','yes'),('yep','yes'),('sure','yes'),('yeah','yes'),('ok','yes'),
+            ('interested','yes'),('tell me more','yes'),('lmk','yes'),('facts','yes'),
+            ('no','no'),('nah','no'),('pass','no'),('no thanks','no'),('not interested','no'),
+            ('stop','no'),('leave me alone','no'),('nope','no')
+        ]:
+            k.execute("INSERT INTO keywords VALUES(?,?)", (w, l))
+
+    k.execute(
+        'CREATE TABLE IF NOT EXISTS ambiguous('
+        'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+        'discord_id TEXT,'
+        'username TEXT,'
+        'message TEXT,'
+        'timestamp TEXT)'
+    )
+
+    c.commit()
+    c.close()
+    print("✅ Database ready!")
 
 def get_keywords(ln):
     c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT word FROM keywords WHERE list_name=?",(ln,));w=[r[0].lower().strip()for r in k.fetchall()];c.close();return w
@@ -254,10 +295,34 @@ def get_touches(did: int) -> int:
 
 def record_touch(did: int, username: str) -> int:
     """Increment touch counter; return new touches count."""
+    now = datetime.now().isoformat()
+
     c = sqlite3.connect(DB_PATH)
     k = c.cursor()
+
+    # Fetch current count
     k.execute(
-        "INSERT INTO public_touches)
+        "SELECT touches FROM public_touches WHERE discord_id=?",
+        (str(did),)
+    )
+    row = k.fetchone()
+
+    if row:
+        touches = int(row[0]) + 1
+        k.execute(
+            "UPDATE public_touches SET username=?, touches=?, last_touch=? WHERE discord_id=?",
+            (username, touches, now, str(did))
+        )
+    else:
+        touches = 1
+        k.execute(
+            "INSERT INTO public_touches(discord_id, username, touches, last_touch) VALUES(?,?,?,?)",
+            (str(did), username, touches, now)
+        )
+
+    c.commit()
+    c.close()
+    return touches
 
 intents=discord.Intents.default();intents.message_content=True;intents.members=True;intents.presences=True
 client=discord.Client(intents=intents);ui_log=None
@@ -1018,6 +1083,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
