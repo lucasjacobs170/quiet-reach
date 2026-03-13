@@ -507,7 +507,33 @@ def can_followup(channel_id: int, user_id: int) -> bool:
     if datetime.now() > s["expires"] or s["remaining"] <= 0:
         _followups.pop(key, None)
         return False
+# --- Organic DM consent window (per user, per channel) ---
+DM_OFFER_WINDOW_SECONDS = 120  # 2 minutes to accept DM offer
+_dm_offers = {}  # (channel_id, user_id) -> expires_at (datetime)
 
+def start_dm_offer(channel_id: int, user_id: int):
+    _dm_offers[(channel_id, user_id)] = datetime.now() + timedelta(seconds=DM_OFFER_WINDOW_SECONDS)
+
+def dm_offer_active(channel_id: int, user_id: int) -> bool:
+    exp = _dm_offers.get((channel_id, user_id))
+    if not exp:
+        return False
+    if datetime.now() > exp:
+        _dm_offers.pop((channel_id, user_id), None)
+        return False
+    return True
+
+def clear_dm_offer(channel_id: int, user_id: int):
+    _dm_offers.pop((channel_id, user_id), None)
+
+def is_affirmative(text: str) -> bool:
+    msg = (text or "").strip().lower()
+    return any(has_keyword(msg, w) for w in get_keywords("yes"))
+
+def is_negative(text: str) -> bool:
+    msg = (text or "").strip().lower()
+    return any(has_keyword(msg, w) for w in get_keywords("no"))
+    
     last_turn = s["last_turn"]
     if last_turn and (datetime.now() - last_turn).total_seconds() < FOLLOWUP_TURN_COOLDOWN_SECONDS:
         return False
@@ -567,7 +593,7 @@ PUBLIC_SMALLTALK = [
 ]
 
 def optin_footer() -> str:
-    return " Want details? DM me, or type `!optin` and I’ll DM you."
+    return " If you want, I can DM details — just reply “yes”."
 
 async def build_public_response(user_text: str, touches: int) -> str:
     """
@@ -626,7 +652,20 @@ async def on_message(message):
         set_opt_in(message.author.id, str(message.author), 0)
         await message.reply("Done — no DMs from me.", mention_author=False)
         return
+# If the bot recently offered to DM this user, accept natural "yes" as opt-in
+    if dm_offer_active(message.channel.id, message.author.id):
+        if is_affirmative(message.content):
+            clear_dm_offer(message.channel.id, message.author.id)
+            set_opt_in(message.author.id, str(message.author), 1)
+            await message.reply("Perfect — I’ll DM you details.", mention_author=False)
+            await send_outreach_dm(message.author, message.guild.id)
+            return
 
+        if is_negative(message.content):
+            clear_dm_offer(message.channel.id, message.author.id)
+            await message.reply("No worries — we can keep it here in chat.", mention_author=False)
+            return
+    
      # If we recently engaged this user in this channel, allow a short multi-turn convo
     if can_followup(message.channel.id, message.author.id):
         consume_followup(message.channel.id, message.author.id)
@@ -653,6 +692,7 @@ async def on_message(message):
         await message.reply(reply_text, mention_author=False)
         mark_channel_replied(message.channel.id)
         start_followup(message.channel.id, message.author.id)
+        start_dm_offer(message.channel.id, message.author.id)
         return
 
     # If keyword mode is disabled, stop here (still allows opt-in/out above)
