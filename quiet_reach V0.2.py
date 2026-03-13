@@ -596,9 +596,6 @@ async def on_message(message):
 
      # If we recently engaged this user in this channel, allow a short multi-turn convo
     if can_followup(message.channel.id, message.author.id):
-        if not can_channel_reply(message.channel.id):
-            return
-
         consume_followup(message.channel.id, message.author.id)
 
         reply = await generate_ai_reply(message.content)
@@ -606,7 +603,7 @@ async def on_message(message):
             reply = "Tell me what you’re looking for and I’ll point you the right way."
 
         await message.reply(reply, mention_author=False)
-        mark_channel_replied(message.channel.id)
+        # Don't mark_channel_replied here; follow-ups are already capped per-user
         return
 
     # If they reply to the bot or mention it, answer publicly (no DM needed)
@@ -615,7 +612,7 @@ async def on_message(message):
 
     if is_mention or is_reply:
         # If it's not a direct mention, respect channel cooldown
-        if (not is_mention) and (not can_channel_reply(message.channel.id)):
+        if (not is_mention) and (not can_public_touch(message.author.id)):
             return
 
         if not can_public_touch(message.author.id):
