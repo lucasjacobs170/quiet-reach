@@ -602,7 +602,7 @@ async def on_message(message):
         # Not opted in -> public touch + nudge (with cooldown)
         if not get_opt_in(message.author.id):
             if not can_public_touch(message.author.id):
-                return
+            return
 
             if not can_channel_reply(message.channel.id):
                 return
@@ -1264,6 +1264,7 @@ if __name__ == "__main__":
     root.deiconify()         # show UI after login dialog closes
     app  = QuietReachUI(root)
     root.mainloop()
+
 
 
 
