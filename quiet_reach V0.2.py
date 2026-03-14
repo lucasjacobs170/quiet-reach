@@ -844,25 +844,6 @@ class QuietReachUI:
 
         global ui_log
         ui_log = self.append_log
-
-    # ---- Nature theme palette ----
-    THEME = {
-        "bg":      "#0b1f14",  # deep forest
-        "panel":   "#102a1c",  # dark evergreen
-        "card":    "#153522",  # card background
-        "text":    "#e7f6ee",  # near-white
-        "muted":   "#a8c7b6",  # muted mint
-        "accent":  "#3bb273",  # leaf green
-        "accent2": "#4aa3df",  # sky blue
-        "warn":    "#e67e22",  # orange
-        "danger":  "#c0392b",  # red
-        "border":  "#244a34",  # subtle border
-    }
-
-    def apply_nature_theme(self):
-        """Call once from build_ui() after widgets exist."""
-        t = self.THEME
-        self.root.configure(bg=t["bg"])
     
     def build_ui(self):
         t = self.THEME
