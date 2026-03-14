@@ -765,14 +765,10 @@ async def send_outreach_dm(user, sid):
         async with dm.typing():
             await asyncio.sleep(random.randint(1, 3))
 
-        # Load images
-        import os
-        if os.path.exists('images.txt'):
-            with open('images.txt', 'r') as f:
-                image_list = [l.strip() for l in f.readlines() if l.strip()]
-        else:
-            image_list = ['preview.jpg']
-        ip = random.choice(image_list) if image_list else None
+        image_list = load_shared_images()
+        if not image_list:
+        image_list = ["preview.jpg"]
+        ip = random.choice(image_list
 
         try:
             with open(ip, 'rb') as f:
