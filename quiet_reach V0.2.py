@@ -1047,33 +1047,34 @@ async def on_message(message):
     # 📣 PROMO OWNER COMMANDS
     # ==========================
     if raw.startswith("!promosetup"):
-    if message.author.id != OWNER_ID:
+        if message.author.id != OWNER_ID:
+            return
+
+        # usage: !promosetup            (uses defaults)
+        #        !promosetup 18 22      (PT hours)
+        parts = (message.content or "").strip().split()
+        start_pt = PROMO_DEFAULT_WINDOW_START
+        end_pt   = PROMO_DEFAULT_WINDOW_END
+
+        if len(parts) == 3:
+            start_pt = int(parts[1])
+            end_pt   = int(parts[2])
+        elif len(parts) != 1:
+            await message.reply("Usage: `!promosetup` or `!promosetup <start_hour_pt> <end_hour_pt>`", mention_author=False)
+            return
+
+        promo_set_channel(message.guild.id, message.channel.id)
+        promo_set_window(message.guild.id, start_pt, end_pt)
+        promo_set_enabled(message.guild.id, True)
+
+        await message.reply(
+            f"✅ Promo configured + enabled.\n"
+            f"- Channel: <#{message.channel.id}>\n"
+            f"- Window (PT): {start_pt}:00–{end_pt}:00\n"
+            f"Run `!promonow` to test or `!promostatus`.",
+            mention_author=False
+        )
         return
-
-    # usage: !promosetup ...
-    parts = (message.content or "").strip().split()
-    start_pt = PROMO_DEFAULT_WINDOW_START
-    end_pt   = PROMO_DEFAULT_WINDOW_END
-
-    if len(parts) == 3:
-        start_pt = int(parts[1])
-        end_pt   = int(parts[2])
-    elif len(parts) != 1:
-        await message.reply("Usage: `!promosetup` or `!promosetup <start_hour_pt> <end_hour_pt>`", mention_author=False)
-        return
-
-    promo_set_channel(message.guild.id, message.channel.id)
-    promo_set_window(message.guild.id, start_pt, end_pt)
-    promo_set_enabled(message.guild.id, True)
-
-    await message.reply(
-        f"✅ Promo configured + enabled.\n"
-        f"- Channel: <#{message.channel.id}>\n"
-        f"- Window (PT): {start_pt}:00–{end_pt}:00\n"
-        f"Run `!promonow` to test or `!promostatus`.",
-        mention_author=False
-    )
-    return
     if raw.startswith("!promo") or raw in ["!setpromochannel", "!promoon", "!promooff", "!promostatus"]:
 
         # Owner-only (change this if you want admins too)
