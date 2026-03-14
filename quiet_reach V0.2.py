@@ -321,6 +321,17 @@ def promo_set_enabled(guild_id: int, enabled: bool):
     c.commit(); c.close()
 
 def promo_get_enabled_rows():
+    def promo_get_config_row(guild_id: int):
+    c = sqlite3.connect(DB_PATH); k = c.cursor()
+    k.execute(
+        "SELECT guild_id, channel_id, enabled, window_start_pt, window_end_pt, next_post_at_utc, last_post_at_utc "
+        "FROM promo_channels WHERE guild_id=?",
+        (str(guild_id),)
+    )
+    row = k.fetchone()
+    c.close()
+    return row
+    
     c = sqlite3.connect(DB_PATH); k = c.cursor()
     k.execute(
         "SELECT guild_id, channel_id, window_start_pt, window_end_pt, next_post_at_utc "
@@ -1035,6 +1046,32 @@ async def on_message(message):
     # ==========================
     # 📣 PROMO OWNER COMMANDS
     # ==========================
+    if raw.startswith("!promosetup"):
+            # usage: !promosetup            (uses defaults)
+            #        !promosetup 18 22      (PT hours)
+            parts = (message.content or "").strip().split()
+            start_pt = PROMO_DEFAULT_WINDOW_START
+            end_pt   = PROMO_DEFAULT_WINDOW_END
+
+            if len(parts) == 3:
+                start_pt = int(parts[1])
+                end_pt   = int(parts[2])
+            elif len(parts) != 1:
+                await message.reply("Usage: `!promosetup` or `!promosetup <start_hour_pt> <end_hour_pt>`", mention_author=False)
+                return
+
+            promo_set_channel(message.guild.id, message.channel.id)
+            promo_set_window(message.guild.id, start_pt, end_pt)
+            promo_set_enabled(message.guild.id, True)
+
+            await message.reply(
+                f"✅ Promo configured + enabled.\n"
+                f"- Channel: <#{message.channel.id}>\n"
+                f"- Window (PT): {start_pt}:00–{end_pt}:00\n"
+                f"Run `!promonow` to test or `!promostatus`.",
+                mention_author=False
+            )
+            return
     if raw.startswith("!promo") or raw in ["!setpromochannel", "!promoon", "!promooff", "!promostatus"]:
 
         # Owner-only (change this if you want admins too)
