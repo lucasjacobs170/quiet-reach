@@ -917,6 +917,7 @@ class QuietReachUI:
             int(w * 0.58), int(h * 0.90),
             int(w * 0.62), ground_y,
             fill=t["border"], width=2, smooth=True
+        )
 
     def __init__(self, root):
         self.root        = root
@@ -929,6 +930,7 @@ class QuietReachUI:
         self.root.configure(bg=self.THEME["bg"])
         self.root.resizable(True, True)
 
+        self.init_fonts()
         self.build_ui()
 
         global ui_log
@@ -965,7 +967,10 @@ class QuietReachUI:
             bg=t["bg"], fg=t["muted"]
         )
         self.status_label.pack(side="right", padx=10)
-
+        art_canvas = tk.Canvas(self.root, height=80, bg=t["bg"], highlightthickness=0)
+        art_canvas.pack(fill="x", padx=20, pady=(0, 6))
+        art_canvas.bind("<Configure>", lambda e: self.draw_header_art(art_canvas, e.width, e.height))
+    
         # DIVIDER
         tk.Frame(self.root, bg=t["accent"], height=2).pack(fill="x", padx=20, pady=(0, 10))
 
