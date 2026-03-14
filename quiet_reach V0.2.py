@@ -1130,10 +1130,10 @@ class QuietReachUI:
         log_card.pack(fill="both", expand=True, padx=6, pady=6)
 
         tk.Label(
-            log_card, text="📡 Live Log",
-            font=self.font_log_title
-            bg=t["card"], fg=t["text"]
-        ).pack(anchor="w", padx=10, pady=(10, 6))
+    log_card, text="📡 Live Log",
+    font=self.font_log_title,
+    bg=t["card"], fg=t["text"]
+).pack(anchor="w", padx=10, pady=(10, 6))
 
         self.log_area = scrolledtext.ScrolledText(
             log_card,
