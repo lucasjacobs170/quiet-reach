@@ -808,6 +808,499 @@ async def send_outreach_dm(user, sid):
     except Exception as e:
         log(f"❌ Error DMing {user}: {e}")
 
+# ============================================================
+# 🖥️ TKINTER DESKTOP UI
+# ============================================================
+
+class QuietReachUI:
+
+    # ---- Nature theme palette ----
+    THEME = {
+        "bg":      "#0b1f14",  # deep forest
+        "panel":   "#102a1c",  # evergreen panel
+        "card":    "#153522",  # card background
+        "text":    "#e7f6ee",  # near-white
+        "muted":   "#a8c7b6",  # muted mint
+        "accent":  "#3bb273",  # leaf green
+        "accent2": "#4aa3df",  # sky blue
+        "warn":    "#e67e22",  # orange
+        "danger":  "#c0392b",  # red
+        "border":  "#244a34",  # subtle border
+        "log_bg":  "#07150e",  # very dark green for logs
+        "log_fg":  "#9ff2c7",  # minty log text
+    }
+
+    def __init__(self, root):
+        self.root        = root
+        self.bot_thread  = None
+        self.bot_running = False
+        self.loop        = None
+
+        self.root.title("Quiet Reach — Control Panel")
+        self.root.geometry("950x700")
+        self.root.configure(bg=self.THEME["bg"])
+        self.root.resizable(True, True)
+
+        self.build_ui()
+
+        global ui_log
+        ui_log = self.append_log
+
+    def build_ui(self):
+        t = self.THEME
+
+        # Root background
+        self.root.configure(bg=t["bg"])
+
+        # HEADER
+        header_frame = tk.Frame(self.root, bg=t["bg"])
+        header_frame.pack(fill="x", padx=20, pady=(15, 8))
+
+        title_wrap = tk.Frame(header_frame, bg=t["bg"])
+        title_wrap.pack(side="left")
+
+        tk.Label(
+            title_wrap, text="Quiet Reach",
+            font=("Helvetica", 24, "bold"),
+            bg=t["bg"], fg=t["text"]
+        ).pack(anchor="w")
+
+        tk.Label(
+            title_wrap, text="forest-quiet outreach assistant",
+            font=("Helvetica", 10),
+            bg=t["bg"], fg=t["muted"]
+        ).pack(anchor="w", pady=(2, 0))
+
+        self.status_label = tk.Label(
+            header_frame, text="Offline",
+            font=("Helvetica", 12),
+            bg=t["bg"], fg=t["muted"]
+        )
+        self.status_label.pack(side="right", padx=10)
+
+        # DIVIDER
+        tk.Frame(self.root, bg=t["accent"], height=2).pack(fill="x", padx=20, pady=(0, 10))
+
+        # MAIN AREA
+        main_frame = tk.Frame(self.root, bg=t["bg"])
+        main_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+        # ---- LEFT SIDE: SCROLLABLE BUTTON PANEL ----
+        btn_canvas = tk.Canvas(main_frame, bg=t["bg"], width=240, highlightthickness=0)
+        btn_scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=btn_canvas.yview)
+        btn_scroll_frame = tk.Frame(btn_canvas, bg=t["bg"])
+
+        btn_scroll_frame.bind(
+            "<Configure>",
+            lambda e: btn_canvas.configure(scrollregion=btn_canvas.bbox("all"))
+        )
+
+        btn_canvas.create_window((0, 0), window=btn_scroll_frame, anchor="nw")
+        btn_canvas.configure(yscrollcommand=btn_scrollbar.set)
+
+        btn_canvas.pack(side="left", fill="y", padx=(0, 8))
+        btn_scrollbar.pack(side="left", fill="y", padx=(0, 12))
+
+        # Left “card” container (adds substance)
+        left_card = tk.Frame(
+            btn_scroll_frame,
+            bg=t["card"],
+            highlightbackground=t["border"],
+            highlightthickness=1
+        )
+        left_card.pack(fill="x", padx=8, pady=8)
+
+        # Button helper
+        def make_button(parent, text, command, color, fg=None):
+            if fg is None:
+                fg = t["text"]
+
+            btn = tk.Button(
+                parent,
+                text=text,
+                command=command,
+                bg=color,
+                fg=fg,
+                font=("Helvetica", 10, "bold"),
+                relief="flat",
+                cursor="hand2",
+                padx=12,
+                pady=9,
+                width=20,
+                activebackground=t["border"],
+                activeforeground=t["text"],
+                highlightthickness=1,
+                highlightbackground=t["border"],
+            )
+            btn.pack(pady=4, padx=8, fill="x")
+
+            # Softer hover
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg=t["border"]))
+            btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
+            return btn
+
+        # Collapsible section helper
+        def make_collapsible_section(parent, title, color=t["accent"], open_by_default=True):
+            outer = tk.Frame(parent, bg=t["card"])
+            outer.pack(fill="x", padx=8, pady=(10, 6))
+
+            header = tk.Frame(outer, bg=t["card"])
+            header.pack(fill="x")
+
+            is_open = tk.BooleanVar(value=open_by_default)
+
+            icon = tk.Label(
+                header,
+                text=("▼" if open_by_default else "▶"),
+                font=("Helvetica", 10, "bold"),
+                bg=t["card"],
+                fg=color,
+            )
+            icon.pack(side="left", padx=(6, 0), pady=(6, 2))
+
+            lbl = tk.Label(
+                header,
+                text=title,
+                font=("Helvetica", 10, "bold"),
+                bg=t["card"],
+                fg=t["text"],
+            )
+            lbl.pack(side="left", padx=(8, 0), pady=(6, 2))
+
+            divider = tk.Frame(outer, bg=color, height=2)
+            divider.pack(fill="x", padx=6, pady=(2, 8))
+
+            content = tk.Frame(outer, bg=t["card"])
+
+            def refresh_scrollregion():
+                btn_canvas.update_idletasks()
+                btn_canvas.configure(scrollregion=btn_canvas.bbox("all"))
+
+            def set_open(open_: bool):
+                is_open.set(open_)
+                icon.config(text=("▼" if open_ else "▶"))
+                if open_:
+                    content.pack(fill="x")
+                else:
+                    content.pack_forget()
+                outer.after(10, refresh_scrollregion)
+
+            def toggle(_evt=None):
+                set_open(not is_open.get())
+
+            for w in (header, icon, lbl):
+                w.bind("<Button-1>", toggle)
+
+            if open_by_default:
+                content.pack(fill="x")
+
+            return content
+
+        # Sections
+        bot_controls = make_collapsible_section(left_card, "Bot Controls", t["accent"], open_by_default=True)
+        self.start_btn = make_button(bot_controls, "Start Bot", self.start_bot, t["accent"])
+        self.stop_btn  = make_button(bot_controls, "Stop Bot",  self.stop_bot,  t["danger"])
+        self.stop_btn.config(state="disabled")
+
+        view_lists = make_collapsible_section(left_card, "View Lists", t["accent2"], open_by_default=False)
+        make_button(view_lists, "Warm List",    lambda: self.view_list("warm"), t["accent2"])
+        make_button(view_lists, "Cold List",    lambda: self.view_list("cold"), t["accent2"])
+        make_button(view_lists, "Neutral List", lambda: self.view_list("neutral"), t["accent2"])
+
+        tools = make_collapsible_section(left_card, "Tools", t["accent2"], open_by_default=False)
+        make_button(tools, "Review Ambiguous", self.review_ambiguous, t["accent2"])
+        make_button(tools, "Edit Keywords",    self.edit_keywords,   t["accent2"])
+        make_button(tools, "Stats",            self.show_stats,      t["accent2"])
+        make_button(tools, "Manage Images",    self.manage_images,   t["accent2"])
+
+        reset_tools = make_collapsible_section(left_card, "Reset Tools", t["danger"], open_by_default=False)
+        make_button(reset_tools, "Reset Warm",        self.reset_warm,      t["danger"])
+        make_button(reset_tools, "Reset Cold",        self.reset_cold,      t["danger"])
+        make_button(reset_tools, "Reset Neutral",     self.reset_neutral,   t["danger"])
+        make_button(reset_tools, "Reset Ambiguous",   self.reset_ambiguous, t["danger"])
+        make_button(reset_tools, "Reset Server Caps", self.reset_caps,      t["danger"])
+        make_button(reset_tools, "WIPE ALL DATA",     self.reset_all,       "#7b241c")
+
+        # ---- RIGHT SIDE: LOG AREA (as a card) ----
+        log_frame = tk.Frame(main_frame, bg=t["bg"])
+        log_frame.pack(side="right", fill="both", expand=True)
+
+        log_card = tk.Frame(
+            log_frame,
+            bg=t["card"],
+            highlightbackground=t["border"],
+            highlightthickness=1
+        )
+        log_card.pack(fill="both", expand=True, padx=6, pady=6)
+
+        tk.Label(
+            log_card, text="Live Log",
+            font=("Helvetica", 11, "bold"),
+            bg=t["card"], fg=t["text"]
+        ).pack(anchor="w", padx=10, pady=(10, 6))
+
+        self.log_area = scrolledtext.ScrolledText(
+            log_card,
+            bg=t["log_bg"],
+            fg=t["log_fg"],
+            font=("Courier", 10),
+            relief="flat",
+            state="disabled",
+            wrap="word",
+            padx=10,
+            pady=10
+        )
+        self.log_area.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+
+        # FOOTER
+        tk.Label(
+            self.root,
+            text="Running on discord.py  |  Quiet Reach v1.2",
+            font=("Helvetica", 8),
+            bg=t["bg"], fg=t["muted"]
+        ).pack(pady=(8, 12))
+
+    def append_log(self, message):
+        def _update():
+            self.log_area.config(state='normal')
+            ts = datetime.now().strftime('%H:%M:%S')
+            self.log_area.insert('end', f"[{ts}] {message}\n")
+            self.log_area.see('end')
+            self.log_area.config(state='disabled')
+        self.root.after(0, _update)
+
+    def start_bot(self):
+        if self.bot_running:
+            return
+        if not BOT_TOKEN:
+            messagebox.showerror("Token Missing!", "Enter BOT_TOKEN in the Login dialog.")
+            return
+        self.bot_running = True
+        self.start_btn.config(state='disabled')
+        self.stop_btn.config(state='normal')
+        self.status_label.config(text="Online", fg='#27ae60')
+        self.append_log("Starting Quiet Reach bot...")
+        self.bot_thread = threading.Thread(target=self.run_bot, daemon=True)
+        self.bot_thread.start()
+
+    def run_bot(self):
+        try:
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
+            self.loop.run_until_complete(client.start(BOT_TOKEN))
+        except Exception as e:
+            log(f"Bot error: {e}")
+            self.bot_running = False
+            self.root.after(0, self.reset_buttons)
+
+    def stop_bot(self):
+        if not self.bot_running:
+            return
+        self.append_log("Stopping bot...")
+        if self.loop:
+            asyncio.run_coroutine_threadsafe(client.close(), self.loop)
+        self.bot_running = False
+        self.reset_buttons()
+        self.status_label.config(text="Offline", fg='#aaaaaa')
+
+    def reset_buttons(self):
+        self.start_btn.config(state='normal')
+        self.stop_btn.config(state='disabled')
+
+    def view_list(self, list_type):
+        users = get_users_by_list(list_type)
+        win = tk.Toplevel(self.root)
+        win.title(f"{list_type.capitalize()} List")
+        win.geometry("500x400")
+        win.configure(bg='#1a1a2e')
+
+        tk.Label(
+            win,
+            text=f"{list_type.capitalize()} List ({len(users)} users)",
+            font=('Helvetica', 14, 'bold'),
+            bg='#1a1a2e', fg='white'
+        ).pack(pady=10)
+
+        frame = tk.Frame(win, bg='#1a1a2e')
+        frame.pack(fill='both', expand=True, padx=15, pady=5)
+
+        sb = tk.Scrollbar(frame)
+        sb.pack(side='right', fill='y')
+
+        lb = tk.Listbox(
+            frame,
+            bg='#0d0d1a', fg='white',
+            font=('Courier', 10), relief='flat',
+            yscrollcommand=sb.set
+        )
+        lb.pack(fill='both', expand=True)
+        sb.config(command=lb.yview)
+
+        if users:
+            for did, uname, lc in users:
+                last = lc[:10] if lc else 'N/A'
+                lb.insert('end', f"  {uname} | ID: {did} | Last: {last}")
+        else:
+            lb.insert('end', f"  No users in {list_type} list yet!")
+
+    def review_ambiguous(self):
+        entries = get_ambiguous_entries()
+        win = tk.Toplevel(self.root)
+        win.title("Review Ambiguous Replies")
+        win.geometry("600x500")
+        win.configure(bg='#1a1a2e')
+
+        tk.Label(
+            win,
+            text=f"Ambiguous Replies — {len(entries)} pending",
+            font=('Helvetica', 14, 'bold'),
+            bg='#1a1a2e', fg='white'
+        ).pack(pady=10)
+
+        if not entries:
+            tk.Label(
+                win, text="All clear!",
+                font=('Helvetica', 12),
+                bg='#1a1a2e', fg='#27ae60'
+            ).pack(pady=20)
+            return
+
+        canvas = tk.Canvas(win, bg='#1a1a2e', highlightthickness=0)
+        sb = ttk.Scrollbar(win, orient='vertical', command=canvas.yview)
+        sf = tk.Frame(canvas, bg='#1a1a2e')
+
+        sf.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
+        canvas.create_window((0, 0), window=sf, anchor='nw')
+        canvas.configure(yscrollcommand=sb.set)
+
+        canvas.pack(side='left', fill='both', expand=True, padx=10, pady=5)
+        sb.pack(side='right', fill='y')
+
+        def make_clf(eid, uid, uname, cf):
+            def clf(act):
+                if act == 'warm':
+                    upsert_user(uid, uname, 'warm')
+                    self.append_log(f"Moved {uname} to WARM")
+                elif act == 'cold':
+                    upsert_user(uid, uname, 'cold')
+                    self.append_log(f"Moved {uname} to COLD")
+                delete_ambiguous(eid)
+                cf.destroy()
+            return clf
+
+        for entry in entries:
+            eid, did, uname, msg, ts = entry
+            card = tk.Frame(sf, bg='#16213e', padx=10, pady=8)
+            card.pack(fill='x', padx=10, pady=5)
+
+            tk.Label(card, text=f"{uname} (ID: {did})",
+                     font=('Helvetica', 10, 'bold'),
+                     bg='#16213e', fg='white').pack(anchor='w')
+
+            tk.Label(card, text=f"\"{msg}\"",
+                     font=('Helvetica', 10, 'italic'),
+                     bg='#16213e', fg='#aaaacc',
+                     wraplength=500, justify='left').pack(anchor='w', pady=3)
+
+            tk.Label(card, text=f"{ts[:16] if ts else 'N/A'}",
+                     font=('Helvetica', 9),
+                     bg='#16213e', fg='#777799').pack(anchor='w')
+
+            clf = make_clf(eid, did, uname, card)
+            br = tk.Frame(card, bg='#16213e')
+            br.pack(anchor='w', pady=5)
+
+            tk.Button(br, text="Warm",
+                      command=lambda c=clf: c('warm'),
+                      bg='#27ae60', fg='white',
+                      font=('Helvetica', 9, 'bold'),
+                      relief='flat', padx=8, pady=4).pack(side='left', padx=3)
+
+            tk.Button(br, text="Cold",
+                      command=lambda c=clf: c('cold'),
+                      bg='#e74c3c', fg='white',
+                      font=('Helvetica', 9, 'bold'),
+                      relief='flat', padx=8, pady=4).pack(side='left', padx=3)
+
+            tk.Button(br, text="Ignore",
+                      command=lambda c=clf: c('ignore'),
+                      bg='#777777', fg='white',
+                      font=('Helvetica', 9, 'bold'),
+                      relief='flat', padx=8, pady=4).pack(side='left', padx=3)
+
+    def edit_keywords(self):
+        win = tk.Toplevel(self.root)
+        win.title("Edit Keywords")
+        win.geometry("500x500")
+        win.configure(bg='#1a1a2e')
+
+        tk.Label(
+            win, text="Edit Keywords",
+            font=('Helvetica', 14, 'bold'),
+            bg='#1a1a2e', fg='white'
+        ).pack(pady=10)
+
+        nb = ttk.Notebook(win)
+        nb.pack(fill='both', expand=True, padx=15, pady=5)
+
+        def make_tab(parent, ln):
+            frame = tk.Frame(parent, bg='#1a1a2e')
+            words = get_keywords(ln)
+
+            lb = tk.Listbox(frame, bg='#0d0d1a', fg='white',
+                            font=('Courier', 10), relief='flat', height=12)
+            lb.pack(fill='both', expand=True, padx=10, pady=5)
+
+            for w in words:
+                lb.insert('end', f"  {w}")
+
+            af = tk.Frame(frame, bg='#1a1a2e')
+            af.pack(fill='x', padx=10, pady=5)
+
+            ent = tk.Entry(af, bg='#0d0d1a', fg='white',
+                           font=('Courier', 10), relief='flat')
+            ent.pack(side='left', fill='x', expand=True, padx=(0, 5))
+
+            def add_w():
+                w = ent.get().strip().lower()
+                if w:
+                    c = sqlite3.connect(DB_PATH)
+                    c.cursor().execute("INSERT OR IGNORE INTO keywords VALUES (?,?)", (w, ln))
+                    c.commit()
+                    c.close()
+                    lb.insert('end', f"  {w}")
+                    ent.delete(0, 'end')
+                    self.append_log(f"Added '{w}' to {ln}")
+
+            def rem_w():
+                sel = lb.curselection()
+                if sel:
+                    w = lb.get(sel[0]).strip()
+                    c = sqlite3.connect(DB_PATH)
+                    c.cursor().execute("DELETE FROM keywords WHERE word=? AND list_name=?", (w, ln))
+                    c.commit()
+                    c.close()
+                    lb.delete(sel[0])
+                    self.append_log(f"Removed '{w}' from {ln}")
+
+            tk.Button(af, text="Add", command=add_w,
+                      bg='#27ae60', fg='white',
+                      font=('Helvetica', 9, 'bold'),
+                      relief='flat', padx=8).pack(side='left')
+
+            tk.Button(frame, text="Remove Selected", command=rem_w,
+                      bg='#e74c3c', fg='white',
+                      font=('Helvetica', 9, 'bold'),
+                      relief='flat', padx=8, pady=4).pack(pady=5)
+
+            return frame
+
+        t1 = make_tab(nb, 'trigger')
+        t2 = make_tab(nb, 'yes')
+        t3 = make_tab(nb, 'no')
+        nb.add(t1, text='Trigger Words')
+        nb.add(t2, text='Yes Words')
+        nb.add(t
 
 # ============================================================
 # 🚀 LAUNCH
