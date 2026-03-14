@@ -320,8 +320,7 @@ def promo_set_enabled(guild_id: int, enabled: bool):
     )
     c.commit(); c.close()
 
-def promo_get_enabled_rows():
-    def promo_get_config_row(guild_id: int):
+def promo_get_config_row(guild_id: int):
     c = sqlite3.connect(DB_PATH); k = c.cursor()
     k.execute(
         "SELECT guild_id, channel_id, enabled, window_start_pt, window_end_pt, next_post_at_utc, last_post_at_utc "
@@ -331,7 +330,8 @@ def promo_get_enabled_rows():
     row = k.fetchone()
     c.close()
     return row
-    
+
+def promo_get_enabled_rows():
     c = sqlite3.connect(DB_PATH); k = c.cursor()
     k.execute(
         "SELECT guild_id, channel_id, window_start_pt, window_end_pt, next_post_at_utc "
@@ -1047,6 +1047,8 @@ async def on_message(message):
     # 📣 PROMO OWNER COMMANDS
     # ==========================
     if raw.startswith("!promosetup"):
+        if message.author.id != OWNER_ID:
+            return
             # usage: !promosetup            (uses defaults)
             #        !promosetup 18 22      (PT hours)
             parts = (message.content or "").strip().split()
