@@ -784,7 +784,7 @@ async def send_outreach_dm(user, sid):
 
         try:
             with open(ip, 'rb') as f:
-                await dm.send(content=opener, file=discord.File(f, filename=ip))
+                await dm.send(content=opener, file=discord.File(f, filename=os.path.basename(ip)))
             log(f"📸 Sent DM with image to {user}")
         except FileNotFoundError:
             await dm.send(opener)
