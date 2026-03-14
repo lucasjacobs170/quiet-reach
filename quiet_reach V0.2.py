@@ -1015,7 +1015,7 @@ async def on_message(message):
     # In-server opt-in / opt-out commands
     raw = (message.content or "").strip().lower()
 
-# ==========================
+    # ==========================
     # 📣 PROMO OWNER COMMANDS
     # ==========================
     if raw.startswith("!promo") or raw in ["!setpromochannel", "!promoon", "!promooff", "!promostatus"]:
