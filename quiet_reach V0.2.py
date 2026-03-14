@@ -252,6 +252,107 @@ def setup_database():
     c.close()
     print("✅ Database ready!")
 
+# ============================================================
+# 📣 PROMO SCHEDULING HELPERS (PT window, stored as UTC)
+# ============================================================
+
+def _pt_now():
+    return datetime.now(PROMO_TZ)
+
+def _compute_next_post_at_utc(window_start_pt: int, window_end_pt: int) -> str:
+    """
+    Picks a random datetime inside today's (or next day's) PT window.
+    Stores as ISO UTC string.
+    Supports windows crossing midnight (e.g. 22 -> 2).
+    """
+    window_start_pt = int(window_start_pt) % 24
+    window_end_pt   = int(window_end_pt) % 24
+
+    now_pt = _pt_now()
+    base_date = now_pt.date()
+
+    start_dt = datetime.combine(base_date, time(window_start_pt, 0), tzinfo=PROMO_TZ)
+    end_dt   = datetime.combine(base_date, time(window_end_pt, 0), tzinfo=PROMO_TZ)
+
+    # window crosses midnight
+    if window_end_pt <= window_start_pt:
+        end_dt += timedelta(days=1)
+
+    # if we're already past the window, schedule for next day's window
+    if now_pt >= end_dt:
+        start_dt += timedelta(days=1)
+        end_dt   += timedelta(days=1)
+
+    span = int((end_dt - start_dt).total_seconds())
+    offset = random.randint(0, max(0, span - 1))
+    scheduled_pt = start_dt + timedelta(seconds=offset)
+
+    scheduled_utc = scheduled_pt.astimezone(timezone.utc)
+    return scheduled_utc.isoformat()
+
+def promo_set_channel(guild_id: int, channel_id: int):
+    c = sqlite3.connect(DB_PATH); k = c.cursor()
+    k.execute(
+        "INSERT INTO promo_channels(guild_id, channel_id) VALUES(?,?) "
+        "ON CONFLICT(guild_id) DO UPDATE SET channel_id=excluded.channel_id",
+        (str(guild_id), str(channel_id))
+    )
+    c.commit(); c.close()
+
+def promo_set_window(guild_id: int, start_pt: int, end_pt: int):
+    next_utc = _compute_next_post_at_utc(start_pt, end_pt)
+    c = sqlite3.connect(DB_PATH); k = c.cursor()
+    k.execute(
+        "INSERT INTO promo_channels(guild_id, window_start_pt, window_end_pt, next_post_at_utc) "
+        "VALUES(?,?,?,?) "
+        "ON CONFLICT(guild_id) DO UPDATE SET window_start_pt=excluded.window_start_pt, "
+        "window_end_pt=excluded.window_end_pt, next_post_at_utc=excluded.next_post_at_utc",
+        (str(guild_id), int(start_pt), int(end_pt), next_utc)
+    )
+    c.commit(); c.close()
+
+def promo_set_enabled(guild_id: int, enabled: bool):
+    c = sqlite3.connect(DB_PATH); k = c.cursor()
+    k.execute(
+        "INSERT INTO promo_channels(guild_id, enabled) VALUES(?,?) "
+        "ON CONFLICT(guild_id) DO UPDATE SET enabled=excluded.enabled",
+        (str(guild_id), 1 if enabled else 0)
+    )
+    c.commit(); c.close()
+
+def promo_get_enabled_rows():
+    c = sqlite3.connect(DB_PATH); k = c.cursor()
+    k.execute(
+        "SELECT guild_id, channel_id, window_start_pt, window_end_pt, next_post_at_utc "
+        "FROM promo_channels WHERE enabled=1 AND channel_id IS NOT NULL"
+    )
+    rows = k.fetchall()
+    c.close()
+    return rows
+
+def promo_update_next(guild_id: int, start_pt: int, end_pt: int):
+    next_utc = _compute_next_post_at_utc(start_pt, end_pt)
+    c = sqlite3.connect(DB_PATH); k = c.cursor()
+    k.execute(
+        "UPDATE promo_channels SET next_post_at_utc=? WHERE guild_id=?",
+        (next_utc, str(guild_id))
+    )
+    c.commit(); c.close()
+
+def promo_record_history(guild_id: int, channel_id: int, image_path: str, caption: str):
+    now_utc = datetime.now(timezone.utc).isoformat()
+    c = sqlite3.connect(DB_PATH); k = c.cursor()
+    k.execute(
+        "INSERT INTO promo_history(guild_id, channel_id, posted_at_utc, image_path, caption) "
+        "VALUES(?,?,?,?,?)",
+        (str(guild_id), str(channel_id), now_utc, image_path, caption)
+    )
+    k.execute(
+        "UPDATE promo_channels SET last_post_at_utc=? WHERE guild_id=?",
+        (now_utc, str(guild_id))
+    )
+    c.commit(); c.close()
+
 def _pt_now():
     return datetime.now(PROMO_TZ)
 
