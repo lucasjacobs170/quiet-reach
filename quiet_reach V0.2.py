@@ -228,7 +228,7 @@ def setup_database():
         'timestamp TEXT)'
     )
 
-     k.execute(
+    k.execute(
         'CREATE TABLE IF NOT EXISTS promo_channels('
         'guild_id TEXT PRIMARY KEY,'
         'channel_id TEXT,'
