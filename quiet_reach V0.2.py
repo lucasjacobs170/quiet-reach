@@ -562,6 +562,229 @@ Write the best possible reply now (friendly, concise).
 def log(m):
     print(m)
     if ui_log:ui_log(m)
+
+# ============================================================
+# 📣 PROMO AUTOPOST (daily PT window -> stored UTC)
+# ============================================================
+
+PROMO_SEEDS_FILE = "promo_seeds.txt"   # optional; one seed per line
+PROMO_MAX_CHARS = 240
+
+promo_task = None
+
+def _parse_iso_utc(s: str):
+    if not s:
+        return None
+    try:
+        dt = datetime.fromisoformat(s)
+        # if missing tzinfo, assume UTC
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+    except Exception:
+        return None
+
+def _utc_now():
+    return datetime.now(timezone.utc)
+
+def _load_promo_seeds() -> list[str]:
+    try:
+        if not os.path.exists(PROMO_SEEDS_FILE):
+            return []
+        with open(PROMO_SEEDS_FILE, "r", encoding="utf-8") as f:
+            lines = [ln.strip() for ln in f.readlines() if ln.strip() and not ln.strip().startswith("#")]
+        return lines
+    except Exception as e:
+        log(f"⚠️ Failed reading {PROMO_SEEDS_FILE}: {e}")
+        return []
+
+def _sanitize_caption(text: str) -> str:
+    t = (text or "").strip()
+    # prevent pings / mass mentions
+    t = t.replace("@everyone", "everyone").replace("@here", "here")
+    # hard cap
+    if len(t) > PROMO_MAX_CHARS:
+        t = t[:PROMO_MAX_CHARS - 1].rstrip() + "…"
+    return t
+
+def promo_get_config_row(guild_id: int):
+    c = sqlite3.connect(DB_PATH); k = c.cursor()
+    k.execute(
+        "SELECT guild_id, channel_id, enabled, window_start_pt, window_end_pt, next_post_at_utc, last_post_at_utc "
+        "FROM promo_channels WHERE guild_id=?",
+        (str(guild_id),)
+    )
+    row = k.fetchone()
+    c.close()
+    return row
+
+def promo_set_next_post_at(guild_id: int, next_post_at_utc_iso: str):
+    c = sqlite3.connect(DB_PATH); k = c.cursor()
+    k.execute(
+        "UPDATE promo_channels SET next_post_at_utc=? WHERE guild_id=?",
+        (next_post_at_utc_iso, str(guild_id))
+    )
+    c.commit(); c.close()
+
+async def generate_promo_caption(theme: str, seed: str) -> str:
+    """
+    Keeps captions non-explicit (Discord-safe) while still flirty.
+    """
+    cta = f"Join the server: {SERVER_INVITE}"
+    seed = (seed or "").strip()
+
+    prompt = f"""
+You write short promotional captions for an adult creator's Discord server.
+Tone: playful, confident, outdoorsy vibe, attention-grabbing.
+Rules:
+- Non-explicit only: do NOT describe sex acts or graphic anatomy.
+- No minors. No coercion. No threats. No harassment.
+- No @everyone / @here.
+- 1-2 short lines max, plus a clear call-to-action.
+- Keep under {PROMO_MAX_CHARS} characters total.
+
+Theme: {theme}
+Seed idea (optional): {seed}
+
+Return ONLY the caption text.
+Include this CTA (exact link): {SERVER_INVITE}
+"""
+
+    loop = asyncio.get_event_loop()
+    out = await loop.run_in_executor(None, lambda: ollama_generate(prompt))
+    out = _sanitize_caption(out)
+
+    if not out:
+        # fallback if model fails
+        base = seed if seed else "New drop today—come say hi."
+        return _sanitize_caption(f"{base}\n{cta}")
+
+    # ensure CTA exists
+    if SERVER_INVITE not in out:
+        out = _sanitize_caption(out.rstrip() + f"\n{cta}")
+
+    return out
+
+async def _post_promo(guild_id: int, channel_id: int, caption: str, image_path: str) -> bool:
+    guild = client.get_guild(int(guild_id)) if guild_id else None
+    if not guild:
+        log(f"⚠️ Promo: guild not found/cached: {guild_id}")
+        return False
+
+    channel = guild.get_channel(int(channel_id)) if channel_id else None
+    if not channel:
+        log(f"⚠️ Promo: channel not found/cached: {channel_id} in {guild.name}")
+        return False
+
+    # NSFW gate
+    try:
+        if hasattr(channel, "is_nsfw") and (not channel.is_nsfw()):
+            log(f"🚫 Promo blocked (channel not NSFW): #{getattr(channel, 'name', channel_id)} in {guild.name}")
+            return False
+    except Exception:
+        pass
+
+    # Permission gate
+    me = guild.get_member(client.user.id) if (client.user and guild) else None
+    if me:
+        perms = channel.permissions_for(me)
+        if not perms.send_messages:
+            log(f"🚫 Promo blocked (no send_messages): {guild.name} #{getattr(channel,'name','?')}")
+            return False
+        if image_path and (not perms.attach_files):
+            log(f"🚫 Promo blocked (no attach_files): {guild.name} #{getattr(channel,'name','?')}")
+            return False
+
+    try:
+        if image_path:
+            with open(image_path, "rb") as f:
+                await channel.send(
+                    content=caption,
+                    file=discord.File(f, filename=os.path.basename(image_path))
+                )
+        else:
+            await channel.send(content=caption)
+
+        promo_record_history(guild_id, channel_id, image_path or "", caption)
+        log(f"📣 Promo posted in {guild.name} #{getattr(channel,'name','?')}")
+        return True
+
+    except FileNotFoundError:
+        log(f"⚠️ Promo image missing: {image_path} (posting text only)")
+        try:
+            await channel.send(content=caption)
+            promo_record_history(guild_id, channel_id, "", caption)
+            return True
+        except Exception as e:
+            log(f"❌ Promo failed (text-only fallback): {e}")
+            return False
+
+    except discord.Forbidden:
+        log(f"❌ Promo forbidden in {guild.name} #{getattr(channel,'name','?')}")
+        return False
+    except Exception as e:
+        log(f"❌ Promo post error: {e}")
+        return False
+
+async def promo_loop():
+    log("📣 Promo loop running.")
+    themes = [
+        "fresh drop",
+        "tease + mystery",
+        "outdoorsy flirty",
+        "late-night vibes",
+        "friendly invite",
+    ]
+
+    while True:
+        try:
+            rows = promo_get_enabled_rows()
+            now = _utc_now()
+
+            seeds = _load_promo_seeds()
+            image_list = load_shared_images()
+
+            for (gid, cid, start_pt, end_pt, next_iso) in rows:
+                next_dt = _parse_iso_utc(next_iso)
+
+                # If missing next schedule, create one
+                if not next_dt:
+                    promo_update_next(int(gid), int(start_pt), int(end_pt))
+                    continue
+
+                if now < next_dt:
+                    continue
+
+                # Pick content
+                theme = random.choice(themes)
+                seed = random.choice(seeds) if seeds else ""
+                img = random.choice(image_list) if image_list else ""
+
+                caption = await generate_promo_caption(theme, seed)
+
+                ok = await _post_promo(int(gid), int(cid), caption, img)
+
+                # Schedule the next one regardless (prevents rapid retry spam)
+                promo_update_next(int(gid), int(start_pt), int(end_pt))
+
+                # small delay between guild posts (rate-limit friendly)
+                await asyncio.sleep(2)
+
+        except Exception as e:
+            log(f"❌ Promo loop error: {e}")
+
+        await asyncio.sleep(30)
+
+@client.event
+async def on_ready():
+    global promo_task
+    log(f"✅ Logged in as {client.user} (ID: {client.user.id})")
+
+    # Start promo loop once
+    if promo_task is None or promo_task.done():
+        promo_task = asyncio.create_task(promo_loop())
+        log("📣 Promo loop started.")
+
 async def handle_dm_reply(message):
     user_id = message.author.id
     username = str(message.author)
@@ -792,6 +1015,77 @@ async def on_message(message):
     # In-server opt-in / opt-out commands
     raw = (message.content or "").strip().lower()
 
+# ==========================
+    # 📣 PROMO OWNER COMMANDS
+    # ==========================
+    if raw.startswith("!promo") or raw in ["!setpromochannel", "!promoon", "!promooff", "!promostatus"]:
+
+        # Owner-only (change this if you want admins too)
+        if message.author.id != OWNER_ID:
+            return
+
+        if raw == "!setpromochannel":
+            promo_set_channel(message.guild.id, message.channel.id)
+            # ensure a default window + next schedule exists
+            promo_set_window(message.guild.id, PROMO_DEFAULT_WINDOW_START, PROMO_DEFAULT_WINDOW_END)
+            await message.reply("✅ Promo channel set for this server.", mention_author=False)
+            return
+
+        if raw.startswith("!promowindow"):
+            # usage: !promowindow 18 22  (PT hours)
+            parts = (message.content or "").strip().split()
+            if len(parts) != 3:
+                await message.reply("Usage: `!promowindow <start_hour_pt> <end_hour_pt>` (0-23)", mention_author=False)
+                return
+            try:
+                start_pt = int(parts[1]); end_pt = int(parts[2])
+                promo_set_window(message.guild.id, start_pt, end_pt)
+                await message.reply(f"✅ Promo window set: {start_pt}:00–{end_pt}:00 PT (next scheduled randomly inside window).", mention_author=False)
+            except Exception as e:
+                await message.reply(f"⚠️ Failed setting window: {e}", mention_author=False)
+            return
+
+        if raw == "!promoon":
+            promo_set_enabled(message.guild.id, True)
+            row = promo_get_config_row(message.guild.id)
+            # if next not scheduled yet, schedule now using saved window
+            if row:
+                _, _, _, start_pt, end_pt, next_iso, _ = row
+                if not next_iso:
+                    promo_update_next(message.guild.id, int(start_pt), int(end_pt))
+            await message.reply("✅ Promo enabled for this server.", mention_author=False)
+            return
+
+        if raw == "!promooff":
+            promo_set_enabled(message.guild.id, False)
+            await message.reply("🛑 Promo disabled for this server.", mention_author=False)
+            return
+
+        if raw == "!promostatus":
+            row = promo_get_config_row(message.guild.id)
+            if not row:
+                await message.reply("No promo config yet. Run `!setpromochannel` first.", mention_author=False)
+                return
+
+            _, channel_id, enabled, start_pt, end_pt, next_iso, last_iso = row
+            next_dt = _parse_iso_utc(next_iso)
+            last_dt = _parse_iso_utc(last_iso)
+
+            def fmt_pt(dt):
+                if not dt: return "—"
+                return dt.astimezone(PROMO_TZ).strftime("%Y-%m-%d %I:%M %p PT")
+
+            await message.reply(
+                "📣 **Promo Status**\n"
+                f"- Enabled: `{bool(enabled)}`\n"
+                f"- Channel ID: `{channel_id}`\n"
+                f"- Window (PT): `{start_pt}:00`–`{end_pt}:00`\n"
+                f"- Next: `{fmt_pt(next_dt)}`\n"
+                f"- Last: `{fmt_pt(last_dt)}`",
+                mention_author=False
+            )
+            return
+    
     if raw in ["!optin", "!opt-in", "!dmme", "!dm me"]:
         set_opt_in(message.author.id, str(message.author), 1)
         await message.reply("Got it — you’re opted in. I’ll DM you.", mention_author=False)
