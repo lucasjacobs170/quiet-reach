@@ -836,7 +836,7 @@ class QuietReachUI:
         self.bot_running = False
         self.loop        = None
 
-        self.root.title("Quiet Reach — Control Panel")
+        self.root.title("🤫 Quiet Reach — Control Panel")
         self.root.geometry("950x700")
         self.root.configure(bg=self.THEME["bg"])
         self.root.resizable(True, True)
@@ -872,7 +872,7 @@ class QuietReachUI:
         ).pack(anchor="w", pady=(2, 0))
 
         self.status_label = tk.Label(
-            header_frame, text="Offline",
+            header_frame, text="⚫ Offline",
             font=("Helvetica", 12),
             bg=t["bg"], fg=t["muted"]
         )
@@ -997,29 +997,29 @@ class QuietReachUI:
             return content
 
         # Sections
-        bot_controls = make_collapsible_section(left_card, "Bot Controls", t["accent"], open_by_default=True)
-        self.start_btn = make_button(bot_controls, "Start Bot", self.start_bot, t["accent"])
-        self.stop_btn  = make_button(bot_controls, "Stop Bot",  self.stop_bot,  t["danger"])
+        bot_controls = make_collapsible_section(left_card, "⚙️ Bot Controls", t["accent"], open_by_default=True)
+        self.start_btn = make_button(bot_controls, "▶  Start Bot", self.start_bot, t["accent"])
+        self.stop_btn  = make_button(bot_controls, "⏹  Stop Bot",  self.stop_bot,  t["danger"])
         self.stop_btn.config(state="disabled")
 
-        view_lists = make_collapsible_section(left_card, "View Lists", t["accent2"], open_by_default=False)
-        make_button(view_lists, "Warm List",    lambda: self.view_list("warm"), t["accent2"])
-        make_button(view_lists, "Cold List",    lambda: self.view_list("cold"), t["accent2"])
-        make_button(view_lists, "Neutral List", lambda: self.view_list("neutral"), t["accent2"])
+        view_lists = make_collapsible_section(left_card, "📋 View Lists", t["accent2"], open_by_default=False)
+        make_button(view_lists, "🔥  Warm List",    lambda: self.view_list("warm"), t["accent2"])
+        make_button(view_lists, "❄️  Cold List",    lambda: self.view_list("cold"), t["accent2"])
+        make_button(view_lists, "😐  Neutral List", lambda: self.view_list("neutral"), t["accent2"])
 
-        tools = make_collapsible_section(left_card, "Tools", t["accent2"], open_by_default=False)
-        make_button(tools, "Review Ambiguous", self.review_ambiguous, t["accent2"])
-        make_button(tools, "Edit Keywords",    self.edit_keywords,   t["accent2"])
-        make_button(tools, "Stats",            self.show_stats,      t["accent2"])
-        make_button(tools, "Manage Images",    self.manage_images,   t["accent2"])
+        tools = make_collapsible_section(left_card, "🛠️ Tools", t["accent2"], open_by_default=False)
+        make_button(tools, "🔍  Review Ambiguous", self.review_ambiguous, t["accent2"])
+        make_button(tools, "✏️  Edit Keywords",    self.edit_keywords,   t["accent2"])
+        make_button(tools, "📊  Stats",            self.show_stats,      t["accent2"])
+        make_button(tools, "🖼️  Manage Images",    self.manage_images,   t["accent2"])
 
-        reset_tools = make_collapsible_section(left_card, "Reset Tools", t["danger"], open_by_default=False)
-        make_button(reset_tools, "Reset Warm",        self.reset_warm,      t["danger"])
-        make_button(reset_tools, "Reset Cold",        self.reset_cold,      t["danger"])
-        make_button(reset_tools, "Reset Neutral",     self.reset_neutral,   t["danger"])
-        make_button(reset_tools, "Reset Ambiguous",   self.reset_ambiguous, t["danger"])
-        make_button(reset_tools, "Reset Server Caps", self.reset_caps,      t["danger"])
-        make_button(reset_tools, "WIPE ALL DATA",     self.reset_all,       "#7b241c")
+        reset_tools = make_collapsible_section(left_card, "🔄 Reset Tools", t["danger"], open_by_default=False)
+        make_button(reset_tools, "🔄  Reset Warm",        self.reset_warm,      t["danger"])
+        make_button(reset_tools, "🔄  Reset Cold",        self.reset_cold,      t["danger"])
+        make_button(reset_tools, "🔄  Reset Neutral",     self.reset_neutral,   t["danger"])
+        make_button(reset_tools, "🔄  Reset Ambiguous",   self.reset_ambiguous, t["danger"])
+        make_button(reset_tools, "🔄  Reset Server Caps", self.reset_caps,      t["danger"])
+        make_button(reset_tools, "💀  WIPE ALL DATA",     self.reset_all,       "#7b241c")
 
         # ---- RIGHT SIDE: LOG AREA (as a card) ----
         log_frame = tk.Frame(main_frame, bg=t["bg"])
@@ -1034,7 +1034,7 @@ class QuietReachUI:
         log_card.pack(fill="both", expand=True, padx=6, pady=6)
 
         tk.Label(
-            log_card, text="Live Log",
+            log_card, text="📡 Live Log",
             font=("Helvetica", 11, "bold"),
             bg=t["card"], fg=t["text"]
         ).pack(anchor="w", padx=10, pady=(10, 6))
@@ -1078,9 +1078,11 @@ class QuietReachUI:
         self.bot_running = True
         self.start_btn.config(state='disabled')
         self.stop_btn.config(state='normal')
-        self.status_label.config(text="Online", fg='#27ae60')
-        self.append_log("Starting Quiet Reach bot...")
-        self.bot_thread = threading.Thread(target=self.run_bot, daemon=True)
+        self.status_label.config(text="🟢 Online", fg='#27ae60')
+        self.append_log("🚀 Starting Quiet Reach bot...")
+        self.bot_thread = threading.Thread(
+            target=self.run_bot, daemon=True
+        )
         self.bot_thread.start()
 
     def run_bot(self):
@@ -1089,19 +1091,19 @@ class QuietReachUI:
             asyncio.set_event_loop(self.loop)
             self.loop.run_until_complete(client.start(BOT_TOKEN))
         except Exception as e:
-            log(f"Bot error: {e}")
+            log(f"❌ Bot error: {e}")
             self.bot_running = False
             self.root.after(0, self.reset_buttons)
 
     def stop_bot(self):
         if not self.bot_running:
             return
-        self.append_log("Stopping bot...")
+        self.append_log("⏹ Stopping bot...")
         if self.loop:
             asyncio.run_coroutine_threadsafe(client.close(), self.loop)
         self.bot_running = False
         self.reset_buttons()
-        self.status_label.config(text="Offline", fg='#aaaaaa')
+        self.status_label.config(text="⚫ Offline", fg='#aaaaaa')
 
     def reset_buttons(self):
         self.start_btn.config(state='normal')
@@ -1109,33 +1111,23 @@ class QuietReachUI:
 
     def view_list(self, list_type):
         users = get_users_by_list(list_type)
+        emoji = {'warm': '🔥', 'cold': '❄️', 'neutral': '😐'}
         win = tk.Toplevel(self.root)
-        win.title(f"{list_type.capitalize()} List")
+        win.title(f"{emoji.get(list_type, '')} {list_type.capitalize()} List")
         win.geometry("500x400")
         win.configure(bg='#1a1a2e')
-
-        tk.Label(
-            win,
+        tk.Label(win,
             text=f"{list_type.capitalize()} List ({len(users)} users)",
             font=('Helvetica', 14, 'bold'),
-            bg='#1a1a2e', fg='white'
-        ).pack(pady=10)
-
+            bg='#1a1a2e', fg='white').pack(pady=10)
         frame = tk.Frame(win, bg='#1a1a2e')
         frame.pack(fill='both', expand=True, padx=15, pady=5)
-
         sb = tk.Scrollbar(frame)
         sb.pack(side='right', fill='y')
-
-        lb = tk.Listbox(
-            frame,
-            bg='#0d0d1a', fg='white',
-            font=('Courier', 10), relief='flat',
-            yscrollcommand=sb.set
-        )
+        lb = tk.Listbox(frame, bg='#0d0d1a', fg='white',
+            font=('Courier', 10), relief='flat', yscrollcommand=sb.set)
         lb.pack(fill='both', expand=True)
         sb.config(command=lb.yview)
-
         if users:
             for did, uname, lc in users:
                 last = lc[:10] if lc else 'N/A'
@@ -1146,33 +1138,25 @@ class QuietReachUI:
     def review_ambiguous(self):
         entries = get_ambiguous_entries()
         win = tk.Toplevel(self.root)
-        win.title("Review Ambiguous Replies")
+        win.title("🔍 Review Ambiguous Replies")
         win.geometry("600x500")
         win.configure(bg='#1a1a2e')
-
-        tk.Label(
-            win,
+        tk.Label(win,
             text=f"Ambiguous Replies — {len(entries)} pending",
             font=('Helvetica', 14, 'bold'),
-            bg='#1a1a2e', fg='white'
-        ).pack(pady=10)
-
+            bg='#1a1a2e', fg='white').pack(pady=10)
         if not entries:
-            tk.Label(
-                win, text="All clear!",
+            tk.Label(win, text="✅ All clear!",
                 font=('Helvetica', 12),
-                bg='#1a1a2e', fg='#27ae60'
-            ).pack(pady=20)
+                bg='#1a1a2e', fg='#27ae60').pack(pady=20)
             return
-
         canvas = tk.Canvas(win, bg='#1a1a2e', highlightthickness=0)
         sb = ttk.Scrollbar(win, orient='vertical', command=canvas.yview)
         sf = tk.Frame(canvas, bg='#1a1a2e')
-
-        sf.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
+        sf.bind('<Configure>',
+            lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
         canvas.create_window((0, 0), window=sf, anchor='nw')
         canvas.configure(yscrollcommand=sb.set)
-
         canvas.pack(side='left', fill='both', expand=True, padx=10, pady=5)
         sb.pack(side='right', fill='y')
 
@@ -1180,10 +1164,10 @@ class QuietReachUI:
             def clf(act):
                 if act == 'warm':
                     upsert_user(uid, uname, 'warm')
-                    self.append_log(f"Moved {uname} to WARM")
+                    self.append_log(f"🔥 Moved {uname} to WARM")
                 elif act == 'cold':
                     upsert_user(uid, uname, 'cold')
-                    self.append_log(f"Moved {uname} to COLD")
+                    self.append_log(f"❄️ Moved {uname} to COLD")
                 delete_ambiguous(eid)
                 cf.destroy()
             return clf
@@ -1192,115 +1176,289 @@ class QuietReachUI:
             eid, did, uname, msg, ts = entry
             card = tk.Frame(sf, bg='#16213e', padx=10, pady=8)
             card.pack(fill='x', padx=10, pady=5)
-
-            tk.Label(card, text=f"{uname} (ID: {did})",
-                     font=('Helvetica', 10, 'bold'),
-                     bg='#16213e', fg='white').pack(anchor='w')
-
-            tk.Label(card, text=f"\"{msg}\"",
-                     font=('Helvetica', 10, 'italic'),
-                     bg='#16213e', fg='#aaaacc',
-                     wraplength=500, justify='left').pack(anchor='w', pady=3)
-
-            tk.Label(card, text=f"{ts[:16] if ts else 'N/A'}",
-                     font=('Helvetica', 9),
-                     bg='#16213e', fg='#777799').pack(anchor='w')
-
+            tk.Label(card, text=f"👤 {uname} (ID: {did})",
+                font=('Helvetica', 10, 'bold'),
+                bg='#16213e', fg='white').pack(anchor='w')
+            tk.Label(card, text=f'💬 "{msg}"',
+                font=('Helvetica', 10, 'italic'),
+                bg='#16213e', fg='#aaaacc',
+                wraplength=500, justify='left').pack(anchor='w', pady=3)
+            tk.Label(card,
+                text=f"🕐 {ts[:16] if ts else 'N/A'}",
+                font=('Helvetica', 9),
+                bg='#16213e', fg='#777799').pack(anchor='w')
             clf = make_clf(eid, did, uname, card)
             br = tk.Frame(card, bg='#16213e')
             br.pack(anchor='w', pady=5)
-
-            tk.Button(br, text="Warm",
-                      command=lambda c=clf: c('warm'),
-                      bg='#27ae60', fg='white',
-                      font=('Helvetica', 9, 'bold'),
-                      relief='flat', padx=8, pady=4).pack(side='left', padx=3)
-
-            tk.Button(br, text="Cold",
-                      command=lambda c=clf: c('cold'),
-                      bg='#e74c3c', fg='white',
-                      font=('Helvetica', 9, 'bold'),
-                      relief='flat', padx=8, pady=4).pack(side='left', padx=3)
-
-            tk.Button(br, text="Ignore",
-                      command=lambda c=clf: c('ignore'),
-                      bg='#777777', fg='white',
-                      font=('Helvetica', 9, 'bold'),
-                      relief='flat', padx=8, pady=4).pack(side='left', padx=3)
+            tk.Button(br, text="🔥 Warm",
+                command=lambda c=clf: c('warm'),
+                bg='#27ae60', fg='white',
+                font=('Helvetica', 9, 'bold'),
+                relief='flat', padx=8, pady=4).pack(side='left', padx=3)
+            tk.Button(br, text="❄️ Cold",
+                command=lambda c=clf: c('cold'),
+                bg='#e74c3c', fg='white',
+                font=('Helvetica', 9, 'bold'),
+                relief='flat', padx=8, pady=4).pack(side='left', padx=3)
+            tk.Button(br, text="😐 Ignore",
+                command=lambda c=clf: c('ignore'),
+                bg='#777777', fg='white',
+                font=('Helvetica', 9, 'bold'),
+                relief='flat', padx=8, pady=4).pack(side='left', padx=3)
 
     def edit_keywords(self):
         win = tk.Toplevel(self.root)
-        win.title("Edit Keywords")
+        win.title("✏️ Edit Keywords")
         win.geometry("500x500")
         win.configure(bg='#1a1a2e')
-
-        tk.Label(
-            win, text="Edit Keywords",
+        tk.Label(win, text="Edit Keywords",
             font=('Helvetica', 14, 'bold'),
-            bg='#1a1a2e', fg='white'
-        ).pack(pady=10)
-
+            bg='#1a1a2e', fg='white').pack(pady=10)
         nb = ttk.Notebook(win)
         nb.pack(fill='both', expand=True, padx=15, pady=5)
 
         def make_tab(parent, ln):
             frame = tk.Frame(parent, bg='#1a1a2e')
             words = get_keywords(ln)
-
             lb = tk.Listbox(frame, bg='#0d0d1a', fg='white',
-                            font=('Courier', 10), relief='flat', height=12)
+                font=('Courier', 10), relief='flat', height=12)
             lb.pack(fill='both', expand=True, padx=10, pady=5)
-
             for w in words:
                 lb.insert('end', f"  {w}")
-
             af = tk.Frame(frame, bg='#1a1a2e')
             af.pack(fill='x', padx=10, pady=5)
-
             ent = tk.Entry(af, bg='#0d0d1a', fg='white',
-                           font=('Courier', 10), relief='flat')
+                font=('Courier', 10), relief='flat')
             ent.pack(side='left', fill='x', expand=True, padx=(0, 5))
 
             def add_w():
                 w = ent.get().strip().lower()
                 if w:
                     c = sqlite3.connect(DB_PATH)
-                    c.cursor().execute("INSERT OR IGNORE INTO keywords VALUES (?,?)", (w, ln))
+                    c.cursor().execute(
+                        "INSERT OR IGNORE INTO keywords VALUES (?,?)",
+                        (w, ln))
                     c.commit()
                     c.close()
                     lb.insert('end', f"  {w}")
                     ent.delete(0, 'end')
-                    self.append_log(f"Added '{w}' to {ln}")
+                    self.append_log(f"✅ Added '{w}' to {ln}")
 
             def rem_w():
                 sel = lb.curselection()
                 if sel:
                     w = lb.get(sel[0]).strip()
                     c = sqlite3.connect(DB_PATH)
-                    c.cursor().execute("DELETE FROM keywords WHERE word=? AND list_name=?", (w, ln))
+                    c.cursor().execute(
+                        "DELETE FROM keywords WHERE word=? AND list_name=?",
+                        (w, ln))
                     c.commit()
                     c.close()
                     lb.delete(sel[0])
-                    self.append_log(f"Removed '{w}' from {ln}")
+                    self.append_log(f"🗑️ Removed '{w}' from {ln}")
 
-            tk.Button(af, text="Add", command=add_w,
-                      bg='#27ae60', fg='white',
-                      font=('Helvetica', 9, 'bold'),
-                      relief='flat', padx=8).pack(side='left')
-
-            tk.Button(frame, text="Remove Selected", command=rem_w,
-                      bg='#e74c3c', fg='white',
-                      font=('Helvetica', 9, 'bold'),
-                      relief='flat', padx=8, pady=4).pack(pady=5)
-
+            tk.Button(af, text="➕ Add", command=add_w,
+                bg='#27ae60', fg='white',
+                font=('Helvetica', 9, 'bold'),
+                relief='flat', padx=8).pack(side='left')
+            tk.Button(frame, text="🗑️ Remove Selected", command=rem_w,
+                bg='#e74c3c', fg='white',
+                font=('Helvetica', 9, 'bold'),
+                relief='flat', padx=8, pady=4).pack(pady=5)
             return frame
 
         t1 = make_tab(nb, 'trigger')
         t2 = make_tab(nb, 'yes')
         t3 = make_tab(nb, 'no')
-        nb.add(t1, text='Trigger Words')
-        nb.add(t2, text='Yes Words')
-        nb.add(t
+        nb.add(t1, text='🔍 Trigger Words')
+        nb.add(t2, text='✅ Yes Words')
+        nb.add(t3, text='❌ No Words')
+
+    def show_stats(self):
+        w, c, n, td, p = get_stats()
+        win = tk.Toplevel(self.root)
+        win.title("📊 Stats")
+        win.geometry("300x280")
+        win.configure(bg='#1a1a2e')
+        win.resizable(False, False)
+        tk.Label(win, text="📊 Quiet Reach Stats",
+            font=('Helvetica', 14, 'bold'),
+            bg='#1a1a2e', fg='white').pack(pady=15)
+        stats = [
+            ("🔥 Warm Leads", w, '#27ae60'),
+            ("❄️ Cold Leads", c, '#e74c3c'),
+            ("😐 Neutral", n, '#f39c12'),
+            ("📨 Total DMs", td, '#4a90d9'),
+            ("⚠️ Pending", p, '#e67e22'),
+        ]
+        for label, value, color in stats:
+            row = tk.Frame(win, bg='#16213e')
+            row.pack(fill='x', padx=20, pady=3)
+            tk.Label(row, text=label,
+                font=('Helvetica', 10),
+                bg='#16213e', fg='white',
+                width=20, anchor='w').pack(side='left', padx=10, pady=6)
+            tk.Label(row, text=str(value),
+                font=('Helvetica', 10, 'bold'),
+                bg='#16213e', fg=color).pack(side='right', padx=10)
+        tk.Button(win, text="Close", command=win.destroy,
+            bg='#4a90d9', fg='white',
+            font=('Helvetica', 10, 'bold'),
+            relief='flat', padx=15, pady=6).pack(pady=15)
+
+    def manage_images(self):
+        """Open a window to manage outreach images."""
+        import os
+        from tkinter import filedialog
+
+        win = tk.Toplevel(self.root)
+        win.title("🖼️ Manage Outreach Images")
+        win.geometry("500x400")
+        win.configure(bg='#1a1a2e')
+
+        tk.Label(
+            win, text="🖼️ Outreach Images",
+            font=('Helvetica', 14, 'bold'),
+            bg='#1a1a2e', fg='white'
+        ).pack(pady=10)
+
+        tk.Label(
+            win,
+            text="These images rotate randomly with each outreach DM",
+            font=('Helvetica', 9),
+            bg='#1a1a2e', fg='#aaaaaa'
+        ).pack()
+
+        # Image list display
+        frame = tk.Frame(win, bg='#1a1a2e')
+        frame.pack(fill='both', expand=True, padx=15, pady=10)
+
+        scrollbar = tk.Scrollbar(frame)
+        scrollbar.pack(side='right', fill='y')
+
+        listbox = tk.Listbox(
+            frame, bg='#0d0d1a', fg='white',
+            font=('Courier', 10), relief='flat',
+            yscrollcommand=scrollbar.set
+        )
+        listbox.pack(fill='both', expand=True)
+        scrollbar.config(command=listbox.yview)
+
+        images_file = 'images.txt'
+
+        def load_images():
+            listbox.delete(0, 'end')
+            if os.path.exists(images_file):
+                with open(images_file, 'r') as f:
+                    lines = [l.strip() for l in f.readlines() if l.strip()]
+                    for line in lines:
+                        listbox.insert('end', f"  {line}")
+            else:
+                listbox.insert('end', "  No images added yet!")
+
+        load_images()
+
+        def add_image():
+            filepath = filedialog.askopenfilename(
+                title="Select an image",
+                filetypes=[
+                    ("Image files", "*.jpg *.jpeg *.png *.gif *.webp"),
+                    ("All files", "*.*")
+                ]
+            )
+            if filepath:
+                import shutil
+                filename = os.path.basename(filepath)
+                dest     = os.path.join(os.getcwd(), filename)
+                shutil.copy2(filepath, dest)
+
+                with open(images_file, 'a') as f:
+                    f.write(filename + '\n')
+
+                load_images()
+                self.append_log(f"🖼️ Added image: {filename}")
+
+        def remove_image():
+            selected = listbox.curselection()
+            if selected:
+                image_name = listbox.get(selected[0]).strip()
+
+                if os.path.exists(images_file):
+                    with open(images_file, 'r') as f:
+                        lines = [l.strip() for l in f.readlines() if l.strip()]
+                    lines = [l for l in lines if l != image_name]
+                    with open(images_file, 'w') as f:
+                        f.write('\n'.join(lines))
+
+                load_images()
+                self.append_log(f"🗑️ Removed image: {image_name}")
+
+        btn_row = tk.Frame(win, bg='#1a1a2e')
+        btn_row.pack(pady=10)
+
+        tk.Button(
+            btn_row, text="➕ Add Image", command=add_image,
+            bg='#27ae60', fg='white', font=('Helvetica', 10, 'bold'),
+            relief='flat', cursor='hand2', padx=12, pady=6
+        ).pack(side='left', padx=5)
+
+        tk.Button(
+            btn_row, text="🗑️ Remove Selected", command=remove_image,
+            bg='#e74c3c', fg='white', font=('Helvetica', 10, 'bold'),
+            relief='flat', cursor='hand2', padx=12, pady=6
+        ).pack(side='left', padx=5)
+
+    def reset_warm(self):
+        if messagebox.askyesno("Reset", "Wipe Warm List?"):
+            c = sqlite3.connect(DB_PATH)
+            c.cursor().execute("DELETE FROM users WHERE list_type='warm'")
+            c.commit()
+            c.close()
+            self.append_log("🔄 Warm List wiped!")
+
+    def reset_cold(self):
+        if messagebox.askyesno("Reset", "Wipe Cold List?"):
+            c = sqlite3.connect(DB_PATH)
+            c.cursor().execute("DELETE FROM users WHERE list_type='cold'")
+            c.commit()
+            c.close()
+            self.append_log("🔄 Cold List wiped!")
+
+    def reset_neutral(self):
+        if messagebox.askyesno("Reset", "Wipe Neutral List?"):
+            c = sqlite3.connect(DB_PATH)
+            c.cursor().execute("DELETE FROM users WHERE list_type='neutral'")
+            c.commit()
+            c.close()
+            self.append_log("🔄 Neutral List wiped!")
+
+    def reset_ambiguous(self):
+        if messagebox.askyesno("Reset", "Wipe Ambiguous replies?"):
+            c = sqlite3.connect(DB_PATH)
+            c.cursor().execute("DELETE FROM ambiguous")
+            c.commit()
+            c.close()
+            self.append_log("🔄 Ambiguous wiped!")
+
+    def reset_caps(self):
+        if messagebox.askyesno("Reset", "Reset server caps?"):
+            c = sqlite3.connect(DB_PATH)
+            c.cursor().execute("DELETE FROM server_caps")
+            c.commit()
+            c.close()
+            self.append_log("🔄 Server caps reset!")
+
+    def reset_all(self):
+        if messagebox.askyesno("⚠️ WIPE ALL", "Wipe ALL data? This cannot be undone!"):
+            if messagebox.askyesno("⚠️ FINAL WARNING", "Are you absolutely sure?"):
+                c = sqlite3.connect(DB_PATH)
+                cur = c.cursor()
+                cur.execute("DELETE FROM users")
+                cur.execute("DELETE FROM ambiguous")
+                cur.execute("DELETE FROM server_caps")
+                c.commit()
+                c.close()
+                self.append_log("💀 ALL DATA WIPED!")
 
 # ============================================================
 # 🚀 LAUNCH
