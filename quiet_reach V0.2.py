@@ -1014,7 +1014,7 @@ class QuietReachUI:
                 command=command,
                 bg=color,
                 fg=fg,
-                font=("Helvetica", 10, "bold"),
+                font=self.font_button,
                 relief="flat",
                 cursor="hand2",
                 padx=12,
@@ -1045,7 +1045,7 @@ class QuietReachUI:
             icon = tk.Label(
                 header,
                 text=("▼" if open_by_default else "▶"),
-                font=("Helvetica", 10, "bold"),
+                font=self.font_section,
                 bg=t["card"],
                 fg=color,
             )
@@ -1054,7 +1054,7 @@ class QuietReachUI:
             lbl = tk.Label(
                 header,
                 text=title,
-                font=("Helvetica", 10, "bold"),
+                font=self.font_section,
                 bg=t["card"],
                 fg=t["text"],
             )
@@ -1128,7 +1128,7 @@ class QuietReachUI:
 
         tk.Label(
             log_card, text="📡 Live Log",
-            font=("Helvetica", 11, "bold"),
+            font=self.font_log_title,
             bg=t["card"], fg=t["text"]
         ).pack(anchor="w", padx=10, pady=(10, 6))
 
@@ -1136,7 +1136,7 @@ class QuietReachUI:
             log_card,
             bg=t["log_bg"],
             fg=t["log_fg"],
-            font=("Courier", 10),
+            font=self.font_log,
             relief="flat",
             state="disabled",
             wrap="word",
