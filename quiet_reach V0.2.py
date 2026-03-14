@@ -677,7 +677,7 @@ async def on_message(message):
             await message.reply("No worries — we can keep it here in chat.", mention_author=False)
             return
     
-     # If we recently engaged this user in this channel, allow a short multi-turn convo
+    # If we recently engaged this user in this channel, allow a short multi-turn convo
     if can_followup(message.channel.id, message.author.id):
         consume_followup(message.channel.id, message.author.id)
 
