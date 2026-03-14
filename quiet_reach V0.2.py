@@ -27,6 +27,18 @@ def load_kb() -> str:
     except FileNotFoundError:
         return ""
 
+IMAGES_FILE = "images.txt"  # shared pool for DMs + promos
+
+def load_shared_images() -> list[str]:
+    try:
+        if not os.path.exists(IMAGES_FILE):
+            return []
+        with open(IMAGES_FILE, "r", encoding="utf-8") as f:
+            return [ln.strip() for ln in f.readlines() if ln.strip() and not ln.strip().startswith("#")]
+    except Exception as e:
+        log(f"⚠️ Failed reading {IMAGES_FILE}: {e}")
+        return []
+
 LUCAS_KB = load_kb()
 ABOUT_LUCAS = f"""
 You are Quiet Reach, Lucas Jacobs's assistant (not Lucas).
@@ -767,8 +779,8 @@ async def send_outreach_dm(user, sid):
 
         image_list = load_shared_images()
         if not image_list:
-        image_list = ["preview.jpg"]
-        ip = random.choice(image_list
+            image_list = ["preview.jpg"]
+        ip = random.choice(image_list)
 
         try:
             with open(ip, 'rb') as f:
