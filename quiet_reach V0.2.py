@@ -1020,6 +1020,17 @@ async def on_message(message):
 
     # In-server opt-in / opt-out commands
     raw = (message.content or "").strip().lower()
+    # If someone replies "yes" to a bot message in an NSFW channel, treat it as DM consent
+    try:
+        if hasattr(message.channel, "is_nsfw") and message.channel.is_nsfw():
+            is_reply = await is_reply_to_bot(message)
+            if is_reply and is_affirmative(message.content) and (not get_opt_in(message.author.id)):
+                set_opt_in(message.author.id, str(message.author), 1)
+                await message.reply("Perfect — I’ll DM you a preview.", mention_author=False)
+                await send_outreach_dm(message.author, message.guild.id)
+                return
+    except Exception:
+        pass
 
     # ==========================
     # 📣 PROMO OWNER COMMANDS
