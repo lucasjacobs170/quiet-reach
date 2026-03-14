@@ -610,6 +610,8 @@ def _load_promo_seeds() -> list[str]:
         return []
 
 def _sanitize_caption(text: str) -> str:
+    # remove common 1:1 pet names (crowd voice)
+    t = re.sub(r"\b(gorgeous|babe|baby|hun|honey|handsome|sweetheart)\b", "", t, flags=re.IGNORECASE)
     t = (text or "").strip()
 
     # prevent pings / mass mentions
