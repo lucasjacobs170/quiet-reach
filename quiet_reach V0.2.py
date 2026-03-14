@@ -4,6 +4,8 @@ from tkinter import ttk, scrolledtext, messagebox
 import tkinter.font as tkfont
 from datetime import datetime, date, timedelta
 import requests
+from datetime import time, timezone
+from zoneinfo import ZoneInfo
 
 BOT_TOKEN=''
 OWNER_ID=434809771124719616
@@ -15,6 +17,10 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 KB_PATH = "lucas_kb.txt"
 # Keyword / engagement mode
 KEYWORD_MODE_ENABLED = True
+
+PROMO_TZ = ZoneInfo("America/Los_Angeles")  # PT (handles DST)
+PROMO_DEFAULT_WINDOW_START = 18  # 6pm PT
+PROMO_DEFAULT_WINDOW_END   = 22  # 10pm PT
 
 # Public engagement pacing
 PUBLIC_TOUCH_COOLDOWN_SECONDS = 60 * 30   # 30 minutes per user
@@ -222,6 +228,26 @@ def setup_database():
         'timestamp TEXT)'
     )
 
+     k.execute(
+        'CREATE TABLE IF NOT EXISTS promo_channels('
+        'guild_id TEXT PRIMARY KEY,'
+        'channel_id TEXT,'
+        'enabled INTEGER DEFAULT 0,'
+        'window_start_pt INTEGER DEFAULT 18,'
+        'window_end_pt INTEGER DEFAULT 22,'
+        'next_post_at_utc TEXT,'
+        'last_post_at_utc TEXT)'
+    )
+
+    k.execute(
+        'CREATE TABLE IF NOT EXISTS promo_history('
+        'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+        'guild_id TEXT,'
+        'channel_id TEXT,'
+        'posted_at_utc TEXT,'
+        'image_path TEXT,'
+        'caption TEXT)'
+    )
     c.commit()
     c.close()
     print("✅ Database ready!")
