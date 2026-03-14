@@ -816,7 +816,21 @@ class QuietReachUI:
 
     # ---- Nature theme palette ----
     THEME = {
-        def pick_font_family(self, candidates, fallback="Helvetica"):
+        "bg":      "#0b1f14",  # deep forest
+        "panel":   "#102a1c",  # evergreen panel
+        "card":    "#153522",  # card background
+        "text":    "#e7f6ee",  # near-white
+        "muted":   "#a8c7b6",  # muted mint
+        "accent":  "#3bb273",  # leaf green
+        "accent2": "#4aa3df",  # sky blue
+        "warn":    "#e67e22",  # orange
+        "danger":  "#c0392b",  # red
+        "border":  "#244a34",  # subtle border
+        "log_bg":  "#07150e",  # very dark green for logs
+        "log_fg":  "#9ff2c7",  # minty log text
+    }
+
+    def pick_font_family(self, candidates, fallback="Helvetica"):
         """Pick the first available font family from candidates."""
         try:
             available = set(tkfont.families(self.root))
@@ -828,64 +842,7 @@ class QuietReachUI:
         return fallback
 
     def init_fonts(self):
-        def draw_header_art(self, canvas, w, h):
-        """
-        Draw simple mountain + tree outlines. Called on resize (<Configure>).
-        """
-        t = self.THEME
-        canvas.delete("all")
-
-        stroke = t["muted"]
-        stroke2 = t["accent"]
-        width = 2
-
-        ground_y = int(h * 0.78)
-
-        # Ground line
-        canvas.create_line(0, ground_y, w, ground_y, fill=t["border"], width=2)
-
-        # Mountains (two overlapping peaks)
-        def mountain(x0, x1, peakx, peaky, color):
-            canvas.create_line(x0, ground_y, peakx, peaky, x1, ground_y, fill=color, width=width, smooth=True)
-
-        mountain(int(w * 0.02), int(w * 0.40), int(w * 0.20), int(h * 0.22), stroke)
-        mountain(int(w * 0.18), int(w * 0.62), int(w * 0.40), int(h * 0.10), stroke)
-
-        # A “ridge” accent line
-        canvas.create_line(int(w * 0.20), int(h * 0.30), int(w * 0.28), int(h * 0.44), fill=stroke2, width=2)
-        canvas.create_line(int(w * 0.40), int(h * 0.20), int(w * 0.48), int(h * 0.42), fill=stroke2, width=2)
-
-        # Trees (outline triangles + trunk)
-        def tree(x, scale=1.0):
-            tw = int(26 * scale)
-            th = int(38 * scale)
-            trunk_h = int(10 * scale)
-
-            top_y = ground_y - th
-            mid_x = x + tw // 2
-
-            canvas.create_polygon(
-                x, ground_y, mid_x, top_y, x + tw, ground_y,
-                outline=stroke, fill="", width=width
-            )
-            canvas.create_line(mid_x, ground_y, mid_x, ground_y + trunk_h, fill=stroke, width=width)
-
-        # Cluster of trees on the right
-        tree(int(w * 0.72), 1.0)
-        tree(int(w * 0.78), 1.25)
-        tree(int(w * 0.86), 1.05)
-        tree(int(w * 0.92), 0.9)
-
-        # Small “trail” curve
-        canvas.create_line(
-            int(w * 0.55), ground_y,
-            int(w * 0.58), int(h * 0.90),
-            int(w * 0.62), ground_y,
-            fill=t["border"], width=2, smooth=True
-        )
-        """
-        Create font objects once; use them everywhere for a consistent look.
-        """
+        """Create font objects once; use them everywhere."""
         title_family = self.pick_font_family(
             ["Bebas Neue", "Montserrat", "Segoe UI Black", "Impact", "Arial Black", "Verdana"],
             fallback="Helvetica"
@@ -906,19 +863,59 @@ class QuietReachUI:
         self.font_status = tkfont.Font(family=ui_family, size=12, weight="bold")
         self.font_log_title = tkfont.Font(family=ui_family, size=12, weight="bold")
         self.font_log = tkfont.Font(family=mono_family, size=11)
-        "bg":      "#0b1f14",  # deep forest
-        "panel":   "#102a1c",  # evergreen panel
-        "card":    "#153522",  # card background
-        "text":    "#e7f6ee",  # near-white
-        "muted":   "#a8c7b6",  # muted mint
-        "accent":  "#3bb273",  # leaf green
-        "accent2": "#4aa3df",  # sky blue
-        "warn":    "#e67e22",  # orange
-        "danger":  "#c0392b",  # red
-        "border":  "#244a34",  # subtle border
-        "log_bg":  "#07150e",  # very dark green for logs
-        "log_fg":  "#9ff2c7",  # minty log text
-    }
+
+    def draw_header_art(self, canvas, w, h):
+        """Draw simple mountain + tree outlines. Called on resize (<Configure>)."""
+        t = self.THEME
+        canvas.delete("all")
+
+        stroke = t["muted"]
+        stroke2 = t["accent"]
+        width = 2
+
+        ground_y = int(h * 0.78)
+
+        # Ground line
+        canvas.create_line(0, ground_y, w, ground_y, fill=t["border"], width=2)
+
+        # Mountains
+        def mountain(x0, x1, peakx, peaky, color):
+            canvas.create_line(x0, ground_y, peakx, peaky, x1, ground_y, fill=color, width=width, smooth=True)
+
+        mountain(int(w * 0.02), int(w * 0.40), int(w * 0.20), int(h * 0.22), stroke)
+        mountain(int(w * 0.18), int(w * 0.62), int(w * 0.40), int(h * 0.10), stroke)
+
+        # Ridge accent lines
+        canvas.create_line(int(w * 0.20), int(h * 0.30), int(w * 0.28), int(h * 0.44), fill=stroke2, width=2)
+        canvas.create_line(int(w * 0.40), int(h * 0.20), int(w * 0.48), int(h * 0.42), fill=stroke2, width=2)
+
+        # Trees
+        def tree(x, scale=1.0):
+            tw = int(26 * scale)
+            th = int(38 * scale)
+            trunk_h = int(10 * scale)
+
+            top_y = ground_y - th
+            mid_x = x + tw // 2
+
+            canvas.create_polygon(
+                x, ground_y, mid_x, top_y, x + tw, ground_y,
+                outline=stroke, fill="", width=width
+            )
+            canvas.create_line(mid_x, ground_y, mid_x, ground_y + trunk_h, fill=stroke, width=width)
+
+        tree(int(w * 0.72), 1.0)
+        tree(int(w * 0.78), 1.25)
+        tree(int(w * 0.86), 1.05)
+        tree(int(w * 0.92), 0.9)
+
+        # Trail curve
+        canvas.create_line(
+            int(w * 0.55), ground_y,
+            int(w * 0.58), int(h * 0.90),
+            int(w * 0.62), ground_y,
+            fill=t["border"], width=2, smooth=True
+        )
     
     def __init__(self, root):
         self.root        = root
@@ -1060,7 +1057,7 @@ class QuietReachUI:
             lbl = tk.Label(
                 header,
                 text=title,
-                font=("Helvetica", 10, "bold"),
+                font=self.font_section,
                 bg=t["card"],
                 fg=t["text"],
             )
