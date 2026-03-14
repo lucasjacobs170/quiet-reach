@@ -1,6 +1,7 @@
 # 🤫 QUIET REACH v1.2
 import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, json
 from tkinter import ttk, scrolledtext, messagebox
+import tkinter.font as tkfont
 from datetime import datetime, date, timedelta
 import requests
 
@@ -815,6 +816,96 @@ class QuietReachUI:
 
     # ---- Nature theme palette ----
     THEME = {
+        def pick_font_family(self, candidates, fallback="Helvetica"):
+        """Pick the first available font family from candidates."""
+        try:
+            available = set(tkfont.families(self.root))
+            for fam in candidates:
+                if fam in available:
+                    return fam
+        except Exception:
+            pass
+        return fallback
+
+    def init_fonts(self):
+        def draw_header_art(self, canvas, w, h):
+        """
+        Draw simple mountain + tree outlines. Called on resize (<Configure>).
+        """
+        t = self.THEME
+        canvas.delete("all")
+
+        stroke = t["muted"]
+        stroke2 = t["accent"]
+        width = 2
+
+        ground_y = int(h * 0.78)
+
+        # Ground line
+        canvas.create_line(0, ground_y, w, ground_y, fill=t["border"], width=2)
+
+        # Mountains (two overlapping peaks)
+        def mountain(x0, x1, peakx, peaky, color):
+            canvas.create_line(x0, ground_y, peakx, peaky, x1, ground_y, fill=color, width=width, smooth=True)
+
+        mountain(int(w * 0.02), int(w * 0.40), int(w * 0.20), int(h * 0.22), stroke)
+        mountain(int(w * 0.18), int(w * 0.62), int(w * 0.40), int(h * 0.10), stroke)
+
+        # A “ridge” accent line
+        canvas.create_line(int(w * 0.20), int(h * 0.30), int(w * 0.28), int(h * 0.44), fill=stroke2, width=2)
+        canvas.create_line(int(w * 0.40), int(h * 0.20), int(w * 0.48), int(h * 0.42), fill=stroke2, width=2)
+
+        # Trees (outline triangles + trunk)
+        def tree(x, scale=1.0):
+            tw = int(26 * scale)
+            th = int(38 * scale)
+            trunk_h = int(10 * scale)
+
+            top_y = ground_y - th
+            mid_x = x + tw // 2
+
+            canvas.create_polygon(
+                x, ground_y, mid_x, top_y, x + tw, ground_y,
+                outline=stroke, fill="", width=width
+            )
+            canvas.create_line(mid_x, ground_y, mid_x, ground_y + trunk_h, fill=stroke, width=width)
+
+        # Cluster of trees on the right
+        tree(int(w * 0.72), 1.0)
+        tree(int(w * 0.78), 1.25)
+        tree(int(w * 0.86), 1.05)
+        tree(int(w * 0.92), 0.9)
+
+        # Small “trail” curve
+        canvas.create_line(
+            int(w * 0.55), ground_y,
+            int(w * 0.58), int(h * 0.90),
+            int(w * 0.62), ground_y,
+            fill=t["border"], width=2, smooth=True
+        )
+        """
+        Create font objects once; use them everywhere for a consistent look.
+        """
+        title_family = self.pick_font_family(
+            ["Bebas Neue", "Montserrat", "Segoe UI Black", "Impact", "Arial Black", "Verdana"],
+            fallback="Helvetica"
+        )
+        ui_family = self.pick_font_family(
+            ["Montserrat", "Segoe UI Semibold", "Segoe UI", "Verdana", "Helvetica"],
+            fallback="Helvetica"
+        )
+        mono_family = self.pick_font_family(
+            ["Consolas", "Cascadia Mono", "Menlo", "Courier New"],
+            fallback="Courier"
+        )
+
+        self.font_title = tkfont.Font(family=title_family, size=30, weight="bold")
+        self.font_subtitle = tkfont.Font(family=ui_family, size=11)
+        self.font_section = tkfont.Font(family=ui_family, size=12, weight="bold")
+        self.font_button = tkfont.Font(family=ui_family, size=12, weight="bold")
+        self.font_status = tkfont.Font(family=ui_family, size=12, weight="bold")
+        self.font_log_title = tkfont.Font(family=ui_family, size=12, weight="bold")
+        self.font_log = tkfont.Font(family=mono_family, size=11)
         "bg":      "#0b1f14",  # deep forest
         "panel":   "#102a1c",  # evergreen panel
         "card":    "#153522",  # card background
@@ -840,6 +931,7 @@ class QuietReachUI:
         self.root.configure(bg=self.THEME["bg"])
         self.root.resizable(True, True)
 
+        self.init_fonts()
         self.build_ui()
 
         global ui_log
@@ -860,23 +952,31 @@ class QuietReachUI:
 
         tk.Label(
             title_wrap, text="Quiet Reach",
-            font=("Helvetica", 24, "bold"),
+            font=self.font_title,
             bg=t["bg"], fg=t["text"]
         ).pack(anchor="w")
 
         tk.Label(
             title_wrap, text="forest-quiet outreach assistant",
-            font=("Helvetica", 10),
+            font=self.font_subtitle,
             bg=t["bg"], fg=t["muted"]
         ).pack(anchor="w", pady=(2, 0))
 
         self.status_label = tk.Label(
             header_frame, text="⚫ Offline",
-            font=("Helvetica", 12),
+            font=self.font_status,
             bg=t["bg"], fg=t["muted"]
         )
         self.status_label.pack(side="right", padx=10)
 
+        # Header art (mountains/trees outlines)
+        art_canvas = tk.Canvas(self.root, height=80, bg=t["bg"], highlightthickness=0)
+        art_canvas.pack(fill="x", padx=20, pady=(0, 6))
+
+        art_canvas.bind(
+            "<Configure>",
+            lambda e: self.draw_header_art(art_canvas, e.width, e.height)
+        )
         # DIVIDER
         tk.Frame(self.root, bg=t["accent"], height=2).pack(fill="x", padx=20, pady=(0, 10))
 
@@ -920,7 +1020,7 @@ class QuietReachUI:
                 command=command,
                 bg=color,
                 fg=fg,
-                font=("Helvetica", 10, "bold"),
+                font=self.font_button,
                 relief="flat",
                 cursor="hand2",
                 padx=12,
@@ -951,7 +1051,7 @@ class QuietReachUI:
             icon = tk.Label(
                 header,
                 text=("▼" if open_by_default else "▶"),
-                font=("Helvetica", 10, "bold"),
+                font=self.font_section,
                 bg=t["card"],
                 fg=color,
             )
@@ -1034,7 +1134,7 @@ class QuietReachUI:
 
         tk.Label(
             log_card, text="📡 Live Log",
-            font=("Helvetica", 11, "bold"),
+            font=self.font_log_title
             bg=t["card"], fg=t["text"]
         ).pack(anchor="w", padx=10, pady=(10, 6))
 
@@ -1042,7 +1142,7 @@ class QuietReachUI:
             log_card,
             bg=t["log_bg"],
             fg=t["log_fg"],
-            font=("Courier", 10),
+            font=self.font_log
             relief="flat",
             state="disabled",
             wrap="word",
