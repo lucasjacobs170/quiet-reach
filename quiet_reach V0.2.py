@@ -878,6 +878,69 @@ class QuietReachUI:
 
         # Button factory helper
         def make_button(parent, text, command, color='#4a90d9', fg='white'):
+             def make_collapsible_section(parent, title, color="#4a90d9", open_by_default=True):
+            """
+            Creates a collapsible UI section.
+            Returns the frame you should add buttons into.
+            """
+            outer = tk.Frame(parent, bg="#1a1a2e")
+            outer.pack(fill="x", padx=0, pady=(10, 3))
+
+            header = tk.Frame(outer, bg="#1a1a2e")
+            header.pack(fill="x")
+
+            is_open = tk.BooleanVar(value=open_by_default)
+
+            icon = tk.Label(
+                header,
+                text=("▼" if open_by_default else "▶"),
+                font=("Helvetica", 10, "bold"),
+                bg="#1a1a2e",
+                fg=color,
+            )
+            icon.pack(side="left", padx=(5, 0))
+
+            lbl = tk.Label(
+                header,
+                text=title,
+                font=("Helvetica", 10, "bold"),
+                bg="#1a1a2e",
+                fg=color,
+            )
+            lbl.pack(side="left", padx=(6, 0))
+
+            divider = tk.Frame(outer, bg=color, height=1)
+            divider.pack(fill="x", padx=5, pady=(3, 6))
+
+            content = tk.Frame(outer, bg="#1a1a2e")
+
+            def refresh_scrollregion():
+                # Ensure the canvas updates when sections open/close
+                btn_canvas.configure(scrollregion=btn_canvas.bbox("all"))
+
+            def set_open(open_: bool):
+                is_open.set(open_)
+                icon.config(text=("▼" if open_ else "▶"))
+                if open_:
+                    content.pack(fill="x")
+                else:
+                    content.pack_forget()
+
+                # Let Tk settle geometry, then refresh scroll region
+                outer.after(10, refresh_scrollregion)
+
+            def toggle(_evt=None):
+                set_open(not is_open.get())
+
+            # Click header to toggle
+            for w in (header, icon, lbl):
+                w.bind("<Button-1>", toggle)
+
+            # Initial state
+            if open_by_default:
+                content.pack(fill="x")
+
+            return content
             btn = tk.Button(
                 parent, text=text, command=command,
                 bg=color, fg=fg,
@@ -902,51 +965,33 @@ class QuietReachUI:
                 btn_scroll_frame, bg=color, height=1
             ).pack(fill='x', padx=5, pady=(0, 5))
 
-        # BOT CONTROLS
-        section_label("⚙️ Bot Controls")
-        self.start_btn = make_button(
-            btn_scroll_frame, "▶  Start Bot", self.start_bot, '#27ae60'
-        )
-        self.stop_btn = make_button(
-            btn_scroll_frame, "⏹  Stop Bot", self.stop_bot, '#e74c3c'
-        )
-        self.stop_btn.config(state='disabled')
+        # BOT CONTROLS (open by default)
+        bot_controls = make_collapsible_section(btn_scroll_frame, "⚙️ Bot Controls", "#4a90d9", open_by_default=True)
+        self.start_btn = make_button(bot_controls, "▶  Start Bot", self.start_bot, "#27ae60")
+        self.stop_btn  = make_button(bot_controls, "⏹  Stop Bot",  self.stop_bot, "#e74c3c")
+        self.stop_btn.config(state="disabled")
 
-        # LISTS
-        section_label("📋 View Lists")
-        make_button(btn_scroll_frame, "🔥  Warm List",
-                    lambda: self.view_list('warm'))
-        make_button(btn_scroll_frame, "❄️  Cold List",
-                    lambda: self.view_list('cold'))
-        make_button(btn_scroll_frame, "😐  Neutral List",
-                    lambda: self.view_list('neutral'))
+        # LISTS (collapsed by default)
+        view_lists = make_collapsible_section(btn_scroll_frame, "📋 View Lists", "#4a90d9", open_by_default=False)
+        make_button(view_lists, "🔥  Warm List",    lambda: self.view_list("warm"))
+        make_button(view_lists, "❄️  Cold List",    lambda: self.view_list("cold"))
+        make_button(view_lists, "😐  Neutral List", lambda: self.view_list("neutral"))
 
-        # TOOLS
-        section_label("🛠️ Tools")
-        make_button(btn_scroll_frame, "🔍  Review Ambiguous",
-                    self.review_ambiguous)
-        make_button(btn_scroll_frame, "✏️  Edit Keywords",
-                    self.edit_keywords)
-        make_button(btn_scroll_frame, "📊  Stats",
-                    self.show_stats)
-        make_button(btn_scroll_frame, "🖼️  Manage Images",
-                    self.manage_images)
+        # TOOLS (collapsed by default)
+        tools = make_collapsible_section(btn_scroll_frame, "🛠️ Tools", "#4a90d9", open_by_default=False)
+        make_button(tools, "🔍  Review Ambiguous", self.review_ambiguous)
+        make_button(tools, "✏️  Edit Keywords",    self.edit_keywords)
+        make_button(tools, "📊  Stats",            self.show_stats)
+        make_button(tools, "🖼️  Manage Images",    self.manage_images)
 
-
-        # RESET TOOLS
-        section_label("🔄 Reset Tools", '#e74c3c')
-        make_button(btn_scroll_frame, "🔄  Reset Warm",
-                    self.reset_warm,      '#c0392b')
-        make_button(btn_scroll_frame, "🔄  Reset Cold",
-                    self.reset_cold,      '#c0392b')
-        make_button(btn_scroll_frame, "🔄  Reset Neutral",
-                    self.reset_neutral,   '#c0392b')
-        make_button(btn_scroll_frame, "🔄  Reset Ambiguous",
-                    self.reset_ambiguous, '#c0392b')
-        make_button(btn_scroll_frame, "🔄  Reset Server Caps",
-                    self.reset_caps,      '#c0392b')
-        make_button(btn_scroll_frame, "💀  WIPE ALL DATA",
-                    self.reset_all,       '#7b241c')
+        # RESET TOOLS (collapsed by default)
+        reset_tools = make_collapsible_section(btn_scroll_frame, "🔄 Reset Tools", "#e74c3c", open_by_default=False)
+        make_button(reset_tools, "🔄  Reset Warm",        self.reset_warm,      "#c0392b")
+        make_button(reset_tools, "🔄  Reset Cold",        self.reset_cold,      "#c0392b")
+        make_button(reset_tools, "🔄  Reset Neutral",     self.reset_neutral,   "#c0392b")
+        make_button(reset_tools, "🔄  Reset Ambiguous",   self.reset_ambiguous, "#c0392b")
+        make_button(reset_tools, "🔄  Reset Server Caps", self.reset_caps,      "#c0392b")
+        make_button(reset_tools, "💀  WIPE ALL DATA",     self.reset_all,       "#7b241c")
 
         # ---- RIGHT SIDE: LOG AREA ----
         log_frame = tk.Frame(main_frame, bg='#1a1a2e')
