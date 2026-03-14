@@ -600,23 +600,28 @@ def _load_promo_seeds() -> list[str]:
 
 def _sanitize_caption(text: str) -> str:
     t = (text or "").strip()
+
     # prevent pings / mass mentions
     t = t.replace("@everyone", "everyone").replace("@here", "here")
+
+    # strip ANY links (prevents extra/hallucinated invites)
+    import re
+    t = re.sub(r"https?://\S+", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdiscord\.gg/\S+", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdiscord\.com/invite/\S+", "", t, flags=re.IGNORECASE)
+
+    # discourage the word "discord" in the public advert
+    t = re.sub(r"\bdiscord\b", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\binvite\b", "", t, flags=re.IGNORECASE)
+
+    # clean extra spaces per-line, keep line breaks
+    t = "\n".join([" ".join(line.split()).strip() for line in t.splitlines()]).strip()
+
     # hard cap
     if len(t) > PROMO_MAX_CHARS:
         t = t[:PROMO_MAX_CHARS - 1].rstrip() + "…"
-    return t
 
-def promo_get_config_row(guild_id: int):
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "SELECT guild_id, channel_id, enabled, window_start_pt, window_end_pt, next_post_at_utc, last_post_at_utc "
-        "FROM promo_channels WHERE guild_id=?",
-        (str(guild_id),)
-    )
-    row = k.fetchone()
-    c.close()
-    return row
+    return t
 
 def promo_set_next_post_at(guild_id: int, next_post_at_utc_iso: str):
     c = sqlite3.connect(DB_PATH); k = c.cursor()
@@ -628,26 +633,28 @@ def promo_set_next_post_at(guild_id: int, next_post_at_utc_iso: str):
 
 async def generate_promo_caption(theme: str, seed: str) -> str:
     """
-    Keeps captions non-explicit (Discord-safe) while still flirty.
+    Organic, saucy, NON-explicit promo caption.
+    No links. CTA drives interaction with the bot (reply "yes").
     """
-    cta = f"Join the server: {SERVER_INVITE}"
+    cta = "Reply “yes” and I’ll DM you a preview."
     seed = (seed or "").strip()
 
     prompt = f"""
-You write short promotional captions for an adult creator's Discord server.
-Tone: playful, confident, outdoorsy vibe, attention-grabbing.
+You write short, saucy promotional captions for an adult creator.
+Tone: flirty, playful, confident, organic (no corporate vibe).
 Rules:
-- Non-explicit only: do NOT describe sex acts or graphic anatomy.
-- No minors. No coercion. No threats. No harassment.
+- NON-explicit only: no graphic anatomy, no sex acts.
+- No minors. No coercion. No harassment.
+- Do NOT include any URLs or links of any kind.
+- Do NOT mention Discord, invites, or servers.
 - No @everyone / @here.
-- 1-2 short lines max, plus a clear call-to-action.
+- 1–2 short lines max, plus this CTA (exact words): {cta}
 - Keep under {PROMO_MAX_CHARS} characters total.
 
 Theme: {theme}
 Seed idea (optional): {seed}
 
 Return ONLY the caption text.
-Include this CTA (exact link): {SERVER_INVITE}
 """
 
     loop = asyncio.get_event_loop()
@@ -655,12 +662,11 @@ Include this CTA (exact link): {SERVER_INVITE}
     out = _sanitize_caption(out)
 
     if not out:
-        # fallback if model fails
-        base = seed if seed else "New drop today—come say hi."
+        base = seed if seed else "Hey you… you’re gonna like this."
         return _sanitize_caption(f"{base}\n{cta}")
 
-    # ensure CTA exists
-    if SERVER_INVITE not in out:
+    # ensure CTA exists (no links)
+    if "reply" not in out.lower() or "yes" not in out.lower():
         out = _sanitize_caption(out.rstrip() + f"\n{cta}")
 
     return out
