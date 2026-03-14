@@ -877,8 +877,22 @@ class QuietReachUI:
         btn_scrollbar.pack(side='left', fill='y', padx=(0, 10))
 
         # Button factory helper
-        def make_button(parent, text, command, color='#4a90d9', fg='white'):
-             def make_collapsible_section(parent, title, color="#4a90d9", open_by_default=True):
+        def make_button(parent, text, command, color="#4a90d9", fg="white"):
+            btn = tk.Button(
+                parent, text=text, command=command,
+                bg=color, fg=fg,
+                font=("Helvetica", 10, "bold"),
+                relief="flat", cursor="hand2",
+                padx=10, pady=8, width=20,
+                activebackground="#357abd",
+                activeforeground="white"
+            )
+            btn.pack(pady=3, padx=5)
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#357abd"))
+            btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
+            return btn
+
+        def make_collapsible_section(parent, title, color="#4a90d9", open_by_default=True):
             """
             Creates a collapsible UI section.
             Returns the frame you should add buttons into.
@@ -915,7 +929,6 @@ class QuietReachUI:
             content = tk.Frame(outer, bg="#1a1a2e")
 
             def refresh_scrollregion():
-                # Ensure the canvas updates when sections open/close
                 btn_canvas.configure(scrollregion=btn_canvas.bbox("all"))
 
             def set_open(open_: bool):
@@ -925,45 +938,18 @@ class QuietReachUI:
                     content.pack(fill="x")
                 else:
                     content.pack_forget()
-
-                # Let Tk settle geometry, then refresh scroll region
                 outer.after(10, refresh_scrollregion)
 
             def toggle(_evt=None):
                 set_open(not is_open.get())
 
-            # Click header to toggle
             for w in (header, icon, lbl):
                 w.bind("<Button-1>", toggle)
 
-            # Initial state
             if open_by_default:
                 content.pack(fill="x")
 
             return content
-            btn = tk.Button(
-                parent, text=text, command=command,
-                bg=color, fg=fg,
-                font=('Helvetica', 10, 'bold'),
-                relief='flat', cursor='hand2',
-                padx=10, pady=8, width=20,
-                activebackground='#357abd',
-                activeforeground='white'
-            )
-            btn.pack(pady=3, padx=5)
-            btn.bind('<Enter>', lambda e, b=btn: b.config(bg='#357abd'))
-            btn.bind('<Leave>', lambda e, b=btn, c=color: b.config(bg=c))
-            return btn
-
-        def section_label(text, color='#4a90d9'):
-            tk.Label(
-                btn_scroll_frame, text=text,
-                font=('Helvetica', 10, 'bold'),
-                bg='#1a1a2e', fg=color
-            ).pack(pady=(10, 3))
-            tk.Frame(
-                btn_scroll_frame, bg=color, height=1
-            ).pack(fill='x', padx=5, pady=(0, 5))
 
         # BOT CONTROLS (open by default)
         bot_controls = make_collapsible_section(btn_scroll_frame, "⚙️ Bot Controls", "#4a90d9", open_by_default=True)
