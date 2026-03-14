@@ -1061,6 +1061,45 @@ async def on_message(message):
             await message.reply("🛑 Promo disabled for this server.", mention_author=False)
             return
 
+        if raw == "!promonow":
+            row = promo_get_config_row(message.guild.id)
+            if not row:
+                await message.reply("No promo config yet. Run `!setpromochannel` first.", mention_author=False)
+                return
+
+            _, channel_id, enabled, start_pt, end_pt, next_iso, last_iso = row
+            if not channel_id:
+                await message.reply("Promo channel not set. Run `!setpromochannel` in the target channel.", mention_author=False)
+                return
+
+            # Pick content
+            themes = [
+                "fresh drop",
+                "tease + mystery",
+                "outdoorsy flirty",
+                "late-night vibes",
+                "friendly invite",
+            ]
+            seeds = _load_promo_seeds()
+            image_list = load_shared_images()
+
+            theme = random.choice(themes)
+            seed = random.choice(seeds) if seeds else ""
+            img = random.choice(image_list) if image_list else ""
+
+            caption = await generate_promo_caption(theme, seed)
+
+            ok = await _post_promo(int(message.guild.id), int(channel_id), caption, img)
+
+            # Always schedule the next run (prevents accidental rapid-fire tests)
+            promo_update_next(int(message.guild.id), int(start_pt), int(end_pt))
+
+            if ok:
+                await message.reply("✅ Promo posted now.", mention_author=False)
+            else:
+                await message.reply("⚠️ Promo failed to post (check logs for details).", mention_author=False)
+            return
+        
         if raw == "!promostatus":
             row = promo_get_config_row(message.guild.id)
             if not row:
