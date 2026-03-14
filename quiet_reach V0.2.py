@@ -813,6 +813,22 @@ async def send_outreach_dm(user, sid):
 
 class QuietReachUI:
 
+    # ---- Nature theme palette ----
+    THEME = {
+        "bg":      "#0b1f14",  # deep forest
+        "panel":   "#102a1c",  # evergreen panel
+        "card":    "#153522",  # card background
+        "text":    "#e7f6ee",  # near-white
+        "muted":   "#a8c7b6",  # muted mint
+        "accent":  "#3bb273",  # leaf green
+        "accent2": "#4aa3df",  # sky blue
+        "warn":    "#e67e22",  # orange
+        "danger":  "#c0392b",  # red
+        "border":  "#244a34",  # subtle border
+        "log_bg":  "#07150e",  # very dark green for logs
+        "log_fg":  "#9ff2c7",  # minty log text
+    }
+    
     def __init__(self, root):
         self.root        = root
         self.bot_thread  = None
@@ -821,7 +837,7 @@ class QuietReachUI:
 
         self.root.title("🤫 Quiet Reach — Control Panel")
         self.root.geometry("950x700")
-        self.root.configure(bg='#1a1a2e')
+        self.root.configure(bg=self.THEME["bg"])
         self.root.resizable(True, True)
 
         self.build_ui()
@@ -829,78 +845,124 @@ class QuietReachUI:
         global ui_log
         ui_log = self.append_log
 
+    # ---- Nature theme palette ----
+    THEME = {
+        "bg":      "#0b1f14",  # deep forest
+        "panel":   "#102a1c",  # dark evergreen
+        "card":    "#153522",  # card background
+        "text":    "#e7f6ee",  # near-white
+        "muted":   "#a8c7b6",  # muted mint
+        "accent":  "#3bb273",  # leaf green
+        "accent2": "#4aa3df",  # sky blue
+        "warn":    "#e67e22",  # orange
+        "danger":  "#c0392b",  # red
+        "border":  "#244a34",  # subtle border
+    }
+
+    def apply_nature_theme(self):
+        """Call once from build_ui() after widgets exist."""
+        t = self.THEME
+        self.root.configure(bg=t["bg"])
+    
     def build_ui(self):
+        t = self.THEME
+
+        # Root background
+        self.root.configure(bg=t["bg"])
 
         # HEADER
-        header_frame = tk.Frame(self.root, bg='#1a1a2e')
-        header_frame.pack(fill='x', padx=20, pady=(15, 5))
+        header_frame = tk.Frame(self.root, bg=t["bg"])
+        header_frame.pack(fill="x", padx=20, pady=(15, 8))
+
+        title_wrap = tk.Frame(header_frame, bg=t["bg"])
+        title_wrap.pack(side="left")
 
         tk.Label(
-            header_frame, text="🤫 Quiet Reach",
-            font=('Helvetica', 24, 'bold'),
-            bg='#1a1a2e', fg='white'
-        ).pack(side='left')
+            title_wrap, text="Quiet Reach",
+            font=("Helvetica", 24, "bold"),
+            bg=t["bg"], fg=t["text"]
+        ).pack(anchor="w")
+
+        tk.Label(
+            title_wrap, text="forest-quiet outreach assistant",
+            font=("Helvetica", 10),
+            bg=t["bg"], fg=t["muted"]
+        ).pack(anchor="w", pady=(2, 0))
 
         self.status_label = tk.Label(
             header_frame, text="⚫ Offline",
-            font=('Helvetica', 12),
-            bg='#1a1a2e', fg='#aaaaaa'
+            font=("Helvetica", 12),
+            bg=t["bg"], fg=t["muted"]
         )
-        self.status_label.pack(side='right', padx=10)
+        self.status_label.pack(side="right", padx=10)
 
         # DIVIDER
-        tk.Frame(self.root, bg='#4a90d9', height=2).pack(
-            fill='x', padx=20, pady=5
-        )
+        tk.Frame(self.root, bg=t["accent"], height=2).pack(fill="x", padx=20, pady=(0, 10))
 
         # MAIN AREA
-        main_frame = tk.Frame(self.root, bg='#1a1a2e')
-        main_frame.pack(fill='both', expand=True, padx=20, pady=10)
+        main_frame = tk.Frame(self.root, bg=t["bg"])
+        main_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
         # ---- LEFT SIDE: SCROLLABLE BUTTON PANEL ----
-        # Wrap buttons in a canvas so they scroll if window is small
-        btn_canvas    = tk.Canvas(main_frame, bg='#1a1a2e',
-                                  width=220, highlightthickness=0)
-        btn_scrollbar = ttk.Scrollbar(main_frame, orient='vertical',
-                                      command=btn_canvas.yview)
-        btn_scroll_frame = tk.Frame(btn_canvas, bg='#1a1a2e')
+        btn_canvas = tk.Canvas(main_frame, bg=t["bg"], width=240, highlightthickness=0)
+        btn_scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=btn_canvas.yview)
+        btn_scroll_frame = tk.Frame(btn_canvas, bg=t["bg"])
 
         btn_scroll_frame.bind(
-            '<Configure>',
-            lambda e: btn_canvas.configure(
-                scrollregion=btn_canvas.bbox('all')
-            )
+            "<Configure>",
+            lambda e: btn_canvas.configure(scrollregion=btn_canvas.bbox("all"))
         )
-        btn_canvas.create_window((0, 0), window=btn_scroll_frame, anchor='nw')
-        btn_canvas.configure(yscrollcommand=btn_scrollbar.set)
-        btn_canvas.pack(side='left', fill='y', padx=(0, 5))
-        btn_scrollbar.pack(side='left', fill='y', padx=(0, 10))
 
-        # Button factory helper
-        def make_button(parent, text, command, color="#4a90d9", fg="white"):
+        btn_canvas.create_window((0, 0), window=btn_scroll_frame, anchor="nw")
+        btn_canvas.configure(yscrollcommand=btn_scrollbar.set)
+
+        btn_canvas.pack(side="left", fill="y", padx=(0, 8))
+        btn_scrollbar.pack(side="left", fill="y", padx=(0, 12))
+
+        # Left “card” container (adds substance)
+        left_card = tk.Frame(
+            btn_scroll_frame,
+            bg=t["card"],
+            highlightbackground=t["border"],
+            highlightthickness=1
+        )
+        left_card.pack(fill="x", padx=8, pady=8)
+
+        # Button helper
+        def make_button(parent, text, command, color, fg=None):
+            if fg is None:
+                fg = t["text"]
+
             btn = tk.Button(
-                parent, text=text, command=command,
-                bg=color, fg=fg,
+                parent,
+                text=text,
+                command=command,
+                bg=color,
+                fg=fg,
                 font=("Helvetica", 10, "bold"),
-                relief="flat", cursor="hand2",
-                padx=10, pady=8, width=20,
-                activebackground="#357abd",
-                activeforeground="white"
+                relief="flat",
+                cursor="hand2",
+                padx=12,
+                pady=9,
+                width=20,
+                activebackground=t["border"],
+                activeforeground=t["text"],
+                highlightthickness=1,
+                highlightbackground=t["border"],
             )
-            btn.pack(pady=3, padx=5)
-            btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#357abd"))
+            btn.pack(pady=4, padx=8, fill="x")
+
+            # Softer hover
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg=t["border"]))
             btn.bind("<Leave>", lambda e, b=btn, c=color: b.config(bg=c))
             return btn
 
-        def make_collapsible_section(parent, title, color="#4a90d9", open_by_default=True):
-            """
-            Creates a collapsible UI section.
-            Returns the frame you should add buttons into.
-            """
-            outer = tk.Frame(parent, bg="#1a1a2e")
-            outer.pack(fill="x", padx=0, pady=(10, 3))
+        # Collapsible section helper
+        def make_collapsible_section(parent, title, color=t["accent"], open_by_default=True):
+            outer = tk.Frame(parent, bg=t["card"])
+            outer.pack(fill="x", padx=8, pady=(10, 6))
 
-            header = tk.Frame(outer, bg="#1a1a2e")
+            header = tk.Frame(outer, bg=t["card"])
             header.pack(fill="x")
 
             is_open = tk.BooleanVar(value=open_by_default)
@@ -909,26 +971,27 @@ class QuietReachUI:
                 header,
                 text=("▼" if open_by_default else "▶"),
                 font=("Helvetica", 10, "bold"),
-                bg="#1a1a2e",
+                bg=t["card"],
                 fg=color,
             )
-            icon.pack(side="left", padx=(5, 0))
+            icon.pack(side="left", padx=(6, 0), pady=(6, 2))
 
             lbl = tk.Label(
                 header,
                 text=title,
                 font=("Helvetica", 10, "bold"),
-                bg="#1a1a2e",
-                fg=color,
+                bg=t["card"],
+                fg=t["text"],
             )
-            lbl.pack(side="left", padx=(6, 0))
+            lbl.pack(side="left", padx=(8, 0), pady=(6, 2))
 
-            divider = tk.Frame(outer, bg=color, height=1)
-            divider.pack(fill="x", padx=5, pady=(3, 6))
+            divider = tk.Frame(outer, bg=color, height=2)
+            divider.pack(fill="x", padx=6, pady=(2, 8))
 
-            content = tk.Frame(outer, bg="#1a1a2e")
+            content = tk.Frame(outer, bg=t["card"])
 
             def refresh_scrollregion():
+                btn_canvas.update_idletasks()
                 btn_canvas.configure(scrollregion=btn_canvas.bbox("all"))
 
             def set_open(open_: bool):
@@ -951,60 +1014,69 @@ class QuietReachUI:
 
             return content
 
-        # BOT CONTROLS (open by default)
-        bot_controls = make_collapsible_section(btn_scroll_frame, "⚙️ Bot Controls", "#4a90d9", open_by_default=True)
-        self.start_btn = make_button(bot_controls, "▶  Start Bot", self.start_bot, "#27ae60")
-        self.stop_btn  = make_button(bot_controls, "⏹  Stop Bot",  self.stop_bot, "#e74c3c")
+        # Sections
+        bot_controls = make_collapsible_section(left_card, "⚙️ Bot Controls", t["accent"], open_by_default=True)
+        self.start_btn = make_button(bot_controls, "▶  Start Bot", self.start_bot, t["accent"])
+        self.stop_btn  = make_button(bot_controls, "⏹  Stop Bot",  self.stop_bot,  t["danger"])
         self.stop_btn.config(state="disabled")
 
-        # LISTS (collapsed by default)
-        view_lists = make_collapsible_section(btn_scroll_frame, "📋 View Lists", "#4a90d9", open_by_default=False)
-        make_button(view_lists, "🔥  Warm List",    lambda: self.view_list("warm"))
-        make_button(view_lists, "❄️  Cold List",    lambda: self.view_list("cold"))
-        make_button(view_lists, "😐  Neutral List", lambda: self.view_list("neutral"))
+        view_lists = make_collapsible_section(left_card, "📋 View Lists", t["accent2"], open_by_default=False)
+        make_button(view_lists, "🔥  Warm List",    lambda: self.view_list("warm"), t["accent2"])
+        make_button(view_lists, "❄️  Cold List",    lambda: self.view_list("cold"), t["accent2"])
+        make_button(view_lists, "😐  Neutral List", lambda: self.view_list("neutral"), t["accent2"])
 
-        # TOOLS (collapsed by default)
-        tools = make_collapsible_section(btn_scroll_frame, "🛠️ Tools", "#4a90d9", open_by_default=False)
-        make_button(tools, "🔍  Review Ambiguous", self.review_ambiguous)
-        make_button(tools, "✏️  Edit Keywords",    self.edit_keywords)
-        make_button(tools, "📊  Stats",            self.show_stats)
-        make_button(tools, "🖼️  Manage Images",    self.manage_images)
+        tools = make_collapsible_section(left_card, "🛠️ Tools", t["accent2"], open_by_default=False)
+        make_button(tools, "🔍  Review Ambiguous", self.review_ambiguous, t["accent2"])
+        make_button(tools, "✏️  Edit Keywords",    self.edit_keywords,   t["accent2"])
+        make_button(tools, "📊  Stats",            self.show_stats,      t["accent2"])
+        make_button(tools, "🖼️  Manage Images",    self.manage_images,   t["accent2"])
 
-        # RESET TOOLS (collapsed by default)
-        reset_tools = make_collapsible_section(btn_scroll_frame, "🔄 Reset Tools", "#e74c3c", open_by_default=False)
-        make_button(reset_tools, "🔄  Reset Warm",        self.reset_warm,      "#c0392b")
-        make_button(reset_tools, "🔄  Reset Cold",        self.reset_cold,      "#c0392b")
-        make_button(reset_tools, "🔄  Reset Neutral",     self.reset_neutral,   "#c0392b")
-        make_button(reset_tools, "🔄  Reset Ambiguous",   self.reset_ambiguous, "#c0392b")
-        make_button(reset_tools, "🔄  Reset Server Caps", self.reset_caps,      "#c0392b")
+        reset_tools = make_collapsible_section(left_card, "🔄 Reset Tools", t["danger"], open_by_default=False)
+        make_button(reset_tools, "🔄  Reset Warm",        self.reset_warm,      t["danger"])
+        make_button(reset_tools, "🔄  Reset Cold",        self.reset_cold,      t["danger"])
+        make_button(reset_tools, "🔄  Reset Neutral",     self.reset_neutral,   t["danger"])
+        make_button(reset_tools, "🔄  Reset Ambiguous",   self.reset_ambiguous, t["danger"])
+        make_button(reset_tools, "🔄  Reset Server Caps", self.reset_caps,      t["danger"])
         make_button(reset_tools, "💀  WIPE ALL DATA",     self.reset_all,       "#7b241c")
 
-        # ---- RIGHT SIDE: LOG AREA ----
-        log_frame = tk.Frame(main_frame, bg='#1a1a2e')
-        log_frame.pack(side='right', fill='both', expand=True)
+        # ---- RIGHT SIDE: LOG AREA (as a card) ----
+        log_frame = tk.Frame(main_frame, bg=t["bg"])
+        log_frame.pack(side="right", fill="both", expand=True)
+
+        log_card = tk.Frame(
+            log_frame,
+            bg=t["card"],
+            highlightbackground=t["border"],
+            highlightthickness=1
+        )
+        log_card.pack(fill="both", expand=True, padx=6, pady=6)
 
         tk.Label(
-            log_frame, text="📡 Live Log",
-            font=('Helvetica', 11, 'bold'),
-            bg='#1a1a2e', fg='#4a90d9'
-        ).pack(anchor='w', pady=(0, 5))
+            log_card, text="📡 Live Log",
+            font=("Helvetica", 11, "bold"),
+            bg=t["card"], fg=t["text"]
+        ).pack(anchor="w", padx=10, pady=(10, 6))
 
         self.log_area = scrolledtext.ScrolledText(
-            log_frame,
-            bg='#0d0d1a', fg='#00ff88',
-            font=('Courier', 10),
-            relief='flat', state='disabled',
-            wrap='word', padx=10, pady=10
+            log_card,
+            bg=t["log_bg"],
+            fg=t["log_fg"],
+            font=("Courier", 10),
+            relief="flat",
+            state="disabled",
+            wrap="word",
+            padx=10,
+            pady=10
         )
-        self.log_area.pack(fill='both', expand=True)
+        self.log_area.pack(fill="both", expand=True, padx=10, pady=(0, 10))
 
         # FOOTER
         tk.Label(
             self.root,
-            text="Running on discord.py  |  Made with 💙  |  Quiet Reach v1.2",
-            font=('Helvetica', 8),
-            bg='#1a1a2e', fg='#555577'
-        ).pack(pady=(5, 10))
+            text="Running on discord.py  |  Quiet Reach v1.2",
+            font=("Helvetica", 8),
+            bg=t["bg"], fg=t["muted"]
+        ).pack(pady=(8, 12))
 
     def append_log(self, message):
         def _update():
