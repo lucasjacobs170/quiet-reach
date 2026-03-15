@@ -598,7 +598,7 @@ def convo_log(
     message: str
 ):
     def log_inbound_message(message):
-    """Log inbound server/DM message."""
+        """Log inbound server/DM message."""
     try:
         is_dm = int(isinstance(message.channel, discord.DMChannel))
         gid = "" if is_dm else (message.guild.id if message.guild else "")
@@ -916,8 +916,10 @@ async def on_ready():
 
 async def handle_dm_reply(message):
     log_inbound_message(message)
-    ...
 
+    user_id = message.author.id
+    username = str(message.author)
+    
 async def handle_dm_reply(message):
     user_id = message.author.id
     username = str(message.author)
@@ -1139,6 +1141,22 @@ async def on_message(message):
     # Ignore self
     if message.author == client.user:
         return
+
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+
+    # Log inbound SERVER messages (not DMs)
+    if not isinstance(message.channel, discord.DMChannel):
+        log_inbound_message(message)
+
+    # DMs: handle separately
+    if isinstance(message.channel, discord.DMChannel):
+        await handle_dm_reply(message)
+        return
+
+    # ... rest of your server logic unchanged ...
 
     # DMs: handle separately (no guild)
     if isinstance(message.channel, discord.DMChannel):
