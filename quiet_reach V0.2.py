@@ -248,6 +248,20 @@ def setup_database():
         'image_path TEXT,'
         'caption TEXT)'
     )
+    
+    k.execute(
+        "CREATE TABLE IF NOT EXISTS conversation_log ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "ts_utc TEXT,"
+        "guild_id TEXT,"
+        "channel_id TEXT,"
+        "user_id TEXT,"
+        "username TEXT,"
+        "is_dm INTEGER,"
+        "direction TEXT,"      -- 'in' or 'out'
+        "message TEXT"
+        ")"
+    )
     c.commit()
     c.close()
     print("✅ Database ready!")
