@@ -12,7 +12,7 @@ OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
 DB_PATH='quiet_reach.db'
 CONFIG_PATH='quiet_reach_config.json'
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434") 
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 KB_PATH = "lucas_kb.txt"
 # Keyword / engagement mode
@@ -938,7 +938,9 @@ async def on_ready():
         log("📣 Promo loop started.")
     
 async def handle_dm_reply(message):
+    # Log inbound DM
     log_inbound_message(message)
+
     user_id = message.author.id
     username = str(message.author)
     content = (message.content or "").strip()
@@ -947,13 +949,23 @@ async def handle_dm_reply(message):
     # Opt-out
     if content_lower in ["stop", "remove", "opt out", "optout"]:
         upsert_user(user_id, username, "neutral", opt_out=1)
-        await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
+        await send_logged(
+            message.channel,
+            guild_id="",
+            content=random.choice(OPT_OUT_RESPONSES),
+            is_dm=1
+        )
         log(f"🛑 {username} opted out")
         return
 
     # If they just want the link, give it (and stop)
     if content_lower in ["link", "server", "invite"]:
-        await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
+        await send_logged(
+            message.channel,
+            guild_id="",
+            content=f"Here you go: {SERVER_INVITE}",
+            is_dm=1
+        )
         return
 
     # If they are asking for info about Lucas, answer with AI (KB-grounded)
@@ -962,7 +974,7 @@ async def handle_dm_reply(message):
         if not reply:
             reply = "I don’t have that detail yet. If you want, ask me a more specific question about Lucas."
         reply += "\n\nIf you want to join the server, say `link`."
-        await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
+        await send_logged(message.channel, guild_id="", content=reply, is_dm=1)
         return
 
     # Otherwise try classification for YES/NO
@@ -970,13 +982,23 @@ async def handle_dm_reply(message):
 
     if ai_result == "yes":
         upsert_user(user_id, username, "warm")
-        await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
+        await send_logged(
+            message.channel,
+            guild_id="",
+            content=random.choice(YES_RESPONSES),
+            is_dm=1
+        )
         log(f"🔥 {username} added to WARM list")
         return
 
     if ai_result == "no":
         upsert_user(user_id, username, "cold")
-        await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
+        await send_logged(
+            message.channel,
+            guild_id="",
+            content=random.choice(NO_RESPONSES),
+            is_dm=1
+        )
         log(f"❄️ {username} added to COLD list")
         return
 
@@ -985,8 +1007,9 @@ async def handle_dm_reply(message):
     if not reply:
         reply = "Got you. What do you want to know about Lucas?"
     reply += "\n\nIf you want to join the server, say `link`."
-    await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
+    await send_logged(message.channel, guild_id="", content=reply, is_dm=1)
     log(f"🤖 AI replied to {username}")
+    
 # --- Anti-spam pacing (channel-level) ---
 CHANNEL_REPLY_COOLDOWN_SECONDS = 90  # 1.5 minutes per channel
 _last_channel_reply = {}            # channel_id -> datetime
@@ -1425,8 +1448,10 @@ async def send_outreach_dm(user, sid):
     if not get_opt_in(user.id):
         log(f"🚫 DM blocked (not opted-in): {user}")
         return
+
     """Send outreach DM and notify owner."""
     opener = random.choice(DM_OPENERS)
+
     try:
         d = random.randint(5, 30)
         log(f"⏳ Waiting {d}s before DMing {user}...")
@@ -1442,21 +1467,22 @@ async def send_outreach_dm(user, sid):
         ip = random.choice(image_list)
 
         try:
-            with open(ip, 'rb') as f:
-                await dm.send(content=opener, file=discord.File(f, filename=os.path.basename(ip)))
+            with open(ip, "rb") as f:
+                file = discord.File(f, filename=os.path.basename(ip))
+                await send_logged(dm, guild_id="", content=opener, file=file, is_dm=1)
             log(f"📸 Sent DM with image to {user}")
         except FileNotFoundError:
-            await dm.send(opener)
+            await send_logged(dm, guild_id="", content=opener, is_dm=1)
             log(f"⚠️ Image not found — text only to {user}")
-        except:
-            await dm.send(opener)
+        except Exception:
+            await send_logged(dm, guild_id="", content=opener, is_dm=1)
             log(f"⚠️ Image error — text only to {user}")
 
-        upsert_user(user.id, str(user), 'neutral')
+        upsert_user(user.id, str(user), "neutral")
         increment_server_cap(sid)
         log(f"✅ DM sent to {user}")
 
-        # 🔥 NOTIFY OWNER OF NEW CONTACT
+        # 🔥 NOTIFY OWNER OF NEW CONTACT (unchanged)
         try:
             owner = await client.fetch_user(OWNER_ID)
             await owner.send(
