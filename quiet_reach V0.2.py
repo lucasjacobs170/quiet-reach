@@ -258,7 +258,6 @@ def setup_database():
         "user_id TEXT,"
         "username TEXT,"
         "is_dm INTEGER,"
-        "direction TEXT,"      -- 'in' or 'out'
         "message TEXT"
         ")"
     )
@@ -587,6 +586,42 @@ Write the best possible reply now (friendly, concise).
 def log(m):
     print(m)
     if ui_log:ui_log(m)
+
+def convo_log(
+    guild_id,
+    channel_id,
+    user_id,
+    username,
+    is_dm: int,
+    direction: str,
+    message: str
+):
+    """
+    Writes a conversation event to SQLite.
+    direction: 'in' (user -> bot) or 'out' (bot -> user)
+    is_dm: 1 for DM, 0 for server
+    """
+    try:
+        c = sqlite3.connect(DB_PATH)
+        k = c.cursor()
+        k.execute(
+            "INSERT INTO conversation_log(ts_utc,guild_id,channel_id,user_id,username,is_dm,direction,message) "
+            "VALUES(?,?,?,?,?,?,?,?)",
+            (
+                datetime.now(timezone.utc).isoformat(),
+                str(guild_id or ""),
+                str(channel_id or ""),
+                str(user_id or ""),
+                str(username or ""),
+                int(is_dm),
+                (direction or "")[:8],
+                (message or "")[:2000],
+            )
+        )
+        c.commit()
+        c.close()
+    except Exception as e:
+        log(f"⚠️ convo_log failed: {e}")
 
 # ============================================================
 # 📣 PROMO AUTOPOST (daily PT window -> stored UTC)
