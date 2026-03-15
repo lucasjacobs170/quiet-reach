@@ -987,6 +987,51 @@ async def promo_loop():
 
         await asyncio.sleep(30)
 
+async def dev_post_promo_now_all() -> tuple[int, int]:
+    """
+    Dev utility: Post a promo immediately for every enabled promo row.
+    Returns: (attempted, succeeded)
+    """
+    rows = promo_get_enabled_rows()
+    if not rows:
+        log("🧪 Dev PromoNow: no enabled promo rows.")
+        return (0, 0)
+
+    themes = [
+        "fresh drop",
+        "tease + mystery",
+        "outdoorsy flirty",
+        "late-night vibes",
+        "friendly invite",
+    ]
+
+    seeds = _load_promo_seeds()
+    image_list = load_shared_images()
+
+    attempted = 0
+    succeeded = 0
+
+    for (gid, cid, start_pt, end_pt, _next_iso) in rows:
+        attempted += 1
+
+        theme = random.choice(themes)
+        seed = random.choice(seeds) if seeds else ""
+        img = random.choice(image_list) if image_list else ""
+
+        caption = await generate_promo_caption(theme, seed)
+        ok = await _post_promo(int(gid), int(cid), caption, img)
+
+        # Always schedule next (avoid rapid retry spam)
+        promo_update_next(int(gid), int(start_pt), int(end_pt))
+
+        if ok:
+            succeeded += 1
+
+        await asyncio.sleep(1)  # gentle spacing
+
+    log(f"🧪 Dev PromoNow done: {succeeded}/{attempted} succeeded.")
+    return (attempted, succeeded)
+
 @client.event
 async def on_ready():
     global promo_task
