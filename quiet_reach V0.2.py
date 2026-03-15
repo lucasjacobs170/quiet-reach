@@ -588,6 +588,23 @@ def log(m):
     print(m)
     if ui_log:ui_log(m)
 
+# ============================================================
+# 📝 FILE LOGGING (conversation log to disk)
+# ============================================================
+
+DB_LOG_ENABLED = True
+FILE_LOG_ENABLED = True
+CONVO_LOG_FILE = "conversation_log.jsonl"  # saved in bot folder
+
+
+def convo_file_log(event: dict):
+    """Append one conversation event to a JSONL file."""
+    try:
+        with open(CONVO_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+    except Exception as e:
+        log(f"⚠️ convo_file_log failed: {e}")
+
 def convo_log(
     guild_id,
     channel_id,
@@ -602,6 +619,25 @@ def convo_log(
     direction: 'in' (user -> bot) or 'out' (bot -> user)
     is_dm: 1 for DM, 0 for server
     """
+     event = {
+        "ts_utc": datetime.now(timezone.utc).isoformat(),
+        "guild_id": str(guild_id or ""),
+        "channel_id": str(channel_id or ""),
+        "user_id": str(user_id or ""),
+        "username": str(username or ""),
+        "is_dm": int(is_dm),
+        "direction": (direction or "")[:8],
+        "message": (message or "")[:2000],
+    }
+
+    # 1) File log (easy to view)
+    if FILE_LOG_ENABLED:
+        convo_file_log(event)
+
+    # 2) DB log (optional, keep if you still want SQLite)
+    if not DB_LOG_ENABLED:
+        return
+
     try:
         c = sqlite3.connect(DB_PATH, timeout=30)
         k = c.cursor()
@@ -609,20 +645,20 @@ def convo_log(
             "INSERT INTO conversation_log(ts_utc,guild_id,channel_id,user_id,username,is_dm,direction,message) "
             "VALUES(?,?,?,?,?,?,?,?)",
             (
-                datetime.now(timezone.utc).isoformat(),
-                str(guild_id or ""),
-                str(channel_id or ""),
-                str(user_id or ""),
-                str(username or ""),
-                int(is_dm),
-                (direction or "")[:8],
-                (message or "")[:2000],
+                event["ts_utc"],
+                event["guild_id"],
+                event["channel_id"],
+                event["user_id"],
+                event["username"],
+                event["is_dm"],
+                event["direction"],
+                event["message"],
             )
         )
         c.commit()
         c.close()
     except Exception as e:
-        log(f"⚠️ convo_log failed: {e}")
+        log(f"⚠️ convo_log (db) failed: {e}")
 
 
 def log_inbound_message(message):
