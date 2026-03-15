@@ -673,15 +673,36 @@ async def send_logged(channel, guild_id, content: str = "", file=None, is_dm: in
     return await channel.send(content=content)
 
 
-async def reply_logged(message, content: str, mention_author: bool = False):
-    """Reply in-channel and log as outbound."""
-    await send_logged(
-        channel=message.channel,
-        guild_id=(message.guild.id if message.guild else ""),
-        content=content,
-        file=None,
-        is_dm=0
-    )
+async def reply_logged(message, content: str, mention_author: bool = False, file=None):
+    """Reply and log as outbound. (Does NOT call send_logged to avoid double-send.)"""
+    try:
+        is_dm = int(isinstance(message.channel, discord.DMChannel))
+        gid = "" if is_dm else (message.guild.id if message.guild else "")
+
+        msg = (content or "")
+        if file is not None:
+            try:
+                fn = getattr(file, "filename", "") or ""
+                if fn:
+                    msg = (msg + f"\n[file:{fn}]").strip()
+            except Exception:
+                pass
+
+        convo_log(
+            guild_id=gid,
+            channel_id=message.channel.id,
+            user_id=client.user.id if client.user else "",
+            username=str(client.user) if client.user else "bot",
+            is_dm=is_dm,
+            direction="out",
+            message=msg,
+        )
+    except Exception as e:
+        log(f"⚠️ reply_logged convo_log failed: {e}")
+
+    # Actually reply
+    if file is not None:
+        return await message.reply(content, mention_author=mention_author, file=file)
     return await message.reply(content, mention_author=mention_author)
 
 # ============================================================
@@ -926,13 +947,13 @@ async def handle_dm_reply(message):
     # Opt-out
     if content_lower in ["stop", "remove", "opt out", "optout"]:
         upsert_user(user_id, username, "neutral", opt_out=1)
-        await message.channel.send(random.choice(OPT_OUT_RESPONSES))
+        await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
         log(f"🛑 {username} opted out")
         return
 
     # If they just want the link, give it (and stop)
     if content_lower in ["link", "server", "invite"]:
-        await message.channel.send(f"Here you go: {SERVER_INVITE}")
+        await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
         return
 
     # If they are asking for info about Lucas, answer with AI (KB-grounded)
@@ -941,7 +962,7 @@ async def handle_dm_reply(message):
         if not reply:
             reply = "I don’t have that detail yet. If you want, ask me a more specific question about Lucas."
         reply += "\n\nIf you want to join the server, say `link`."
-        await message.channel.send(reply)
+        await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
         return
 
     # Otherwise try classification for YES/NO
@@ -949,13 +970,13 @@ async def handle_dm_reply(message):
 
     if ai_result == "yes":
         upsert_user(user_id, username, "warm")
-        await message.channel.send(random.choice(YES_RESPONSES))
+        await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
         log(f"🔥 {username} added to WARM list")
         return
 
     if ai_result == "no":
         upsert_user(user_id, username, "cold")
-        await message.channel.send(random.choice(NO_RESPONSES))
+        await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
         log(f"❄️ {username} added to COLD list")
         return
 
@@ -964,7 +985,7 @@ async def handle_dm_reply(message):
     if not reply:
         reply = "Got you. What do you want to know about Lucas?"
     reply += "\n\nIf you want to join the server, say `link`."
-    await message.channel.send(reply)
+    await send_logged(message.channel, guild_id="", content=SOMETHING, is_dm=1)
     log(f"🤖 AI replied to {username}")
 # --- Anti-spam pacing (channel-level) ---
 CHANNEL_REPLY_COOLDOWN_SECONDS = 90  # 1.5 minutes per channel
@@ -1134,7 +1155,7 @@ async def build_public_response(user_text: str, touches: int) -> str:
             f" (Reply 'yes' and I’ll DM you.)"
         )
 
-    @client.event
+@client.event
 async def on_message(message):
     if message.author == client.user:
         return
@@ -1149,9 +1170,6 @@ async def on_message(message):
     raw = (message.content or "").strip().lower()
 
     # (optional comment)
-    # In-server opt-in / opt-out commands
-
-    # PASTE THE NSFW TRY/EXCEPT HERE
 
     # In-server opt-in / opt-out commands
 
@@ -1164,8 +1182,8 @@ async def on_message(message):
                 await message.reply("Perfect — I’ll DM you a preview.", mention_author=False)
                 await send_outreach_dm(message.author, message.guild.id)
                 return
-    except Exception:
-        pass
+    except Exception as e:
+        log(f"⚠️ NSFW opt-in check failed: {e}")
 
     # ==========================
     # 📣 PROMO OWNER COMMANDS
