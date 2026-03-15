@@ -46,7 +46,11 @@ def load_shared_images() -> list[str]:
         return []
 
 LUCAS_KB = load_kb()
-ABOUT_LUCAS = f"""
+def rebuild_invite_texts():
+    """Rebuild any strings that embed SERVER_INVITE."""
+    global ABOUT_LUCAS, YES_RESPONSES
+
+    ABOUT_LUCAS = f"""
 You are Quiet Reach, Lucas Jacobs's assistant (not Lucas).
 
 Identity rules:
@@ -63,7 +67,21 @@ Safety/accuracy rules:
 - Do NOT invent links.
 - If the user asks for a link, ONLY give this Discord invite: {SERVER_INVITE}
 - If you don't know, say so and offer the Discord invite.
-"""
+""".strip()
+
+    YES_RESPONSES = [
+        f"Yesss okay! 🎉 Here's an invite to Lucas's server, come hang: {SERVER_INVITE}",
+        f"Ugh okay let's gooo 🙌 — drop into the server and we can chat more: {SERVER_INVITE}",
+        f"Ahh okay I love that for you 😏 — here's the link, come through: {SERVER_INVITE}",
+        f"Yay!! 🎉 Okay here's the server link — it's chill in there I promise 😊: {SERVER_INVITE}",
+        f"Okay yes! 👏 Come hang with us — here's the invite: {SERVER_INVITE}",
+        f"Let's gooo! 🔥 Here's where the fun is: {SERVER_INVITE}",
+        f"Omg hi yes! 😊 Jump in here and we can chat more: {SERVER_INVITE}",
+        f"Ayyy welcome! 🎊 Here's the link — see you in there: {SERVER_INVITE}",
+    ]
+
+
+rebuild_invite_texts()
 DM_OPENERS = [
     "Hey, I represent a cammer and content creator named Lucas Jacobs — are you interested in seeing more? 😏",
     "Hi there! I'm reaching out on behalf of Lucas Jacobs, a content creator — would you be curious to check out what he's offering?",
@@ -78,7 +96,6 @@ DM_OPENERS = [
     "Hey! I work with Lucas Jacobs, a content creator — he's got exclusive cam content that might interest you. Worth a look?",
     "Hi there, I represent Lucas Jacobs, a creator with exclusive content — are you interested in checking out what he offers?"
 ]
-YES_RESPONSES=[f"Yesss okay! 🎉 Here's an invite to Lucas's server, come hang: {SERVER_INVITE}",f"Ugh okay let's gooo 🙌 — drop into the server and we can chat more: {SERVER_INVITE}",f"Ahh okay I love that for you 😏 — here's the link, come through: {SERVER_INVITE}",f"Yay!! 🎉 Okay here's the server link — it's chill in there I promise 😊: {SERVER_INVITE}",f"Okay yes! 👏 Come hang with us — here's the invite: {SERVER_INVITE}",f"Let's gooo! 🔥 Here's where the fun is: {SERVER_INVITE}",f"Omg hi yes! 😊 Jump in here and we can chat more: {SERVER_INVITE}",f"Ayyy welcome! 🎊 Here's the link — see you in there: {SERVER_INVITE}"]
 NO_RESPONSES=["Totally cool, no worries at all! 👌","All good! Sorry to bother 😊 have a great day!","No worries at all! Take care 💙","Totally understand! Have a good one 👋","All good, no hard feelings! 😊","Haha fair enough! Sorry to slide in 😅 take care!","No worries! Hope you have an amazing day 🌟","Understood! Sorry for the interruption 😊💙"]
 OPT_OUT_RESPONSES=["Done! You've been opted out — I won't message you again. Take care! 💙","Of course! Removing you now — sorry for the bother 😊 take care!","Got it! You won't hear from me again. Have a great one 💙","Absolutely! All done — sorry if I bothered you 😊 take care!"]
 
@@ -107,8 +124,14 @@ def save_config(cfg: dict):
 
 def apply_config(cfg: dict):
     """Apply config values into globals used by the bot."""
-    global BOT_TOKEN
-    BOT_TOKEN = (cfg.get("BOT_TOKEN") or "").strip()
+    global BOT_TOKEN, SERVER_INVITE
+
+    if "BOT_TOKEN" in cfg:
+        BOT_TOKEN = (cfg.get("BOT_TOKEN") or "").strip()
+
+    if "SERVER_INVITE" in cfg and cfg.get("SERVER_INVITE"):
+        SERVER_INVITE = (cfg.get("SERVER_INVITE") or "").strip()
+        rebuild_invite_texts()
 
 def login_dialog(root):
     """
@@ -146,9 +169,10 @@ def login_dialog(root):
     btns.pack(padx=16, pady=(0, 14), fill="x")
 
     def on_continue():
-        new_cfg = {"BOT_TOKEN": token_var.get().strip()}
-        save_config(new_cfg)
-        apply_config(new_cfg)
+        merged = cfg or {}
+        merged["BOT_TOKEN"] = token_var.get().strip()
+        save_config(merged)
+        apply_config(merged)
         win.destroy()
 
     def on_cancel():
@@ -1834,6 +1858,7 @@ class QuietReachUI:
         make_button(tools, "✏️  Edit Keywords",    self.edit_keywords,   t["accent2"])
         make_button(tools, "📊  Stats",            self.show_stats,      t["accent2"])
         make_button(tools, "🖼️  Manage Images",    self.manage_images,   t["accent2"])
+        make_button(tools, "🔗  Set Server Invite", self.set_server_invite, t["accent2"])
 
         reset_tools = make_collapsible_section(left_card, "🔄 Reset Tools", t["danger"], open_by_default=False)
         make_button(reset_tools, "🔄  Reset Warm",        self.reset_warm,      t["danger"])
@@ -2128,6 +2153,70 @@ class QuietReachUI:
             font=('Helvetica', 10, 'bold'),
             relief='flat', padx=15, pady=6).pack(pady=15)
 
+    def set_server_invite(self):
+    global SERVER_INVITE
+
+    win = tk.Toplevel(self.root)
+    win.title("🔗 Set Discord Invite")
+    win.geometry("520x200")
+    win.configure(bg="#1a1a2e")
+    win.resizable(False, False)
+
+    tk.Label(
+        win,
+        text="Discord Invite Link",
+        font=("Helvetica", 12, "bold"),
+        bg="#1a1a2e",
+        fg="white",
+    ).pack(pady=(14, 6))
+
+    tk.Label(
+        win,
+        text="Example: https://discord.gg/xxxx  or  https://discord.com/invite/xxxx",
+        font=("Helvetica", 9),
+        bg="#1a1a2e",
+        fg="#aaaaaa",
+    ).pack(pady=(0, 8))
+
+    invite_var = tk.StringVar(value=SERVER_INVITE)
+    ent = tk.Entry(win, textvariable=invite_var, width=60)
+    ent.pack(padx=14, pady=(0, 10))
+    ent.focus_set()
+
+    def save_invite():
+        global SERVER_INVITE
+        new_invite = (invite_var.get() or "").strip()
+
+        if not (new_invite.startswith("https://discord.gg/") or new_invite.startswith("https://discord.com/invite/")):
+            messagebox.showerror(
+                "Invalid Invite",
+                "Invite must start with https://discord.gg/ or https://discord.com/invite/"
+            )
+            return
+
+        SERVER_INVITE = new_invite
+        rebuild_invite_texts()
+
+        cfg = load_config() or {}
+        cfg["SERVER_INVITE"] = new_invite
+        save_config(cfg)
+
+        self.append_log(f"🔗 SERVER_INVITE updated: {new_invite}")
+        win.destroy()
+
+    btn_row = tk.Frame(win, bg="#1a1a2e")
+    btn_row.pack(pady=10)
+
+    tk.Button(
+        btn_row, text="Save", command=save_invite,
+        bg="#27ae60", fg="white", relief="flat", padx=14, pady=6
+    ).pack(side="left", padx=6)
+
+    tk.Button(
+        btn_row, text="Cancel", command=win.destroy,
+        bg="#444455", fg="white", relief="flat", padx=14, pady=6
+    ).pack(side="left", padx=6)
+    
     def manage_images(self):
         """Open a window to manage outreach images."""
         import os
