@@ -619,7 +619,7 @@ def convo_log(
     direction: 'in' (user -> bot) or 'out' (bot -> user)
     is_dm: 1 for DM, 0 for server
     """
-     event = {
+    event = {
         "ts_utc": datetime.now(timezone.utc).isoformat(),
         "guild_id": str(guild_id or ""),
         "channel_id": str(channel_id or ""),
