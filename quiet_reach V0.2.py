@@ -2154,188 +2154,191 @@ class QuietReachUI:
             relief='flat', padx=15, pady=6).pack(pady=15)
 
     def set_server_invite(self):
-    global SERVER_INVITE
-
-    win = tk.Toplevel(self.root)
-    win.title("🔗 Set Discord Invite")
-    win.geometry("520x200")
-    win.configure(bg="#1a1a2e")
-    win.resizable(False, False)
-
-    tk.Label(
-        win,
-        text="Discord Invite Link",
-        font=("Helvetica", 12, "bold"),
-        bg="#1a1a2e",
-        fg="white",
-    ).pack(pady=(14, 6))
-
-    tk.Label(
-        win,
-        text="Example: https://discord.gg/xxxx  or  https://discord.com/invite/xxxx",
-        font=("Helvetica", 9),
-        bg="#1a1a2e",
-        fg="#aaaaaa",
-    ).pack(pady=(0, 8))
-
-    invite_var = tk.StringVar(value=SERVER_INVITE)
-    ent = tk.Entry(win, textvariable=invite_var, width=60)
-    ent.pack(padx=14, pady=(0, 10))
-    ent.focus_set()
-
-    def save_invite():
         global SERVER_INVITE
-        new_invite = (invite_var.get() or "").strip()
 
-        if not (
-            new_invite.startswith("https://discord.gg/")
-            or new_invite.startswith("https://discord.com/invite/")
-        ):
-            messagebox.showerror(
-                "Invalid Invite",
-                "Invite must start with https://discord.gg/ or https://discord.com/invite/",
-            )
-            return
+        win = tk.Toplevel(self.root)
+        win.title("🔗 Set Discord Invite")
+        win.geometry("520x200")
+        win.configure(bg="#1a1a2e")
+        win.resizable(False, False)
 
-        SERVER_INVITE = new_invite
-        rebuild_invite_texts()
+        tk.Label(
+            win,
+            text="Discord Invite Link",
+            font=("Helvetica", 12, "bold"),
+            bg="#1a1a2e",
+            fg="white",
+        ).pack(pady=(14, 6))
 
-        cfg = load_config() or {}
-        cfg["SERVER_INVITE"] = new_invite
-        save_config(cfg)
+        tk.Label(
+            win,
+            text="Example: https://discord.gg/xxxx  or  https://discord.com/invite/xxxx",
+            font=("Helvetica", 9),
+            bg="#1a1a2e",
+            fg="#aaaaaa",
+        ).pack(pady=(0, 8))
 
-        self.append_log(f"🔗 SERVER_INVITE updated: {new_invite}")
-        win.destroy()
+        invite_var = tk.StringVar(value=SERVER_INVITE)
+        ent = tk.Entry(win, textvariable=invite_var, width=60)
+        ent.pack(padx=14, pady=(0, 10))
+        ent.focus_set()
 
-    btn_row = tk.Frame(win, bg="#1a1a2e")
-    btn_row.pack(pady=10)
+        def save_invite():
+            global SERVER_INVITE
+            new_invite = (invite_var.get() or "").strip()
 
-    tk.Button(
-        btn_row,
-        text="Save",
-        command=save_invite,
-        bg="#27ae60",
-        fg="white",
-        relief="flat",
-        padx=14,
-        pady=6,
-    ).pack(side="left", padx=6)
+            if not (
+                new_invite.startswith("https://discord.gg/")
+                or new_invite.startswith("https://discord.com/invite/")
+            ):
+                messagebox.showerror(
+                    "Invalid Invite",
+                    "Invite must start with https://discord.gg/ or https://discord.com/invite/",
+                )
+                return
 
-    tk.Button(
-        btn_row,
-        text="Cancel",
-        command=win.destroy,
-        bg="#444455",
-        fg="white",
-        relief="flat",
-        padx=14,
-        pady=6,
-    ).pack(side="left", padx=6)
+            SERVER_INVITE = new_invite
+            rebuild_invite_texts()
 
+            cfg = load_config() or {}
+            cfg["SERVER_INVITE"] = new_invite
+            save_config(cfg)
 
-def manage_images(self):
-    """Open a window to manage outreach images."""
-    import os
-    from tkinter import filedialog
+            self.append_log(f"🔗 SERVER_INVITE updated: {new_invite}")
+            win.destroy()
 
-    win = tk.Toplevel(self.root)
-    win.title("🖼️ Manage Outreach Images")
-    win.geometry("500x400")
-    win.configure(bg="#1a1a2e")
+        btn_row = tk.Frame(win, bg="#1a1a2e")
+        btn_row.pack(pady=10)
 
-    tk.Label(
-        win, text="🖼️ Outreach Images",
-        font=("Helvetica", 14, "bold"),
-        bg="#1a1a2e", fg="white"
-    ).pack(pady=10)
+        tk.Button(
+            btn_row,
+            text="Save",
+            command=save_invite,
+            bg="#27ae60",
+            fg="white",
+            relief="flat",
+            padx=14,
+            pady=6,
+        ).pack(side="left", padx=6)
 
-    tk.Label(
-        win,
-        text="These images rotate randomly with each outreach DM",
-        font=("Helvetica", 9),
-        bg="#1a1a2e", fg="#aaaaaa"
-    ).pack()
+        tk.Button(
+            btn_row,
+            text="Cancel",
+            command=win.destroy,
+            bg="#444455",
+            fg="white",
+            relief="flat",
+            padx=14,
+            pady=6,
+        ).pack(side="left", padx=6)
 
-    frame = tk.Frame(win, bg="#1a1a2e")
-    frame.pack(fill="both", expand=True, padx=15, pady=10)
+    def manage_images(self):
+        """Open a window to manage outreach images."""
+        import os
+        import shutil
+        from tkinter import filedialog
 
-    scrollbar = tk.Scrollbar(frame)
-    scrollbar.pack(side="right", fill="y")
+        win = tk.Toplevel(self.root)
+        win.title("🖼️ Manage Outreach Images")
+        win.geometry("500x400")
+        win.configure(bg="#1a1a2e")
 
-    listbox = tk.Listbox(
-        frame, bg="#0d0d1a", fg="white",
-        font=("Courier", 10), relief="flat",
-        yscrollcommand=scrollbar.set
-    )
-    listbox.pack(fill="both", expand=True)
-    scrollbar.config(command=listbox.yview)
+        tk.Label(
+            win,
+            text="🖼️ Outreach Images",
+            font=("Helvetica", 14, "bold"),
+            bg="#1a1a2e",
+            fg="white"
+        ).pack(pady=10)
 
-    images_file = "images.txt"
+        tk.Label(
+            win,
+            text="These images rotate randomly with each outreach DM",
+            font=("Helvetica", 9),
+            bg="#1a1a2e",
+            fg="#aaaaaa"
+        ).pack()
 
-    def load_images():
-        listbox.delete(0, "end")
-        if os.path.exists(images_file):
-            with open(images_file, "r", encoding="utf-8") as f:
-                lines = [l.strip() for l in f.readlines() if l.strip()]
-            if lines:
-                for line in lines:
-                    listbox.insert("end", f"  {line}")
+        frame = tk.Frame(win, bg="#1a1a2e")
+        frame.pack(fill="both", expand=True, padx=15, pady=10)
+
+        scrollbar = tk.Scrollbar(frame)
+        scrollbar.pack(side="right", fill="y")
+
+        listbox = tk.Listbox(
+            frame, bg="#0d0d1a", fg="white",
+            font=("Courier", 10), relief="flat",
+            yscrollcommand=scrollbar.set
+        )
+        listbox.pack(fill="both", expand=True)
+        scrollbar.config(command=listbox.yview)
+
+        images_file = "images.txt"
+
+        def load_images():
+            listbox.delete(0, "end")
+            if os.path.exists(images_file):
+                with open(images_file, "r", encoding="utf-8") as f:
+                    lines = [l.strip() for l in f.readlines() if l.strip()]
+                if lines:
+                    for line in lines:
+                        listbox.insert("end", f"  {line}")
+                else:
+                    listbox.insert("end", "  No images added yet!")
             else:
                 listbox.insert("end", "  No images added yet!")
-        else:
-            listbox.insert("end", "  No images added yet!")
 
-    load_images()
+        load_images()
 
-    def add_image():
-        filepath = filedialog.askopenfilename(
-            title="Select an image",
-            filetypes=[
-                ("Image files", "*.jpg *.jpeg *.png *.gif *.webp"),
-                ("All files", "*.*"),
-            ],
-        )
-        if filepath:
-            import shutil
-            filename = os.path.basename(filepath)
-            dest = os.path.join(os.getcwd(), filename)
-            shutil.copy2(filepath, dest)
+        def add_image():
+            filepath = filedialog.askopenfilename(
+                title="Select an image",
+                filetypes=[
+                    ("Image files", "*.jpg *.jpeg *.png *.gif *.webp"),
+                    ("All files", "*.*"),
+                ],
+            )
+            if filepath:
+                filename = os.path.basename(filepath)
+                dest = os.path.join(os.getcwd(), filename)
+                shutil.copy2(filepath, dest)
 
-            with open(images_file, "a", encoding="utf-8") as f:
-                f.write(filename + "\n")
+                with open(images_file, "a", encoding="utf-8") as f:
+                    f.write(filename + "\n")
 
-            load_images()
-            self.append_log(f"🖼️ Added image: {filename}")
+                load_images()
+                self.append_log(f"🖼️ Added image: {filename}")
 
-    def remove_image():
-        selected = listbox.curselection()
-        if selected:
+        def remove_image():
+            selected = listbox.curselection()
+            if not selected:
+                return
+
             image_name = listbox.get(selected[0]).strip()
-
             if os.path.exists(images_file):
                 with open(images_file, "r", encoding="utf-8") as f:
                     lines = [l.strip() for l in f.readlines() if l.strip()]
                 lines = [l for l in lines if l != image_name]
                 with open(images_file, "w", encoding="utf-8") as f:
-                    f.write("\n".join(lines))
+                    f.write("\n".join(lines) + ("\n" if lines else ""))
 
             load_images()
             self.append_log(f"🗑️ Removed image: {image_name}")
 
-    btn_row = tk.Frame(win, bg="#1a1a2e")
-    btn_row.pack(pady=10)
+        btn_row = tk.Frame(win, bg="#1a1a2e")
+        btn_row.pack(pady=10)
 
-    tk.Button(
-        btn_row, text="➕ Add Image", command=add_image,
-        bg="#27ae60", fg="white", font=("Helvetica", 10, "bold"),
-        relief="flat", cursor="hand2", padx=12, pady=6
-    ).pack(side="left", padx=5)
+        tk.Button(
+            btn_row, text="➕ Add Image", command=add_image,
+            bg="#27ae60", fg="white", font=("Helvetica", 10, "bold"),
+            relief="flat", cursor="hand2", padx=12, pady=6
+        ).pack(side="left", padx=5)
 
-    tk.Button(
-        btn_row, text="🗑️ Remove Selected", command=remove_image,
-        bg="#e74c3c", fg="white", font=("Helvetica", 10, "bold"),
-        relief="flat", cursor="hand2", padx=12, pady=6
-    ).pack(side="left", padx=5)
+        tk.Button(
+            btn_row, text="🗑️ Remove Selected", command=remove_image,
+            bg="#e74c3c", fg="white", font=("Helvetica", 10, "bold"),
+            relief="flat", cursor="hand2", padx=12, pady=6
+        ).pack(side="left", padx=5)
 
     def reset_warm(self):
         if messagebox.askyesno("Reset", "Wipe Warm List?"):
