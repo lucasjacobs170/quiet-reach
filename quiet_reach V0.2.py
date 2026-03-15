@@ -597,8 +597,36 @@ def convo_log(
     direction: str,
     message: str
 ):
-    def log_inbound_message(message):
-        """Log inbound server/DM message."""
+    """
+    Writes a conversation event to SQLite.
+    direction: 'in' (user -> bot) or 'out' (bot -> user)
+    is_dm: 1 for DM, 0 for server
+    """
+    try:
+        c = sqlite3.connect(DB_PATH, timeout=30)
+        k = c.cursor()
+        k.execute(
+            "INSERT INTO conversation_log(ts_utc,guild_id,channel_id,user_id,username,is_dm,direction,message) "
+            "VALUES(?,?,?,?,?,?,?,?)",
+            (
+                datetime.now(timezone.utc).isoformat(),
+                str(guild_id or ""),
+                str(channel_id or ""),
+                str(user_id or ""),
+                str(username or ""),
+                int(is_dm),
+                (direction or "")[:8],
+                (message or "")[:2000],
+            )
+        )
+        c.commit()
+        c.close()
+    except Exception as e:
+        log(f"⚠️ convo_log failed: {e}")
+
+
+def log_inbound_message(message):
+    """Log inbound server/DM message."""
     try:
         is_dm = int(isinstance(message.channel, discord.DMChannel))
         gid = "" if is_dm else (message.guild.id if message.guild else "")
@@ -614,10 +642,10 @@ def convo_log(
     except Exception as e:
         log(f"⚠️ inbound convo_log failed: {e}")
 
+
 async def send_logged(channel, guild_id, content: str = "", file=None, is_dm: int = 0):
     """Send a message and log it as outbound."""
     try:
-        # Log text + file name (optional) so you know what was sent
         msg = (content or "")
         if file is not None:
             try:
@@ -644,9 +672,9 @@ async def send_logged(channel, guild_id, content: str = "", file=None, is_dm: in
         return await channel.send(content=content, file=file)
     return await channel.send(content=content)
 
+
 async def reply_logged(message, content: str, mention_author: bool = False):
     """Reply in-channel and log as outbound."""
-    # reply() sends to the same channel; log as server outbound
     await send_logged(
         channel=message.channel,
         guild_id=(message.guild.id if message.guild else ""),
