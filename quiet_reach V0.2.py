@@ -81,6 +81,60 @@ Safety/accuracy rules:
     ]
 
 
+COMMANDS_HELP_TEXT = """
+Quiet Reach — Commands Reference
+
+OWNER / PROMO
+- !promosetup [start end]
+  Configure promo channel (current channel) + set PT window hours + enable promos.
+  Example: !promosetup 18 22
+
+- !setpromochannel
+  Set promo channel to the current channel (also schedules a default window).
+
+- !promowindow <start end>
+  Set the promo window in PT hours (0–23). Schedules next post randomly in-window.
+
+- !promoon
+  Enable promos for this server.
+
+- !promooff
+  Disable promos for this server.
+
+- !promonow
+  Post a promo immediately (then schedules the next run).
+
+- !promostatus
+  Show promo configuration + next/last post time.
+
+OPT-IN / DM CONTROL (server chat)
+- !optin / !opt-in / !dmme / !dm me
+  Opt the user into DMs and immediately DM outreach.
+
+- !optout / !opt-out / !nodm / !no dm
+  Opt the user out of DMs.
+
+DM COMMANDS (DMs to the bot)
+- stop / remove / opt out / optout
+  Opt out of future contact.
+
+- link / server / invite
+  Return the current SERVER_INVITE.
+
+GENERAL BEHAVIOR (automatic)
+- Keyword trigger engagement:
+  If KEYWORD_MODE_ENABLED is True and a trigger keyword is detected, the bot replies publicly
+  and offers DM opt-in; opted-in users may be DM’d (cap + cooldown rules apply).
+
+DEV UI (Tkinter)
+- Tools → Dev Commands
+  Includes “Post Promo Now (all enabled)”, stats, toggles for keyword mode + logging.
+
+Notes:
+- Some actions are OWNER-only by OWNER_ID.
+- Public replies are visible; “invisible” interaction requires slash commands + ephemeral (not implemented).
+""".strip()
+
 rebuild_invite_texts()
 DM_OPENERS = [
     "Hey, I represent a cammer and content creator named Lucas Jacobs — are you interested in seeing more? 😏",
@@ -1297,6 +1351,16 @@ async def on_message(message):
 
     raw = (message.content or "").strip().lower()
 
+    if raw in ["!helpqr", "!qrhelp", "!commands"]:
+        if message.author.id != OWNER_ID:
+            return
+        # Discord message limit is ~2000 chars, so send a shortened version
+        text = COMMANDS_HELP_TEXT
+        if len(text) > 1900:
+            text = text[:1900] + "\n…(truncated)"
+        await message.reply(f"```{text}```", mention_author=False)
+        return
+
     # (optional comment)
 
     # In-server opt-in / opt-out commands
@@ -1612,6 +1676,32 @@ async def send_outreach_dm(user, sid):
 
 class QuietReachUI:
 
+    def show_commands_help(self):
+        win = tk.Toplevel(self.root)
+        win.title("📖 Commands / Help")
+        win.geometry("760x520")
+        win.configure(bg="#1a1a2e")
+
+        tk.Label(
+            win,
+            text="📖 Commands / Help",
+            font=("Helvetica", 14, "bold"),
+            bg="#1a1a2e",
+            fg="white",
+        ).pack(pady=(12, 8))
+
+        box = scrolledtext.ScrolledText(
+            win,
+            bg="#0d0d1a",
+            fg="white",
+            font=("Courier", 10),
+            relief="flat",
+            wrap="word",
+        )
+        box.pack(fill="both", expand=True, padx=12, pady=12)
+        box.insert("1.0", COMMANDS_HELP_TEXT)
+        box.config(state="disabled")
+
     # ---- Nature theme palette ----
     THEME = {
         "bg":      "#0b1f14",  # deep forest
@@ -1905,6 +1995,7 @@ class QuietReachUI:
         make_button(tools, "🖼️  Manage Images",    self.manage_images,   t["accent2"])
         make_button(tools, "🔗  Set Server Invite", self.set_server_invite, t["accent2"])
         make_button(tools, "🧪  Dev Commands", self.open_dev_commands, t["accent2"])
+        make_button(tools, "📖  Commands / Help", self.show_commands_help, t["accent2"])
 
         reset_tools = make_collapsible_section(left_card, "🔄 Reset Tools", t["danger"], open_by_default=False)
         make_button(reset_tools, "🔄  Reset Warm",        self.reset_warm,      t["danger"])
