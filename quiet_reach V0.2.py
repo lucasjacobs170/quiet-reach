@@ -1160,7 +1160,6 @@ async def build_public_response(user_text: str, touches: int) -> str:
         )
 @client.event
 async def on_message(message):
-    # Ignore self
     if message.author == client.user:
         return
 
@@ -1173,12 +1172,9 @@ async def on_message(message):
         await handle_dm_reply(message)
         return
 
-    # ... rest of your server logic unchanged ...
+    raw = (message.content or "").strip().lower()
 
-    # DMs: handle separately (no guild)
-    if isinstance(message.channel, discord.DMChannel):
-        await handle_dm_reply(message)
-        return
+    # ... rest of your server logic unchanged ...
 
     # In-server opt-in / opt-out commands
     raw = (message.content or "").strip().lower()
