@@ -597,6 +597,64 @@ def convo_log(
     direction: str,
     message: str
 ):
+    def log_inbound_message(message):
+    """Log inbound server/DM message."""
+    try:
+        is_dm = int(isinstance(message.channel, discord.DMChannel))
+        gid = "" if is_dm else (message.guild.id if message.guild else "")
+        convo_log(
+            guild_id=gid,
+            channel_id=message.channel.id,
+            user_id=message.author.id,
+            username=str(message.author),
+            is_dm=is_dm,
+            direction="in",
+            message=(message.content or "")
+        )
+    except Exception as e:
+        log(f"⚠️ inbound convo_log failed: {e}")
+
+async def send_logged(channel, guild_id, content: str = "", file=None, is_dm: int = 0):
+    """Send a message and log it as outbound."""
+    try:
+        # Log text + file name (optional) so you know what was sent
+        msg = (content or "")
+        if file is not None:
+            try:
+                fn = getattr(file, "filename", "") or ""
+                if fn:
+                    msg = (msg + f"\n[file:{fn}]").strip()
+            except Exception:
+                pass
+
+        convo_log(
+            guild_id=guild_id or "",
+            channel_id=channel.id,
+            user_id=client.user.id if client.user else "",
+            username=str(client.user) if client.user else "bot",
+            is_dm=int(is_dm),
+            direction="out",
+            message=msg
+        )
+    except Exception as e:
+        log(f"⚠️ outbound convo_log failed: {e}")
+
+    # Actually send
+    if file is not None:
+        return await channel.send(content=content, file=file)
+    return await channel.send(content=content)
+
+async def reply_logged(message, content: str, mention_author: bool = False):
+    """Reply in-channel and log as outbound."""
+    # reply() sends to the same channel; log as server outbound
+    await send_logged(
+        channel=message.channel,
+        guild_id=(message.guild.id if message.guild else ""),
+        content=content,
+        file=None,
+        is_dm=0
+    )
+    return await message.reply(content, mention_author=mention_author)
     """
     Writes a conversation event to SQLite.
     direction: 'in' (user -> bot) or 'out' (bot -> user)
