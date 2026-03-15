@@ -1859,6 +1859,7 @@ class QuietReachUI:
         make_button(tools, "📊  Stats",            self.show_stats,      t["accent2"])
         make_button(tools, "🖼️  Manage Images",    self.manage_images,   t["accent2"])
         make_button(tools, "🔗  Set Server Invite", self.set_server_invite, t["accent2"])
+        make_button(tools, "🧪  Dev Commands", self.open_dev_commands, t["accent2"])
 
         reset_tools = make_collapsible_section(left_card, "🔄 Reset Tools", t["danger"], open_by_default=False)
         make_button(reset_tools, "🔄  Reset Warm",        self.reset_warm,      t["danger"])
@@ -2120,6 +2121,114 @@ class QuietReachUI:
         nb.add(t1, text='🔍 Trigger Words')
         nb.add(t2, text='✅ Yes Words')
         nb.add(t3, text='❌ No Words')
+
+    def _run_coro_on_bot_loop(self, coro, label: str = "dev task"):
+        """
+        Safely run an async coroutine on the Discord bot's event loop thread.
+        """
+        if not self.bot_running or not self.loop:
+            self.append_log(f"⚠️ Can't run {label}: bot not running.")
+            return
+
+        try:
+            fut = asyncio.run_coroutine_threadsafe(coro, self.loop)
+
+            def _done_callback(_f):
+                try:
+                    _f.result()
+                except Exception as e:
+                    self.append_log(f"❌ {label} failed: {e}")
+
+            fut.add_done_callback(_done_callback)
+            self.append_log(f"🧪 Started: {label}")
+        except Exception as e:
+            self.append_log(f"❌ Couldn't start {label}: {e}")
+
+    def _toggle_flag(self, name: str):
+        """
+        Toggle simple global booleans like KEYWORD_MODE_ENABLED, FILE_LOG_ENABLED, DB_LOG_ENABLED.
+        """
+        try:
+            if name not in globals():
+                self.append_log(f"⚠️ Unknown flag: {name}")
+                return
+            cur = globals()[name]
+            if not isinstance(cur, bool):
+                self.append_log(f"⚠️ {name} is not boolean (is {type(cur)})")
+                return
+            globals()[name] = not cur
+            self.append_log(f"🧪 {name} -> {globals()[name]}")
+        except Exception as e:
+            self.append_log(f"❌ Toggle failed: {e}")
+
+    def open_dev_commands(self):
+        """
+        Opens a small dev panel with one-click utilities.
+        """
+        win = tk.Toplevel(self.root)
+        win.title("🧪 Dev Commands")
+        win.geometry("420x360")
+        win.configure(bg="#1a1a2e")
+        win.resizable(False, False)
+
+        tk.Label(
+            win,
+            text="🧪 Dev Commands",
+            font=("Helvetica", 14, "bold"),
+            bg="#1a1a2e",
+            fg="white",
+        ).pack(pady=(12, 8))
+
+        tk.Label(
+            win,
+            text="One-click actions (some require bot online).",
+            font=("Helvetica", 9),
+            bg="#1a1a2e",
+            fg="#aaaaaa",
+        ).pack(pady=(0, 10))
+
+        btn_frame = tk.Frame(win, bg="#1a1a2e")
+        btn_frame.pack(fill="both", expand=True, padx=14, pady=10)
+
+        def mk(text, cmd, color):
+            tk.Button(
+                btn_frame,
+                text=text,
+                command=cmd,
+                bg=color,
+                fg="white",
+                relief="flat",
+                padx=12,
+                pady=8,
+                cursor="hand2",
+            ).pack(fill="x", pady=5)
+
+        # --- Discord actions (async) ---
+        mk(
+            "📣 Post Promo Now (all enabled)",
+            lambda: self._run_coro_on_bot_loop(dev_post_promo_now_all(), "Dev: PromoNow all"),
+            "#4a90d9",
+        )
+
+        # --- Local UI actions ---
+        mk("📊 Show Stats", self.show_stats, "#27ae60")
+
+        mk("🧠 Toggle Keyword Mode", lambda: self._toggle_flag("KEYWORD_MODE_ENABLED"), "#7f8c8d")
+        mk("📝 Toggle File Logging", lambda: self._toggle_flag("FILE_LOG_ENABLED"), "#7f8c8d")
+        mk("🗃️ Toggle DB Logging", lambda: self._toggle_flag("DB_LOG_ENABLED"), "#7f8c8d")
+
+        mk("♻️ Rebuild Invite Texts", lambda: (rebuild_invite_texts(), self.append_log("🧪 Rebuilt invite texts.")), "#9b59b6")
+
+        tk.Button(
+            win,
+            text="Close",
+            command=win.destroy,
+            bg="#444455",
+            fg="white",
+            relief="flat",
+            padx=12,
+            pady=8,
+        ).pack(pady=(0, 12))
 
     def show_stats(self):
         w, c, n, td, p = get_stats()
