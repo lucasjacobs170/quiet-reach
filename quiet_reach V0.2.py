@@ -913,12 +913,6 @@ async def on_ready():
     if promo_task is None or promo_task.done():
         promo_task = asyncio.create_task(promo_loop())
         log("📣 Promo loop started.")
-
-async def handle_dm_reply(message):
-    log_inbound_message(message)
-
-    user_id = message.author.id
-    username = str(message.author)
     
 async def handle_dm_reply(message):
     user_id = message.author.id
@@ -1139,11 +1133,6 @@ async def build_public_response(user_text: str, touches: int) -> str:
 @client.event
 async def on_message(message):
     # Ignore self
-    if message.author == client.user:
-        return
-
-@client.event
-async def on_message(message):
     if message.author == client.user:
         return
 
