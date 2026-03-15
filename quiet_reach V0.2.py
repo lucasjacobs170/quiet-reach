@@ -10,6 +10,12 @@ from zoneinfo import ZoneInfo
 BOT_TOKEN=''
 OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
+# Official Lucas links (DM-only)
+CHATABURATE_URL = "https://chaturbate.com/b/lucas_jacobs/"
+ONLYFANS_FREE_URL = "https://onlyfans.com/lucas_jacobs_free"
+ONLYFANS_PAID_URL = "https://onlyfans.com/lucasjacobs170"
+X_URL = "https://x.com/lucasjacobs170"
+INSTAGRAM_URL = "https://www.instagram.com/lucas_jacobs17/?hl=en"
 DB_PATH='quiet_reach.db'
 CONFIG_PATH='quiet_reach_config.json'
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434") 
@@ -55,6 +61,8 @@ You are Quiet Reach, Lucas Jacobs's assistant (not Lucas).
 
 - Lucas Jacobs is a man. Use he/him pronouns.
 - Never refer to Lucas as she/her or they/them.
+- Never reference time of day (morning/afternoon/evening/night/tonight/today).
+- Do not say things like “tonight”, “this morning”, “later today”, “late-night”, etc.
 
 Identity rules:
 - Never claim you are Lucas.
@@ -860,6 +868,14 @@ def _load_promo_seeds() -> list[str]:
 def _sanitize_caption(text: str) -> str:
     t = (text or "").strip()
 
+    # strip time-of-day references
+    t = re.sub(
+        r"\b(morning|afternoon|evening|night|tonight|today|tomorrow|yesterday|midnight)\b",
+        "",
+        t,
+        flags=re.IGNORECASE
+    )
+    
     # remove common 1:1 pet names (crowd voice)
     t = re.sub(r"\b(gorgeous|babe|baby|hun|honey|handsome|sweetheart)\b", "", t, flags=re.IGNORECASE)
 
@@ -903,7 +919,7 @@ You write short, saucy promotional captions for an adult creator.
 Tone: flirty, playful, confident, organic (no corporate vibe).
 Rules:
 - Speak to a CROWD (plural) like you’re addressing a channel, not one person.
-  Use crowd words: "trail fam", "campers", "crew", "night owls", "y’all", "everyone".
+  Use crowd words: "hikers", "campers", "crew", "y’all", "everyone".
 - Avoid 1:1 pet names like "gorgeous", "babe", "baby", "honey", "handsome".
 - Outdoorsy + playful vibe (trail / campfire / sunset / stargazing metaphors OK).
 - NON-explicit only: no graphic anatomy, no sex acts.
@@ -1001,7 +1017,6 @@ async def promo_loop():
         "fresh drop",
         "tease + mystery",
         "outdoorsy flirty",
-        "late-night vibes",
         "friendly invite",
     ]
 
@@ -1058,7 +1073,6 @@ async def dev_post_promo_now_all() -> tuple[int, int]:
         "fresh drop",
         "tease + mystery",
         "outdoorsy flirty",
-        "late-night vibes",
         "friendly invite",
     ]
 
@@ -1120,16 +1134,59 @@ async def handle_dm_reply(message):
         log(f"🛑 {username} opted out")
         return
 
-    # If they just want the link, give it (and stop)
-    if content_lower in ["link", "server", "invite"]:
+    # DM shortcuts
+    if content_lower in ["link", "discord", "server", "invite"]:
         await send_logged(
             message.channel,
             guild_id="",
-            content=f"Here you go: {SERVER_INVITE}",
+            content=f"Discord invite: {SERVER_INVITE}",
             is_dm=1
         )
         return
 
+    if content_lower in ["links", "contact", "socials", "social"]:
+        # reuse the deterministic links path
+        lines = ["Here are the official ways to reach Lucas:"]
+
+        if CHATABURATE_URL:
+            lines.append(f"- Chaturbate: {CHATABURATE_URL}")
+        if ONLYFANS_FREE_URL:
+            lines.append(f"- OnlyFans (free): {ONLYFANS_FREE_URL}")
+        if ONLYFANS_PAID_URL:
+            lines.append(f"- OnlyFans (paid): {ONLYFANS_PAID_URL}")
+        if X_URL:
+            lines.append(f"- X: {X_URL}")
+        if INSTAGRAM_URL:
+            lines.append(f"- Instagram: {INSTAGRAM_URL}")
+        if SERVER_INVITE:
+            lines.append(f"- Discord: {SERVER_INVITE}")
+
+        await send_logged(message.channel, guild_id="", content="\n".join(lines), is_dm=1)
+        return
+
+    # ✅ DM-only official links / contact (deterministic; no AI)
+    if any(k in content_lower for k in ["contact", "reach", "get in contact", "get into contact", "get in touch", "links", "social", "socials", "onlyfans", "chaturbate", "instagram", "twitter", "x"]):
+        lines = ["Here are the official ways to reach Lucas:"]
+
+        if CHATABURATE_URL:
+            lines.append(f"- Chaturbate: {CHATABURATE_URL}")
+        if ONLYFANS_FREE_URL:
+            lines.append(f"- OnlyFans (free): {ONLYFANS_FREE_URL}")
+        if ONLYFANS_PAID_URL:
+            lines.append(f"- OnlyFans (paid): {ONLYFANS_PAID_URL}")
+        if X_URL:
+            lines.append(f"- X: {X_URL}")
+        if INSTAGRAM_URL:
+            lines.append(f"- Instagram: {INSTAGRAM_URL}")
+
+        # Discord stays DM-only too (allowed here)
+        if SERVER_INVITE:
+            lines.append(f"- Discord: {SERVER_INVITE}")
+
+        lines.append("\nTell me which one you prefer and I’ll point you the right way.")
+        await send_logged(message.channel, guild_id="", content="\n".join(lines), is_dm=1)
+        return
+    
     # If they are asking for info about Lucas, answer with AI (KB-grounded)
     if looks_like_question(content) or ("lucas" in content_lower):
         reply = await generate_ai_reply(content)
@@ -1327,7 +1384,7 @@ async def build_public_response(user_text: str, touches: int) -> str:
     if touches <= 1:
         return (
             f"{prefix} I’m Lucas’s assistant. What were you looking for—"
-            f"preview, schedule, or the server link?{optin_footer()}"
+            f"preview or details?{optin_footer()}"
         )
     elif touches < NUDGE_AFTER_TOUCHES:
         return (
@@ -1353,6 +1410,26 @@ async def on_message(message):
         return
 
     raw = (message.content or "").strip().lower()
+
+    # 🔒 Never share links publicly (Discord + socials). DM-only.
+    if (
+        "discord" in raw
+        or "discord.gg" in raw
+        or "discord.com/invite" in raw
+        or "invite" in raw
+        or "server link" in raw
+        or "onlyfans" in raw
+        or "chaturbate" in raw
+        or "instagram" in raw
+        or "twitter" in raw
+        or "x.com" in raw
+    ):
+        await message.reply(
+            "Yep — I can DM you that. Reply “yes” and I’ll send the links privately.",
+            mention_author=False
+        )
+        start_dm_offer(message.channel.id, message.author.id)
+        return
 
     if raw in ["!helpqr", "!qrhelp", "!commands"]:
         if message.author.id != OWNER_ID:
@@ -1471,7 +1548,6 @@ async def on_message(message):
                 "fresh drop",
                 "tease + mystery",
                 "outdoorsy flirty",
-                "late-night vibes",
                 "friendly invite",
             ]
             seeds = _load_promo_seeds()
