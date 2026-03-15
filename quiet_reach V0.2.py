@@ -2187,10 +2187,13 @@ class QuietReachUI:
         global SERVER_INVITE
         new_invite = (invite_var.get() or "").strip()
 
-        if not (new_invite.startswith("https://discord.gg/") or new_invite.startswith("https://discord.com/invite/")):
+        if not (
+            new_invite.startswith("https://discord.gg/")
+            or new_invite.startswith("https://discord.com/invite/")
+        ):
             messagebox.showerror(
                 "Invalid Invite",
-                "Invite must start with https://discord.gg/ or https://discord.com/invite/"
+                "Invite must start with https://discord.gg/ or https://discord.com/invite/",
             )
             return
 
@@ -2208,13 +2211,25 @@ class QuietReachUI:
     btn_row.pack(pady=10)
 
     tk.Button(
-        btn_row, text="Save", command=save_invite,
-        bg="#27ae60", fg="white", relief="flat", padx=14, pady=6
+        btn_row,
+        text="Save",
+        command=save_invite,
+        bg="#27ae60",
+        fg="white",
+        relief="flat",
+        padx=14,
+        pady=6,
     ).pack(side="left", padx=6)
 
     tk.Button(
-        btn_row, text="Cancel", command=win.destroy,
-        bg="#444455", fg="white", relief="flat", padx=14, pady=6
+        btn_row,
+        text="Cancel",
+        command=win.destroy,
+        bg="#444455",
+        fg="white",
+        relief="flat",
+        padx=14,
+        pady=6,
     ).pack(side="left", padx=6)
     
     def manage_images(self):
