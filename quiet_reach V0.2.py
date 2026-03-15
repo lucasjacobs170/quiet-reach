@@ -943,6 +943,7 @@ async def on_ready():
         log("📣 Promo loop started.")
     
 async def handle_dm_reply(message):
+    log_inbound_message(message)
     user_id = message.author.id
     username = str(message.author)
     content = (message.content or "").strip()
