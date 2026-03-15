@@ -258,6 +258,7 @@ def setup_database():
         "user_id TEXT,"
         "username TEXT,"
         "is_dm INTEGER,"
+        "direction TEXT,"
         "message TEXT"
         ")"
     )
