@@ -1174,10 +1174,8 @@ async def on_message(message):
 
     raw = (message.content or "").strip().lower()
 
-    # ... rest of your server logic unchanged ...
-
     # In-server opt-in / opt-out commands
-    raw = (message.content or "").strip().lower()
+
     # If someone replies "yes" to a bot message in an NSFW channel, treat it as DM consent
     try:
         if hasattr(message.channel, "is_nsfw") and message.channel.is_nsfw():
