@@ -915,6 +915,10 @@ async def on_ready():
         log("📣 Promo loop started.")
 
 async def handle_dm_reply(message):
+    log_inbound_message(message)
+    ...
+
+async def handle_dm_reply(message):
     user_id = message.author.id
     username = str(message.author)
     content = (message.content or "").strip()
@@ -1154,6 +1158,21 @@ async def on_message(message):
                 return
     except Exception:
         pass
+        @client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
+
+    # Log inbound SERVER messages here (not DMs)
+    if not isinstance(message.channel, discord.DMChannel):
+        log_inbound_message(message)
+
+    # DMs: handle separately
+    if isinstance(message.channel, discord.DMChannel):
+        await handle_dm_reply(message)
+        return
+
+    ...
 
     # ==========================
     # 📣 PROMO OWNER COMMANDS
