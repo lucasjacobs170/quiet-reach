@@ -1113,6 +1113,111 @@ async def on_ready():
         promo_task = asyncio.create_task(promo_loop())
         log("📣 Promo loop started.")
     
+def build_official_links_all_message() -> str:
+    lines = ["Here are Lucas’s official links (DM-only):"]
+
+    if CHATABURATE_URL:
+        lines.append(f"- Chaturbate: {CHATABURATE_URL}")
+    if ONLYFANS_FREE_URL:
+        lines.append(f"- OnlyFans (free): {ONLYFANS_FREE_URL}")
+    if ONLYFANS_PAID_URL:
+        lines.append(f"- OnlyFans (paid): {ONLYFANS_PAID_URL}")
+    if X_URL:
+        lines.append(f"- X: {X_URL}")
+    if INSTAGRAM_URL:
+        lines.append(f"- Instagram: {INSTAGRAM_URL}")
+    if SERVER_INVITE:
+        lines.append(f"- Discord: {SERVER_INVITE}")
+
+    return "\n".join(lines)
+
+
+def build_other_options_hint(except_keys: list[str] | None = None) -> str:
+    except_keys = set(except_keys or [])
+    options = []
+    if "discord" not in except_keys and SERVER_INVITE:
+        options.append("Discord")
+    if "onlyfans" not in except_keys and (ONLYFANS_FREE_URL or ONLYFANS_PAID_URL):
+        options.append("OnlyFans (free/paid)")
+    if "chaturbate" not in except_keys and CHATABURATE_URL:
+        options.append("Chaturbate")
+    if "x" not in except_keys and X_URL:
+        options.append("X")
+    if "instagram" not in except_keys and INSTAGRAM_URL:
+        options.append("Instagram")
+
+    if not options:
+        return "If you want the full list, say `links`."
+    return f"Also available: {', '.join(options)}. If you want the full list, say `links`."
+
+
+def dm_link_router(content_lower: str) -> str | None:
+    """
+    Returns a DM response string if this message is requesting links/contact.
+    Otherwise returns None so normal DM logic continues.
+    """
+    t = (content_lower or "").strip()
+
+    # 1) Explicit "give me all links"
+    if t in ["links", "link list", "all links", "socials", "social", "contact"]:
+        return build_official_links_all_message()
+
+    # 2) Specific requests (return only relevant link(s))
+    # Discord
+    if (
+        t in ["link", "invite", "server"]
+        or "discord" in t
+        or "discord.gg" in t
+        or "discord.com/invite" in t
+    ):
+        if SERVER_INVITE:
+            return f"Discord invite: {SERVER_INVITE}\n\n{build_other_options_hint(['discord'])}"
+        return "I don’t have the Discord invite saved right now."
+
+    # Instagram
+    if "instagram" in t or "ig" in t:
+        if INSTAGRAM_URL:
+            return f"Instagram: {INSTAGRAM_URL}\n\n{build_other_options_hint(['instagram'])}"
+        return "I don’t have the Instagram link saved right now."
+
+    # X / Twitter
+    if "x.com" in t or "twitter" in t or t == "x":
+        if X_URL:
+            return f"X: {X_URL}\n\n{build_other_options_hint(['x'])}"
+        return "I don’t have the X link saved right now."
+
+    # Chaturbate
+    if "chaturbate" in t:
+        if CHATABURATE_URL:
+            return f"Chaturbate: {CHATABURATE_URL}\n\n{build_other_options_hint(['chaturbate'])}"
+        return "I don’t have the Chaturbate link saved right now."
+
+    # OnlyFans
+    if "onlyfans" in t or t == "of":
+        # If they specify free vs paid, give only that one
+        wants_free = ("free" in t)
+        wants_paid = ("paid" in t or "vip" in t)
+
+        if wants_free and ONLYFANS_FREE_URL:
+            return f"OnlyFans (free): {ONLYFANS_FREE_URL}\n\n{build_other_options_hint(['onlyfans'])}"
+        if wants_paid and ONLYFANS_PAID_URL:
+            return f"OnlyFans (paid): {ONLYFANS_PAID_URL}\n\n{build_other_options_hint(['onlyfans'])}"
+
+        # Generic "onlyfans link" -> give both OF links (still not “everything”)
+        lines = ["OnlyFans links:"]
+        if ONLYFANS_FREE_URL:
+            lines.append(f"- Free: {ONLYFANS_FREE_URL}")
+        if ONLYFANS_PAID_URL:
+            lines.append(f"- Paid: {ONLYFANS_PAID_URL}")
+        if len(lines) == 1:
+            return "I don’t have the OnlyFans links saved right now."
+
+        lines.append("")
+        lines.append(build_other_options_hint(["onlyfans"]))
+        return "\n".join(lines)
+
+    return None
+
 async def handle_dm_reply(message):
     # Log inbound DM
     log_inbound_message(message)
@@ -1134,51 +1239,12 @@ async def handle_dm_reply(message):
         log(f"🛑 {username} opted out")
         return
 
-    # DM shortcuts
-    if content_lower in ["link", "discord", "server", "invite"]:
-        await send_logged(
-            message.channel,
-            guild_id="",
-            content=f"Discord invite: {SERVER_INVITE}",
-            is_dm=1
-        )
+    # 🔗 DM link routing (smart: specific vs full list)
+    link_reply = dm_link_router(content_lower)
+    if link_reply:
+        await send_logged(message.channel, guild_id="", content=link_reply, is_dm=1)
         return
-
-    if content_lower in ["links", "contact", "socials", "social"]:
-        # reuse the deterministic links path
-        lines = ["Here are the official ways to reach Lucas:"]
-
-        if CHATABURATE_URL:
-            lines.append(f"- Chaturbate: {CHATABURATE_URL}")
-        if ONLYFANS_FREE_URL:
-            lines.append(f"- OnlyFans (free): {ONLYFANS_FREE_URL}")
-        if ONLYFANS_PAID_URL:
-            lines.append(f"- OnlyFans (paid): {ONLYFANS_PAID_URL}")
-        if X_URL:
-            lines.append(f"- X: {X_URL}")
-        if INSTAGRAM_URL:
-            lines.append(f"- Instagram: {INSTAGRAM_URL}")
-        if SERVER_INVITE:
-            lines.append(f"- Discord: {SERVER_INVITE}")
-
-        await send_logged(message.channel, guild_id="", content="\n".join(lines), is_dm=1)
-        return
-
-    # ✅ DM-only official links / contact (deterministic; no AI)
-    if any(k in content_lower for k in ["contact", "reach", "get in contact", "get into contact", "get in touch", "links", "social", "socials", "onlyfans", "chaturbate", "instagram", "twitter", "x"]):
-        lines = ["Here are the official ways to reach Lucas:"]
-
-        if CHATABURATE_URL:
-            lines.append(f"- Chaturbate: {CHATABURATE_URL}")
-        if ONLYFANS_FREE_URL:
-            lines.append(f"- OnlyFans (free): {ONLYFANS_FREE_URL}")
-        if ONLYFANS_PAID_URL:
-            lines.append(f"- OnlyFans (paid): {ONLYFANS_PAID_URL}")
-        if X_URL:
-            lines.append(f"- X: {X_URL}")
-        if INSTAGRAM_URL:
-            lines.append(f"- Instagram: {INSTAGRAM_URL}")
-
+    
         # Discord stays DM-only too (allowed here)
         if SERVER_INVITE:
             lines.append(f"- Discord: {SERVER_INVITE}")
