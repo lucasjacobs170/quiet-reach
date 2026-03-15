@@ -1133,21 +1133,25 @@ async def build_public_response(user_text: str, touches: int) -> str:
             f"{prefix} Want me to keep it here in chat, or DM you details?"
             f" (Reply 'yes' and I’ll DM you.)"
         )
-@client.event
+
+    @client.event
 async def on_message(message):
     if message.author == client.user:
         return
 
-    # Log inbound SERVER messages (not DMs)
     if not isinstance(message.channel, discord.DMChannel):
         log_inbound_message(message)
 
-    # DMs: handle separately
     if isinstance(message.channel, discord.DMChannel):
         await handle_dm_reply(message)
         return
 
     raw = (message.content or "").strip().lower()
+
+    # (optional comment)
+    # In-server opt-in / opt-out commands
+
+    # PASTE THE NSFW TRY/EXCEPT HERE
 
     # In-server opt-in / opt-out commands
 
@@ -1162,21 +1166,6 @@ async def on_message(message):
                 return
     except Exception:
         pass
-        @client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-
-    # Log inbound SERVER messages here (not DMs)
-    if not isinstance(message.channel, discord.DMChannel):
-        log_inbound_message(message)
-
-    # DMs: handle separately
-    if isinstance(message.channel, discord.DMChannel):
-        await handle_dm_reply(message)
-        return
-
-    ...
 
     # ==========================
     # 📣 PROMO OWNER COMMANDS
