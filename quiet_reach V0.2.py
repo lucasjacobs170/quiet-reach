@@ -2231,108 +2231,111 @@ class QuietReachUI:
         padx=14,
         pady=6,
     ).pack(side="left", padx=6)
-    
-    def manage_images(self):
-        """Open a window to manage outreach images."""
-        import os
-        from tkinter import filedialog
 
-        win = tk.Toplevel(self.root)
-        win.title("🖼️ Manage Outreach Images")
-        win.geometry("500x400")
-        win.configure(bg='#1a1a2e')
 
-        tk.Label(
-            win, text="🖼️ Outreach Images",
-            font=('Helvetica', 14, 'bold'),
-            bg='#1a1a2e', fg='white'
-        ).pack(pady=10)
+def manage_images(self):
+    """Open a window to manage outreach images."""
+    import os
+    from tkinter import filedialog
 
-        tk.Label(
-            win,
-            text="These images rotate randomly with each outreach DM",
-            font=('Helvetica', 9),
-            bg='#1a1a2e', fg='#aaaaaa'
-        ).pack()
+    win = tk.Toplevel(self.root)
+    win.title("🖼️ Manage Outreach Images")
+    win.geometry("500x400")
+    win.configure(bg="#1a1a2e")
 
-        # Image list display
-        frame = tk.Frame(win, bg='#1a1a2e')
-        frame.pack(fill='both', expand=True, padx=15, pady=10)
+    tk.Label(
+        win, text="🖼️ Outreach Images",
+        font=("Helvetica", 14, "bold"),
+        bg="#1a1a2e", fg="white"
+    ).pack(pady=10)
 
-        scrollbar = tk.Scrollbar(frame)
-        scrollbar.pack(side='right', fill='y')
+    tk.Label(
+        win,
+        text="These images rotate randomly with each outreach DM",
+        font=("Helvetica", 9),
+        bg="#1a1a2e", fg="#aaaaaa"
+    ).pack()
 
-        listbox = tk.Listbox(
-            frame, bg='#0d0d1a', fg='white',
-            font=('Courier', 10), relief='flat',
-            yscrollcommand=scrollbar.set
-        )
-        listbox.pack(fill='both', expand=True)
-        scrollbar.config(command=listbox.yview)
+    frame = tk.Frame(win, bg="#1a1a2e")
+    frame.pack(fill="both", expand=True, padx=15, pady=10)
 
-        images_file = 'images.txt'
+    scrollbar = tk.Scrollbar(frame)
+    scrollbar.pack(side="right", fill="y")
 
-        def load_images():
-            listbox.delete(0, 'end')
-            if os.path.exists(images_file):
-                with open(images_file, 'r') as f:
-                    lines = [l.strip() for l in f.readlines() if l.strip()]
-                    for line in lines:
-                        listbox.insert('end', f"  {line}")
+    listbox = tk.Listbox(
+        frame, bg="#0d0d1a", fg="white",
+        font=("Courier", 10), relief="flat",
+        yscrollcommand=scrollbar.set
+    )
+    listbox.pack(fill="both", expand=True)
+    scrollbar.config(command=listbox.yview)
+
+    images_file = "images.txt"
+
+    def load_images():
+        listbox.delete(0, "end")
+        if os.path.exists(images_file):
+            with open(images_file, "r", encoding="utf-8") as f:
+                lines = [l.strip() for l in f.readlines() if l.strip()]
+            if lines:
+                for line in lines:
+                    listbox.insert("end", f"  {line}")
             else:
-                listbox.insert('end', "  No images added yet!")
+                listbox.insert("end", "  No images added yet!")
+        else:
+            listbox.insert("end", "  No images added yet!")
 
-        load_images()
+    load_images()
 
-        def add_image():
-            filepath = filedialog.askopenfilename(
-                title="Select an image",
-                filetypes=[
-                    ("Image files", "*.jpg *.jpeg *.png *.gif *.webp"),
-                    ("All files", "*.*")
-                ]
-            )
-            if filepath:
-                import shutil
-                filename = os.path.basename(filepath)
-                dest     = os.path.join(os.getcwd(), filename)
-                shutil.copy2(filepath, dest)
+    def add_image():
+        filepath = filedialog.askopenfilename(
+            title="Select an image",
+            filetypes=[
+                ("Image files", "*.jpg *.jpeg *.png *.gif *.webp"),
+                ("All files", "*.*"),
+            ],
+        )
+        if filepath:
+            import shutil
+            filename = os.path.basename(filepath)
+            dest = os.path.join(os.getcwd(), filename)
+            shutil.copy2(filepath, dest)
 
-                with open(images_file, 'a') as f:
-                    f.write(filename + '\n')
+            with open(images_file, "a", encoding="utf-8") as f:
+                f.write(filename + "\n")
 
-                load_images()
-                self.append_log(f"🖼️ Added image: {filename}")
+            load_images()
+            self.append_log(f"🖼️ Added image: {filename}")
 
-        def remove_image():
-            selected = listbox.curselection()
-            if selected:
-                image_name = listbox.get(selected[0]).strip()
+    def remove_image():
+        selected = listbox.curselection()
+        if selected:
+            image_name = listbox.get(selected[0]).strip()
 
-                if os.path.exists(images_file):
-                    with open(images_file, 'r') as f:
-                        lines = [l.strip() for l in f.readlines() if l.strip()]
-                    lines = [l for l in lines if l != image_name]
-                    with open(images_file, 'w') as f:
-                        f.write('\n'.join(lines))
+            if os.path.exists(images_file):
+                with open(images_file, "r", encoding="utf-8") as f:
+                    lines = [l.strip() for l in f.readlines() if l.strip()]
+                lines = [l for l in lines if l != image_name]
+                with open(images_file, "w", encoding="utf-8") as f:
+                    f.write("\n".join(lines))
 
-                load_images()
-                self.append_log(f"🗑️ Removed image: {image_name}")
+            load_images()
+            self.append_log(f"🗑️ Removed image: {image_name}")
 
-        btn_row = tk.Frame(win, bg='#1a1a2e')
-        btn_row.pack(pady=10)
+    btn_row = tk.Frame(win, bg="#1a1a2e")
+    btn_row.pack(pady=10)
 
-        tk.Button(
-            btn_row, text="➕ Add Image", command=add_image,
-            bg='#27ae60', fg='white', font=('Helvetica', 10, 'bold'),
-            relief='flat', cursor='hand2', padx=12, pady=6
-        ).pack(side='left', padx=5)
+    tk.Button(
+        btn_row, text="➕ Add Image", command=add_image,
+        bg="#27ae60", fg="white", font=("Helvetica", 10, "bold"),
+        relief="flat", cursor="hand2", padx=12, pady=6
+    ).pack(side="left", padx=5)
 
-        tk.Button(
-            btn_row, text="🗑️ Remove Selected", command=remove_image,
-            bg='#e74c3c', fg='white', font=('Helvetica', 10, 'bold'),
-            relief='flat', cursor='hand2', padx=12, pady=6
-        ).pack(side='left', padx=5)
+    tk.Button(
+        btn_row, text="🗑️ Remove Selected", command=remove_image,
+        bg="#e74c3c", fg="white", font=("Helvetica", 10, "bold"),
+        relief="flat", cursor="hand2", padx=12, pady=6
+    ).pack(side="left", padx=5)
 
     def reset_warm(self):
         if messagebox.askyesno("Reset", "Wipe Warm List?"):
