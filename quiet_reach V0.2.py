@@ -660,15 +660,15 @@ def _load_promo_seeds() -> list[str]:
         return []
 
 def _sanitize_caption(text: str) -> str:
+    t = (text or "").strip()
+
     # remove common 1:1 pet names (crowd voice)
     t = re.sub(r"\b(gorgeous|babe|baby|hun|honey|handsome|sweetheart)\b", "", t, flags=re.IGNORECASE)
-    t = (text or "").strip()
 
     # prevent pings / mass mentions
     t = t.replace("@everyone", "everyone").replace("@here", "here")
 
-    # strip ANY links (prevents extra/hallucinated invites)
-    import re
+    # strip ANY links
     t = re.sub(r"https?://\S+", "", t, flags=re.IGNORECASE)
     t = re.sub(r"\bdiscord\.gg/\S+", "", t, flags=re.IGNORECASE)
     t = re.sub(r"\bdiscord\.com/invite/\S+", "", t, flags=re.IGNORECASE)
@@ -677,10 +677,8 @@ def _sanitize_caption(text: str) -> str:
     t = re.sub(r"\bdiscord\b", "", t, flags=re.IGNORECASE)
     t = re.sub(r"\binvite\b", "", t, flags=re.IGNORECASE)
 
-    # clean extra spaces per-line, keep line breaks
     t = "\n".join([" ".join(line.split()).strip() for line in t.splitlines()]).strip()
 
-    # hard cap
     if len(t) > PROMO_MAX_CHARS:
         t = t[:PROMO_MAX_CHARS - 1].rstrip() + "…"
 
