@@ -249,8 +249,11 @@ def login_dialog(root):
 
         # Optional validation (prevents bad pastes)
         if not tok or tok.count(".") < 2:
-        messagebox.showerror("Invalid Token", "BOT_TOKEN looks invalid. Paste the raw bot token (one line).")
-        return
+            messagebox.showerror(
+                "Invalid Token",
+                "BOT_TOKEN looks invalid. Paste the raw bot token (one line)."
+            )
+            return
 
         merged["BOT_TOKEN"] = tok
         save_config(merged)
