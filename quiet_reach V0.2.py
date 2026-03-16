@@ -16,6 +16,15 @@ ONLYFANS_FREE_URL = "https://onlyfans.com/lucas_jacobs_free"
 ONLYFANS_PAID_URL = "https://onlyfans.com/lucasjacobs170"
 X_URL = "https://x.com/lucasjacobs170"
 INSTAGRAM_URL = "https://www.instagram.com/lucas_jacobs17/?hl=en"
+# One-line blurbs to add context in DMs when giving a link
+LINK_BLURBS = {
+    "discord": "His community hub — updates, drops, and a direct way to keep up with Lucas.",
+    "chaturbate": "His live cam page — where you can catch him live and interact in real time.",
+    "onlyfans_free": "Free follow page — lighter previews and updates.",
+    "onlyfans_paid": "Paid page — the full premium content and the hottest drops.",
+    "x": "Fast updates + teasers when he posts something new.",
+    "instagram": "Pics + casual updates — the most “daily life” vibe.",
+}
 DB_PATH='quiet_reach.db'
 CONFIG_PATH='quiet_reach_config.json'
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434") 
@@ -1203,6 +1212,10 @@ def build_other_options_hint(except_keys: list[str] | None = None) -> str:
 
 
 def dm_link_router(content_lower: str) -> str | None:
+
+    soft = random.choice(DM_SOFTENERS)
+    return f"{soft}\nChaturbate: {CHATABURATE_URL}\n{LINK_BLURBS['chaturbate']}\n\n{build_other_options_hint(['chaturbate'])}"
+    
     """
     Returns a DM response string if this message is requesting links/contact.
     Otherwise returns None so normal DM logic continues.
@@ -1228,19 +1241,19 @@ def dm_link_router(content_lower: str) -> str | None:
     # Instagram
     if "instagram" in t or re.search(r"(?:^|\\s)ig(?:$|\\s)", t):
         if INSTAGRAM_URL:
-            return f"Instagram: {INSTAGRAM_URL}\n\n{build_other_options_hint(['instagram'])}"
+            return f"X: {X_URL}\n{LINK_BLURBS['x']}\n\n{build_other_options_hint(['x'])}"
         return "I don’t have the Instagram link saved right now."
 
     # X / Twitter (match "x" as a standalone word too)
     if "x.com" in t or "twitter" in t or re.search(r"\bx\b", t):
         if X_URL:
-            return f"X: {X_URL}\n\n{build_other_options_hint(['x'])}"
+            return f"X: {X_URL}\n{LINK_BLURBS['x']}\n\n{build_other_options_hint(['x'])}"
         return "I don’t have the X link saved right now."
 
     # Chaturbate
     if "chaturbate" in t:
         if CHATABURATE_URL:
-            return f"Chaturbate: {CHATABURATE_URL}\n\n{build_other_options_hint(['chaturbate'])}"
+            return f"X: {X_URL}\n{LINK_BLURBS['x']}\n\n{build_other_options_hint(['x'])}"
         return "I don’t have the Chaturbate link saved right now."
 
     # OnlyFans
@@ -1250,18 +1263,18 @@ def dm_link_router(content_lower: str) -> str | None:
         wants_paid = ("paid" in t or "vip" in t)
 
         if wants_free and ONLYFANS_FREE_URL:
-            return f"OnlyFans (free): {ONLYFANS_FREE_URL}\n\n{build_other_options_hint(['onlyfans'])}"
+            return f"X: {X_URL}\n{LINK_BLURBS['x']}\n\n{build_other_options_hint(['x'])}"
         if wants_paid and ONLYFANS_PAID_URL:
-            return f"OnlyFans (paid): {ONLYFANS_PAID_URL}\n\n{build_other_options_hint(['onlyfans'])}"
+            return f"X: {X_URL}\n{LINK_BLURBS['x']}\n\n{build_other_options_hint(['x'])}"
 
         # Generic "onlyfans link" -> give both OF links (still not “everything”)
         lines = ["OnlyFans links:"]
         if ONLYFANS_FREE_URL:
             lines.append(f"- Free: {ONLYFANS_FREE_URL}")
+            lines.append(f"  {LINK_BLURBS['onlyfans_free']}")
         if ONLYFANS_PAID_URL:
             lines.append(f"- Paid: {ONLYFANS_PAID_URL}")
-        if len(lines) == 1:
-            return "I don’t have the OnlyFans links saved right now."
+            lines.append(f"  {LINK_BLURBS['onlyfans_paid']}")
 
         lines.append("")
         lines.append(build_other_options_hint(["onlyfans"]))
@@ -1288,6 +1301,13 @@ async def handle_dm_reply(message):
     content = (message.content or "").strip()
     content_lower = content.lower().strip()
     await dm_human_delay(message.channel)
+
+    # Bot identity / lore (DM-only)
+    if any(p in content_lower for p in ["who are you", "what are you", "your backstory", "how old are you", "who made you"]):
+        lore = random.choice(BOT_BACKSTORY_LINES)
+        msg = f"{lore}\n\nWhat do you want — links, a preview, or info about Lucas?"
+        await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
+        return
 
     # Opt-out
     if content_lower in ["stop", "remove", "opt out", "optout"]:
@@ -1472,12 +1492,26 @@ def looks_like_question(text: str) -> bool:
     starters = ("who", "what", "when", "where", "why", "how", "can", "do", "is", "are", "does")
     return t.startswith(starters)
 
+DM_SOFTENERS = [
+    "Totally —",
+    "Yeah, for sure —",
+    "You got it —",
+    "Yep —",
+    "Good question —",
+]
+
 PUBLIC_SMALLTALK = [
     "Ooo good question.",
     "Love that you asked.",
     "Okay wait—yes.",
     "Real quick:",
     "Alright, trail-guide mode on:",
+]
+
+BOT_BACKSTORY_LINES = [
+    "Fun fact: I’m basically a forest-ranger clipboard that got promoted into Lucas’s assistant.",
+    "Little backstory: I started as a “quiet outreach” experiment… now I’m the official trail-guide for Lucas content.",
+    "I’m the tiny voice in the woods that points people toward Lucas — politely, and without spamming servers.",
 ]
 
 def optin_footer() -> str:
@@ -1512,6 +1546,11 @@ async def build_public_response(user_text: str, touches: int) -> str:
             f"{optin_footer()}"
         )
     else:
+        if touches == 3:
+        return (
+            f"{prefix} Quick heads up: I keep server replies limited so I don’t spam the channel."
+            f" If you want details, I can DM you — just reply “yes”."
+        )
         return (
             f"{prefix} Want me to keep it here in chat, or DM you details?"
             f" (Reply 'yes' and I’ll DM you.)"
