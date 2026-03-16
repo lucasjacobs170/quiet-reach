@@ -1734,10 +1734,14 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    if not isinstance(message.channel, discord.DMChannel):
+    is_dm = isinstance(message.channel, discord.DMChannel)
+
+    # Log inbound (server only)
+    if not is_dm:
         log_inbound_message(message)
 
-    if isinstance(message.channel, discord.DMChannel):
+    # DM handling
+    if is_dm:
         await handle_dm_reply(message)
         return
 
@@ -1761,28 +1765,24 @@ async def on_message(message):
         # Remember what they asked for, so when they consent we DM the exact thing
         remember_pending_dm_request(message.channel.id, message.author.id, message.content)
 
-        await reply_logged(
+        await server_reply(
             message,
             "I keep links out of the channel so it doesn’t turn into spam. "
             "Reply “yes” and I’ll DM you the link privately.",
-            mention_author=False
+            mention_author=False,
         )
         start_dm_offer(message.channel.id, message.author.id)
         return
 
+    # Owner help
     if raw in ["!helpqr", "!qrhelp", "!commands"]:
         if message.author.id != OWNER_ID:
             return
-        # Discord message limit is ~2000 chars, so send a shortened version
         text = COMMANDS_HELP_TEXT
         if len(text) > 1900:
             text = text[:1900] + "\n…(truncated)"
-        await reply_logged(message, f"```{text}```", mention_author=False)
+        await server_reply(message, f"```{text}```", mention_author=False)
         return
-
-    # (optional comment)
-
-    # In-server opt-in / opt-out commands
 
     # If someone replies "yes" to a bot message in an NSFW channel, treat it as DM consent
     try:
@@ -1790,7 +1790,7 @@ async def on_message(message):
             is_reply = await is_reply_to_bot(message)
             if is_reply and is_affirmative(message.content) and (not get_opt_in(message.author.id)):
                 set_opt_in(message.author.id, str(message.author), 1)
-                await reply_logged(message, "Perfect — I’ll DM you a preview.", mention_author=False)
+                await server_reply(message, "Perfect — I’ll DM you a preview.", mention_author=False)
                 await send_outreach_dm(message.author, message.guild.id)
                 return
     except Exception as e:
@@ -1807,20 +1807,24 @@ async def on_message(message):
         #        !promosetup 18 22      (PT hours)
         parts = (message.content or "").strip().split()
         start_pt = PROMO_DEFAULT_WINDOW_START
-        end_pt   = PROMO_DEFAULT_WINDOW_END
+        end_pt = PROMO_DEFAULT_WINDOW_END
 
         if len(parts) == 3:
             start_pt = int(parts[1])
-            end_pt   = int(parts[2])
+            end_pt = int(parts[2])
         elif len(parts) != 1:
-            await message.reply("Usage: `!promosetup` or `!promosetup <start_hour_pt> <end_hour_pt>`", mention_author=False)
+            await server_reply(
+                message,
+                "Usage: `!promosetup` or `!promosetup <start_hour_pt> <end_hour_pt>`",
+                mention_author=False,
+            )
             return
 
         promo_set_channel(message.guild.id, message.channel.id)
         promo_set_window(message.guild.id, start_pt, end_pt)
         promo_set_enabled(message.guild.id, True)
 
-        await reply_logged(
+        await server_reply(
             message,
             (
                 f"✅ Promo configured + enabled.\n"
@@ -1828,70 +1832,73 @@ async def on_message(message):
                 f"- Window (PT): {start_pt}:00–{end_pt}:00\n"
                 f"- Promos: ON"
             ),
-            mention_author=False
+            mention_author=False,
         )
         return
-    if raw.startswith("!promo") or raw in ["!setpromochannel", "!promoon", "!promooff", "!promostatus"]:
 
-        # Owner-only (change this if you want admins too)
+    if raw.startswith("!promo") or raw in ["!setpromochannel", "!promoon", "!promooff", "!promostatus"]:
         if message.author.id != OWNER_ID:
             return
 
         if raw == "!setpromochannel":
             promo_set_channel(message.guild.id, message.channel.id)
-            # ensure a default window + next schedule exists
             promo_set_window(message.guild.id, PROMO_DEFAULT_WINDOW_START, PROMO_DEFAULT_WINDOW_END)
-            await reply_logged(message, "✅ Promo channel set for this server.", mention_author=False)
+            await server_reply(message, "✅ Promo channel set for this server.", mention_author=False)
             return
 
         if raw.startswith("!promowindow"):
-            # usage: !promowindow 18 22  (PT hours)
             parts = (message.content or "").strip().split()
             if len(parts) != 3:
-                await message.reply("Usage: `!promowindow <start_hour_pt> <end_hour_pt>` (0-23)", mention_author=False)
+                await server_reply(
+                    message,
+                    "Usage: `!promowindow <start_hour_pt> <end_hour_pt>` (0-23)",
+                    mention_author=False,
+                )
                 return
             try:
-                start_pt = int(parts[1]); end_pt = int(parts[2])
+                start_pt = int(parts[1])
+                end_pt = int(parts[2])
                 promo_set_window(message.guild.id, start_pt, end_pt)
-                await message.reply(f"✅ Promo window set: {start_pt}:00–{end_pt}:00 PT (next scheduled randomly inside window).", mention_author=False)
+                await server_reply(
+                    message,
+                    f"✅ Promo window set: {start_pt}:00–{end_pt}:00 PT (next scheduled randomly inside window).",
+                    mention_author=False,
+                )
             except Exception as e:
-                await message.reply(f"⚠️ Failed setting window: {e}", mention_author=False)
+                await server_reply(message, f"⚠️ Failed setting window: {e}", mention_author=False)
             return
 
         if raw == "!promoon":
             promo_set_enabled(message.guild.id, True)
             row = promo_get_config_row(message.guild.id)
-            # if next not scheduled yet, schedule now using saved window
             if row:
                 _, _, _, start_pt, end_pt, next_iso, _ = row
                 if not next_iso:
                     promo_update_next(message.guild.id, int(start_pt), int(end_pt))
-            await message.reply("✅ Promo enabled for this server.", mention_author=False)
+            await server_reply(message, "✅ Promo enabled for this server.", mention_author=False)
             return
 
         if raw == "!promooff":
             promo_set_enabled(message.guild.id, False)
-            await message.reply("🛑 Promo disabled for this server.", mention_author=False)
+            await server_reply(message, "🛑 Promo disabled for this server.", mention_author=False)
             return
 
         if raw == "!promonow":
             row = promo_get_config_row(message.guild.id)
             if not row:
-                await message.reply("No promo config yet. Run `!setpromochannel` first.", mention_author=False)
+                await server_reply(message, "No promo config yet. Run `!setpromochannel` first.", mention_author=False)
                 return
 
             _, channel_id, enabled, start_pt, end_pt, next_iso, last_iso = row
             if not channel_id:
-                await message.reply("Promo channel not set. Run `!setpromochannel` in the target channel.", mention_author=False)
+                await server_reply(
+                    message,
+                    "Promo channel not set. Run `!setpromochannel` in the target channel.",
+                    mention_author=False,
+                )
                 return
 
-            # Pick content
-            themes = [
-                "fresh drop",
-                "tease + mystery",
-                "outdoorsy flirty",
-                "friendly invite",
-            ]
+            themes = ["fresh drop", "tease + mystery", "outdoorsy flirty", "friendly invite"]
             seeds = _load_promo_seeds()
             image_list = load_shared_images()
 
@@ -1900,22 +1907,20 @@ async def on_message(message):
             img = random.choice(image_list) if image_list else ""
 
             caption = await generate_promo_caption(theme, seed)
-
             ok = await _post_promo(int(message.guild.id), int(channel_id), caption, img)
 
-            # Always schedule the next run (prevents accidental rapid-fire tests)
             promo_update_next(int(message.guild.id), int(start_pt), int(end_pt))
 
             if ok:
-                await message.reply("✅ Promo posted now.", mention_author=False)
+                await server_reply(message, "✅ Promo posted now.", mention_author=False)
             else:
-                await message.reply("⚠️ Promo failed to post (check logs for details).", mention_author=False)
+                await server_reply(message, "⚠️ Promo failed to post (check logs for details).", mention_author=False)
             return
-        
+
         if raw == "!promostatus":
             row = promo_get_config_row(message.guild.id)
             if not row:
-                await message.reply("No promo config yet. Run `!setpromochannel` first.", mention_author=False)
+                await server_reply(message, "No promo config yet. Run `!setpromochannel` first.", mention_author=False)
                 return
 
             _, channel_id, enabled, start_pt, end_pt, next_iso, last_iso = row
@@ -1923,40 +1928,46 @@ async def on_message(message):
             last_dt = _parse_iso_utc(last_iso)
 
             def fmt_pt(dt):
-                if not dt: return "—"
+                if not dt:
+                    return "—"
                 return dt.astimezone(PROMO_TZ).strftime("%Y-%m-%d %I:%M %p PT")
 
-            await message.reply(
+            await server_reply(
+                message,
                 "📣 **Promo Status**\n"
                 f"- Enabled: `{bool(enabled)}`\n"
                 f"- Channel ID: `{channel_id}`\n"
                 f"- Window (PT): `{start_pt}:00`–`{end_pt}:00`\n"
                 f"- Next: `{fmt_pt(next_dt)}`\n"
                 f"- Last: `{fmt_pt(last_dt)}`",
-                mention_author=False
+                mention_author=False,
             )
             return
-    
+
+    # ==========================
+    # ✅ OPT-IN / OPT-OUT (server)
+    # ==========================
     if raw in ["!optin", "!opt-in", "!dmme", "!dm me"]:
         set_opt_in(message.author.id, str(message.author), 1)
-        await message.reply("Got it — you’re opted in. I’ll DM you.", mention_author=False)
+        await server_reply(message, "Got it — you’re opted in. I’ll DM you.", mention_author=False)
         await send_outreach_dm(message.author, message.guild.id)
         return
 
     if raw in ["!optout", "!opt-out", "!nodm", "!no dm"]:
         set_opt_in(message.author.id, str(message.author), 0)
-        await message.reply("Done — no DMs from me.", mention_author=False)
+        await server_reply(message, "Done — no DMs from me.", mention_author=False)
         return
-    # If the bot recently offered to DM this user, accept natural "yes" as opt-in
+
+    # ==========================
+    # ✅ DM offer consent window
+    # ==========================
     if dm_offer_active(message.channel.id, message.author.id):
         if is_affirmative(message.content) or is_dm_request_phrase(message.content):
             clear_dm_offer(message.channel.id, message.author.id)
             set_opt_in(message.author.id, str(message.author), 1)
 
-            # public acknowledgement (logged)
-            await reply_logged(message, "Perfect — check your DMs.", mention_author=False)
+            await server_reply(message, "Perfect — check your DMs.", mention_author=False)
 
-            # Fulfill the exact request they made in public (if any)
             pending_text = pop_pending_dm_request(message.channel.id, message.author.id)
             if pending_text:
                 try:
@@ -1968,16 +1979,17 @@ async def on_message(message):
                 except Exception as e:
                     log(f"⚠️ Pending-DM fulfill failed: {e}")
 
-            # Fallback: normal outreach if we couldn't fulfill a specific request
             await send_outreach_dm(message.author, message.guild.id)
             return
 
         if is_negative(message.content):
             clear_dm_offer(message.channel.id, message.author.id)
-            await message.reply("No worries — we can keep it here in chat.", mention_author=False)
+            await server_reply(message, "No worries — we can keep it here in chat.", mention_author=False)
             return
-    
-    # If we recently engaged this user in this channel, allow a short multi-turn convo
+
+    # ==========================
+    # 💬 Follow-up window (server)
+    # ==========================
     if can_followup(message.channel.id, message.author.id):
         consume_followup(message.channel.id, message.author.id)
 
@@ -1987,16 +1999,16 @@ async def on_message(message):
 
         reply = _strip_links_and_discord_words(reply)
         reply = _shorten(reply, AI_MAX_CHARS_PUBLIC)
-        await message.reply(reply, mention_author=False)
-        # Don't mark_channel_replied here; follow-ups are already capped per-user
+        await server_reply(message, reply, mention_author=False)
         return
 
-    # If they reply to the bot or mention it, answer publicly (no DM needed)
+    # ==========================
+    # @mention or reply-to-bot
+    # ==========================
     is_mention = bool(client.user and client.user.mentioned_in(message))
     is_reply = await is_reply_to_bot(message)
 
     if is_mention or is_reply:
-        # If it's not a direct mention, respect channel cooldown
         if (not is_mention) and (not can_public_touch(message.author.id)):
             return
 
@@ -2004,17 +2016,19 @@ async def on_message(message):
         reply_text = await build_public_response(message.content, touches)
         reply_text = _strip_links_and_discord_words(reply_text)
         reply_text = _shorten(reply_text, AI_MAX_CHARS_PUBLIC)
-        await message.reply(reply_text, mention_author=False)
+        await server_reply(message, reply_text, mention_author=False)
+
         mark_channel_replied(message.channel.id)
         start_followup(message.channel.id, message.author.id)
         start_dm_offer(message.channel.id, message.author.id)
         return
 
-    # If keyword mode is disabled, stop here (still allows opt-in/out above)
+    # ==========================
+    # Keyword mode
+    # ==========================
     if not KEYWORD_MODE_ENABLED:
         return
 
-    # Keyword trigger scan (server-safe until opt-in)
     content = (message.content or "").lower()
     tw = get_keywords("trigger")
 
@@ -2045,7 +2059,9 @@ async def on_message(message):
             reply_text = await build_public_response(message.content, touches)
             reply_text = _strip_links_and_discord_words(reply_text)
             reply_text = _shorten(reply_text, AI_MAX_CHARS_PUBLIC)
-            await message.reply(reply_text, mention_author=False)
+
+            await server_reply(message, reply_text, mention_author=False)
+
             mark_channel_replied(message.channel.id)
             start_followup(message.channel.id, message.author.id)
             start_dm_offer(message.channel.id, message.author.id)
