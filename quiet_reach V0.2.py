@@ -76,7 +76,9 @@ Personality:
 Safety/accuracy rules:
 - Use only the KNOWLEDGE BASE facts when answering about Lucas.
 - Do NOT invent links.
-- If you don't know, say so and offer the Discord invite.
+- If you don't know, say so and ask if they want links in DM ("say `link` or `links`").
+- Keep replies SHORT: 1–2 sentences, max ~240 characters.
+- Never output any URLs/links in AI responses (links are handled by system routing).
 """.strip()
 
     YES_RESPONSES = [
@@ -675,6 +677,33 @@ async def classify_reply_with_ai(user_message: str) -> str:
         return "no"
     return "other"
 
+AI_MAX_CHARS_DM = 260
+AI_MAX_CHARS_PUBLIC = 220
+
+def _strip_links_and_discord_words(text: str) -> str:
+    t = (text or "").strip()
+
+    # Remove all URLs
+    t = re.sub(r"https?://\S+", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdiscord\.gg/\S+", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bdiscord\.com/invite/\S+", "", t, flags=re.IGNORECASE)
+
+    # Remove “discord/invite/server link” wording (prevents “go join…” in public)
+    t = re.sub(r"\bdiscord\b", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\binvite\b", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\bserver\b", "", t, flags=re.IGNORECASE)
+
+    # Collapse whitespace
+    t = " ".join(t.split()).strip()
+    return t
+
+def _shorten(text: str, max_chars: int) -> str:
+    t = (text or "").strip()
+    if len(t) <= max_chars:
+        return t
+    t = t[: max_chars - 1].rstrip()
+    return t + "…"
+
 async def generate_ai_reply(user_message: str) -> str:
     try:
         prompt = f"""{ABOUT_LUCAS}
@@ -689,7 +718,9 @@ Write the best possible reply now (friendly, concise).
 """
         loop = asyncio.get_event_loop()
         reply = await loop.run_in_executor(None, lambda: ollama_generate(prompt))
-        return (reply or "").strip()
+        reply = (reply or "").strip()
+        reply = _strip_links_and_discord_words(reply)
+        return reply
     except Exception as e:
         log(f"❌ Local model reply error: {e}")
         return ""
@@ -1200,8 +1231,8 @@ def dm_link_router(content_lower: str) -> str | None:
             return f"Instagram: {INSTAGRAM_URL}\n\n{build_other_options_hint(['instagram'])}"
         return "I don’t have the Instagram link saved right now."
 
-    # X / Twitter
-    if "x.com" in t or "twitter" in t or t == "x":
+    # X / Twitter (match "x" as a standalone word too)
+    if "x.com" in t or "twitter" in t or re.search(r"\bx\b", t):
         if X_URL:
             return f"X: {X_URL}\n\n{build_other_options_hint(['x'])}"
         return "I don’t have the X link saved right now."
@@ -1237,6 +1268,16 @@ def dm_link_router(content_lower: str) -> str | None:
         return "\n".join(lines)
 
     return None
+
+DM_DELAY_MIN_SECONDS = 3
+DM_DELAY_MAX_SECONDS = 5
+
+async def dm_human_delay(channel):
+    try:
+        async with channel.typing():
+            await asyncio.sleep(random.randint(DM_DELAY_MIN_SECONDS, DM_DELAY_MAX_SECONDS))
+    except Exception:
+        await asyncio.sleep(random.randint(DM_DELAY_MIN_SECONDS, DM_DELAY_MAX_SECONDS))
 
 async def handle_dm_reply(message):
     # Log inbound DM
