@@ -1449,10 +1449,18 @@ async def handle_dm_reply(message):
     username = str(message.author)
     content = (message.content or "").strip()
     content_lower = content.lower().strip()
+    # Full lore on request (DM-only)
+    if content_lower in ["full story", "full lore", "the full story", "tell me the full story"]:
+        set_dm_topic(user_id, "lore")
+        await send_logged(message.channel, guild_id="", content=QUIET_REACH_CANON_LORE_FULL[:1800], is_dm=1)
+        return
     await dm_human_delay(message.channel)
 
     # Bot identity / lore (DM-only)
     if any(p in content_lower for p in [
+    "how did you come about", "how were you made", "how were you created",
+    "how did you get made", "are you a bot", "you are a bot", "you're a bot",
+    "are you human", "what made you", "who built you",
     "who are you", "what are you", "who made you", "how old are you",
     "your backstory", "backstory",
     "your story", "tell me your story", "tell me about you",
@@ -1462,7 +1470,7 @@ async def handle_dm_reply(message):
     ]):
         lore = random.choice(BOT_BACKSTORY_LINES)
         set_dm_topic(user_id, "lore")
-        msg = f"{lore}\n\nWhat do you want — links, a preview, or info about Lucas?"
+        msg = f"{lore}\n\nIf you want the full legend, just say: `full story`."
         await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
         return
 
@@ -1744,6 +1752,42 @@ def is_who_is_lucas_question(text: str) -> bool:
         return False
     return ("who is lucas" in t) or ("who's lucas" in t) or ("whos lucas" in t)
 
+PUBLIC_IGNORE_AFTER_HOSTILE_SECONDS = 60 * 10  # 10 min
+_public_ignore_until = {}  # (channel_id, user_id) -> datetime
+
+
+def is_hostile(text: str) -> bool:
+    t = (text or "").lower()
+    if not t:
+        return False
+
+    hostile_phrases = [
+        "fuck you", "go fuck yourself", "go to hell",
+        "get the hell out", "shut up", "leave me alone",
+        "dumb bot", "stupid bot", "trash bot",
+    ]
+    if any(p in t for p in hostile_phrases):
+        return True
+
+    if ("bot" in t) and any(w in t for w in ["dumb", "stupid", "idiot"]):
+        return True
+
+    return False
+
+
+def ignoring_user(channel_id: int, user_id: int) -> bool:
+    until = _public_ignore_until.get((channel_id, user_id))
+    if not until:
+        return False
+    if datetime.now() >= until:
+        _public_ignore_until.pop((channel_id, user_id), None)
+        return False
+    return True
+
+
+def set_ignore_user(channel_id: int, user_id: int):
+    _public_ignore_until[(channel_id, user_id)] = datetime.now() + timedelta(seconds=PUBLIC_IGNORE_AFTER_HOSTILE_SECONDS)
+
 # ============================================================
 # 🧭 INTENT HELPERS (contact / links / platform questions)
 # ============================================================
@@ -1869,6 +1913,10 @@ PUBLIC_QUESTION_OPENERS = [
     "For sure.",
 ]
 
+QUIET_REACH_CANON_LORE_FULL = """
+<PASTE YOUR FULL BACKSTORY TEXT HERE EXACTLY>
+""".strip()
+
 BOT_BACKSTORY_LINES = [
     "Fun fact: I’m basically a forest-ranger clipboard that got promoted into Lucas’s assistant.",
     "Little backstory: I started as a “quiet outreach” experiment… now I’m the official trail-guide for Lucas content.",
@@ -1909,44 +1957,6 @@ async def build_public_response(user_text: str, touches: int) -> str:
                 "Lucas is a content creator. If you tell me what you’re looking for (live, premium, or socials), "
                 "I can point you the right way — and I can DM official links if you ask."
             )
-
-        PUBLIC_IGNORE_AFTER_HOSTILE_SECONDS = 60 * 10  # 10 min
-_public_ignore_until = {}  # (channel_id, user_id) -> datetime
-
-
-def is_hostile(text: str) -> bool:
-    t = (text or "").lower()
-    if not t:
-        return False
-
-    # Keep it simple and high-signal
-    hostile_phrases = [
-        "fuck you", "go fuck yourself", "go to hell",
-        "get the hell out", "shut up", "leave me alone",
-        "dumb bot", "stupid bot", "trash bot",
-    ]
-    if any(p in t for p in hostile_phrases):
-        return True
-
-    # light profanity + direct attack
-    if ("bot" in t) and any(w in t for w in ["dumb", "stupid", "idiot"]):
-        return True
-
-    return False
-
-
-def ignoring_user(channel_id: int, user_id: int) -> bool:
-    until = _public_ignore_until.get((channel_id, user_id))
-    if not until:
-        return False
-    if datetime.now() >= until:
-        _public_ignore_until.pop((channel_id, user_id), None)
-        return False
-    return True
-
-
-def set_ignore_user(channel_id: int, user_id: int):
-    _public_ignore_until[(channel_id, user_id)] = datetime.now() + timedelta(seconds=PUBLIC_IGNORE_AFTER_HOSTILE_SECONDS)
 
         # Normal question: KB-grounded AI answer, then soft DM offer
         opener = random.choice(PUBLIC_QUESTION_OPENERS)
@@ -2265,7 +2275,7 @@ async def on_message(message):
         # Use the SAME public response logic (prevents hallucinations on FAQ)
         touches = get_touches(message.author.id)
         if touches <= 0:
-        touches = 1
+            touches = 1
 
         reply_text = await build_public_response(message.content, touches)
         reply_text = _strip_links_and_discord_words(reply_text)
