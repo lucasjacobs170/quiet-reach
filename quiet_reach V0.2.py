@@ -1529,6 +1529,27 @@ def consume_followup(channel_id: int, user_id: int):
 DM_OFFER_WINDOW_SECONDS = 120  # 2 minutes to accept DM offer
 _dm_offers = {}  # (channel_id, user_id) -> expires_at (datetime)
 
+# --- Pending DM request memory (so DM fulfills what they asked for) ---
+PENDING_DM_REQUEST_WINDOW_SECONDS = 180  # 3 minutes
+_pending_dm_requests = {}  # (channel_id, user_id) -> {"text": str, "expires": dt}
+
+def remember_pending_dm_request(channel_id: int, user_id: int, original_text: str):
+    _pending_dm_requests[(channel_id, user_id)] = {
+        "text": (original_text or "").strip(),
+        "expires": datetime.now() + timedelta(seconds=PENDING_DM_REQUEST_WINDOW_SECONDS),
+    }
+
+def pop_pending_dm_request(channel_id: int, user_id: int) -> str | None:
+    key = (channel_id, user_id)
+    row = _pending_dm_requests.get(key)
+    if not row:
+        return None
+    if datetime.now() > row["expires"]:
+        _pending_dm_requests.pop(key, None)
+        return None
+    _pending_dm_requests.pop(key, None)
+    return (row.get("text") or "").strip()
+
 
 def start_dm_offer(channel_id: int, user_id: int):
     _dm_offers[(channel_id, user_id)] = datetime.now() + timedelta(seconds=DM_OFFER_WINDOW_SECONDS)
@@ -1556,6 +1577,18 @@ def is_affirmative(text: str) -> bool:
 def is_negative(text: str) -> bool:
     msg = (text or "").strip().lower()
     return any(has_keyword(msg, w) for w in get_keywords("no"))
+
+def is_dm_request_phrase(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    phrases = [
+        "dm me", "pm me", "message me", "msg me",
+        "send me a dm", "send me a pm",
+        "private message me", "send me a private message",
+        "send it privately", "can you dm", "can u dm",
+    ]
+    return any(p in t for p in phrases)
     
 async def is_reply_to_bot(message) -> bool:
     """
@@ -1684,8 +1717,13 @@ async def on_message(message):
         or "twitter" in raw
         or "x.com" in raw
     ):
-        await message.reply(
-            "Yep — I can DM you that. Reply “yes” and I’ll send the links privately.",
+        # Remember what they asked for, so when they consent we DM the exact thing
+        remember_pending_dm_request(message.channel.id, message.author.id, message.content)
+
+        await reply_logged(
+            message,
+            "I keep links out of the channel so it doesn’t turn into spam. "
+            "Reply “yes” and I’ll DM you the link privately.",
             mention_author=False
         )
         start_dm_offer(message.channel.id, message.author.id)
@@ -1867,7 +1905,7 @@ async def on_message(message):
         return
     # If the bot recently offered to DM this user, accept natural "yes" as opt-in
     if dm_offer_active(message.channel.id, message.author.id):
-        if is_affirmative(message.content):
+        if is_affirmative(message.content) or is_dm_request_phrase(message.content):
             clear_dm_offer(message.channel.id, message.author.id)
             set_opt_in(message.author.id, str(message.author), 1)
             await message.reply("Perfect — I’ll DM you details.", mention_author=False)
