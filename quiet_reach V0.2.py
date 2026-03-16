@@ -1252,8 +1252,24 @@ def dm_link_router(content_lower: str) -> str | None:
 
     soft = random.choice(DM_SOFTENERS)
 
-    # 1) Explicit "give me all links"
-    if t in ["links", "link list", "all links", "socials", "social", "contact"]:
+    # 1) Contact intent -> give best contact options (not a sales pitch)
+    if is_contact_intent(t):
+        lines = [soft, "Best ways to contact / follow Lucas:"]
+        if SERVER_INVITE:
+            lines.append(f"- Discord: {SERVER_INVITE}")
+            lines.append(f"  {LINK_BLURBS['discord']}")
+        if X_URL:
+            lines.append(f"- X: {X_URL}")
+            lines.append(f"  {LINK_BLURBS['x']}")
+        if INSTAGRAM_URL:
+            lines.append(f"- Instagram: {INSTAGRAM_URL}")
+            lines.append(f"  {LINK_BLURBS['instagram']}")
+        lines.append("")
+        lines.append("If you want everything, just say `links`.")
+        return "\n".join(lines)
+
+    # 2) Any “links/socials” request -> full list
+    if is_links_request(t) or t in ["all links", "link list", "contact"]:
         return build_official_links_all_message()
 
     # Detect platform intents (supports multi-platform asks like "x instagram discord")
@@ -1266,22 +1282,17 @@ def dm_link_router(content_lower: str) -> str | None:
     wants_instagram = ("instagram" in t) or bool(re.search(r"(?:^|\s)ig(?:$|\s)", t))
     wants_x = ("x.com" in t) or ("twitter" in t) or bool(re.search(r"\bx\b", t))
     wants_chaturbate = "chaturbate" in t
-    wants_onlyfans = ("onlyfans" in t) or (t == "of") or (" onlyfans" in t) or ("of " in t)
+    wants_onlyfans = ("onlyfans" in t) or (t.strip() == "of")
 
     wants_free = ("free" in t)
     wants_paid = ("paid" in t) or ("vip" in t)
 
     requested = []
-    if wants_discord:
-        requested.append("discord")
-    if wants_instagram:
-        requested.append("instagram")
-    if wants_x:
-        requested.append("x")
-    if wants_chaturbate:
-        requested.append("chaturbate")
-    if wants_onlyfans:
-        requested.append("onlyfans")
+    if wants_discord: requested.append("discord")
+    if wants_instagram: requested.append("instagram")
+    if wants_x: requested.append("x")
+    if wants_chaturbate: requested.append("chaturbate")
+    if wants_onlyfans: requested.append("onlyfans")
 
     # If they mentioned 2+ platforms, give those (not the entire list)
     if len(requested) >= 2:
@@ -1309,7 +1320,6 @@ def dm_link_router(content_lower: str) -> str | None:
             except_keys.append("chaturbate")
 
         if "onlyfans" in requested:
-            # If they specify free/paid in the same sentence, honor it
             if wants_free and ONLYFANS_FREE_URL:
                 lines.append(f"- OnlyFans (free): {ONLYFANS_FREE_URL}")
                 lines.append(f"  {LINK_BLURBS['onlyfans_free']}")
@@ -1328,6 +1338,81 @@ def dm_link_router(content_lower: str) -> str | None:
         lines.append("")
         lines.append(build_other_options_hint(except_keys))
         return "\n".join(lines)
+
+    # ---- Single-platform cases ----
+    if wants_discord:
+        if SERVER_INVITE:
+            return (
+                f"{soft}\n"
+                f"Discord invite: {SERVER_INVITE}\n"
+                f"{LINK_BLURBS['discord']}\n\n"
+                f"{build_other_options_hint(['discord'])}"
+            )
+        return "I don’t have the Discord invite saved right now."
+
+    if wants_instagram:
+        if INSTAGRAM_URL:
+            return (
+                f"{soft}\n"
+                f"Instagram: {INSTAGRAM_URL}\n"
+                f"{LINK_BLURBS['instagram']}\n\n"
+                f"{build_other_options_hint(['instagram'])}"
+            )
+        return "I don’t have the Instagram link saved right now."
+
+    if wants_x:
+        if X_URL:
+            return (
+                f"{soft}\n"
+                f"X: {X_URL}\n"
+                f"{LINK_BLURBS['x']}\n\n"
+                f"{build_other_options_hint(['x'])}"
+            )
+        return "I don’t have the X link saved right now."
+
+    if wants_chaturbate:
+        if CHATABURATE_URL:
+            return (
+                f"{soft}\n"
+                f"Chaturbate: {CHATABURATE_URL}\n"
+                f"{LINK_BLURBS['chaturbate']}\n\n"
+                f"{build_other_options_hint(['chaturbate'])}"
+            )
+        return "I don’t have the Chaturbate link saved right now."
+
+    if wants_onlyfans:
+        if wants_free and wants_paid:
+            pass
+        else:
+            if wants_free and ONLYFANS_FREE_URL:
+                return (
+                    f"{soft}\n"
+                    f"OnlyFans (free): {ONLYFANS_FREE_URL}\n"
+                    f"{LINK_BLURBS['onlyfans_free']}\n\n"
+                    f"{build_other_options_hint(['onlyfans'])}"
+                )
+            if wants_paid and ONLYFANS_PAID_URL:
+                return (
+                    f"{soft}\n"
+                    f"OnlyFans (paid): {ONLYFANS_PAID_URL}\n"
+                    f"{LINK_BLURBS['onlyfans_paid']}\n\n"
+                    f"{build_other_options_hint(['onlyfans'])}"
+                )
+
+        lines = [soft, "OnlyFans links:"]
+        if ONLYFANS_FREE_URL:
+            lines.append(f"- Free: {ONLYFANS_FREE_URL}")
+            lines.append(f"  {LINK_BLURBS['onlyfans_free']}")
+        if ONLYFANS_PAID_URL:
+            lines.append(f"- Paid: {ONLYFANS_PAID_URL}")
+            lines.append(f"  {LINK_BLURBS['onlyfans_paid']}")
+        if len(lines) <= 2:
+            return "I don’t have the OnlyFans links saved right now."
+        lines.append("")
+        lines.append(build_other_options_hint(["onlyfans"]))
+        return "\n".join(lines)
+
+    return None
 
     # ---- Single-platform cases ----
 
@@ -1445,6 +1530,7 @@ async def handle_dm_reply(message):
     "your vibe", "what's your vibe", "whats your vibe",
     ]):
         lore = random.choice(BOT_BACKSTORY_LINES)
+        set_dm_topic(user_id, "lore")
         msg = f"{lore}\n\nWhat do you want — links, a preview, or info about Lucas?"
         await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
         return
@@ -1461,7 +1547,23 @@ async def handle_dm_reply(message):
         log(f"🛑 {username} opted out")
         return
 
+    # If they’re asking more about ME (lore follow-up), stay in lore mode
+    topic = get_dm_topic(user_id)
+    if topic == "lore":
+        if any(p in content_lower for p in ["more about you", "more detail", "more details", "tell me more", "about you", "who are you really"]):
+            extra = random.choice(BOT_LORE_EXPANSIONS)
+            await send_logged(message.channel, guild_id="", content=extra, is_dm=1)
+            return
+
     # 🔗 DM link routing (smart: specific vs full list)
+    
+    # Platform vibe questions (don’t just re-drop links)
+    if is_platform_info_question(content):
+        key = platform_key_from_text(content_lower)
+        if key and key in PLATFORM_INFO:
+            await send_logged(message.channel, guild_id="", content=PLATFORM_INFO[key], is_dm=1)
+            return
+
     link_reply = dm_link_router(content_lower)
     if link_reply:
         await send_logged(message.channel, guild_id="", content=link_reply, is_dm=1)
@@ -1664,6 +1766,110 @@ def looks_like_question(text: str) -> bool:
         return True
     starters = ("who", "what", "when", "where", "why", "how", "can", "do", "is", "are", "does")
     return t.startswith(starters)
+
+# ============================================================
+# 🧭 INTENT HELPERS (contact / links / platform questions)
+# ============================================================
+
+def is_contact_intent(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+
+    phrases = [
+        "contact lucas", "reach lucas", "message lucas", "dm lucas", "pm lucas",
+        "talk to lucas", "get in touch", "how can i contact", "how do i contact",
+        "how can i reach", "how do i reach",
+    ]
+    return any(p in t for p in phrases)
+
+
+def is_links_request(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+
+    # catches: "show me his links", "can i get links", "links please", etc.
+    if re.search(r"\blinks?\b", t):
+        return True
+
+    # also treat "socials" as link list
+    if re.search(r"\bsocials?\b", t):
+        return True
+
+    return False
+
+
+def is_platform_info_question(text: str) -> bool:
+    """
+    True when they ask what a platform is LIKE (not asking for the link).
+    Example: "what is his discord server like?"
+    """
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+
+    has_platform = any(w in t for w in ["discord", "onlyfans", "chaturbate", "instagram", "twitter", "x.com", " x "])
+    if not has_platform:
+        return False
+
+    vibe_phrases = [
+        "what is it like", "what's it like", "what is his", "what's his",
+        "tell me about", "what goes on", "what do people do", "what kind of",
+        "what is the vibe", "what's the vibe",
+    ]
+    return looks_like_question(t) and any(p in t for p in vibe_phrases)
+
+
+PLATFORM_INFO = {
+    "discord": "It’s the community hub — updates, drops, and a place to chat with other fans. Low pressure, lots of behind-the-scenes chatter.",
+    "x": "Mostly quick updates + teasers when he posts something new, and it’s the fastest place to catch announcements.",
+    "instagram": "More casual / daily-life vibe — photos, quick check-ins, and lighter updates.",
+    "onlyfans": "That’s where the full content lives — the free page is lighter previews, and the paid page is the premium drops.",
+    "chaturbate": "That’s the live side — interactive streams where you can actually engage in real time.",
+}
+
+
+def platform_key_from_text(text: str) -> str | None:
+    t = (text or "").lower()
+    if "discord" in t:
+        return "discord"
+    if "instagram" in t or re.search(r"(?:^|\s)ig(?:$|\s)", t):
+        return "instagram"
+    if "onlyfans" in t or t.strip() == "of":
+        return "onlyfans"
+    if "chaturbate" in t:
+        return "chaturbate"
+    if "twitter" in t or "x.com" in t or re.search(r"\bx\b", t):
+        return "x"
+    return None
+
+
+# ============================================================
+# 🧠 DM "topic memory" (keeps lore follow-ups about the bot)
+# ============================================================
+
+DM_TOPIC_WINDOW_SECONDS = 180
+_dm_topic = {}  # user_id -> {"topic": str, "expires": datetime}
+
+def set_dm_topic(user_id: int, topic: str):
+    _dm_topic[user_id] = {"topic": topic, "expires": datetime.now() + timedelta(seconds=DM_TOPIC_WINDOW_SECONDS)}
+
+def get_dm_topic(user_id: int) -> str | None:
+    row = _dm_topic.get(user_id)
+    if not row:
+        return None
+    if datetime.now() > row["expires"]:
+        _dm_topic.pop(user_id, None)
+        return None
+    return row.get("topic")
+
+
+BOT_LORE_EXPANSIONS = [
+    "Okay okay—more detail: I’m basically a polite little “trail guide” program. I keep things tidy in public chats, and if you want links or specifics, I quietly bring them to DMs so nobody gets spammed.",
+    "If I had a job title it’d be: *Friendly Gatekeeper + Link Librarian.* I answer quick questions, point people to the right place, and keep Lucas’s socials organized so you don’t have to hunt.",
+    "I’m built to be helpful first: clarify what you want, then deliver the cleanest answer (links in DMs, short answers in public). No chaos, no channel spam.",
+]
 
 DM_SOFTENERS = [
     "Totally —",
