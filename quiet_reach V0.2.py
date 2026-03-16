@@ -1287,6 +1287,7 @@ async def handle_dm_reply(message):
     username = str(message.author)
     content = (message.content or "").strip()
     content_lower = content.lower().strip()
+    await dm_human_delay(message.channel)
 
     # Opt-out
     if content_lower in ["stop", "remove", "opt out", "optout"]:
@@ -1761,6 +1762,8 @@ async def on_message(message):
 
         touches = record_touch(message.author.id, str(message.author))
         reply_text = await build_public_response(message.content, touches)
+        reply_text = _strip_links_and_discord_words(reply_text)
+        reply_text = _shorten(reply_text, AI_MAX_CHARS_PUBLIC)
         await message.reply(reply_text, mention_author=False)
         mark_channel_replied(message.channel.id)
         start_followup(message.channel.id, message.author.id)
@@ -1800,6 +1803,8 @@ async def on_message(message):
 
             touches = record_touch(message.author.id, str(message.author))
             reply_text = await build_public_response(message.content, touches)
+            reply_text = _strip_links_and_discord_words(reply_text)
+            reply_text = _shorten(reply_text, AI_MAX_CHARS_PUBLIC)
             await message.reply(reply_text, mention_author=False)
             mark_channel_replied(message.channel.id)
             start_followup(message.channel.id, message.author.id)
