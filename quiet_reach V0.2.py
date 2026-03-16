@@ -1204,21 +1204,34 @@ async def on_ready():
         log("📣 Promo loop started.")
     
 def build_official_links_all_message() -> str:
-    lines = ["Here are Lucas’s official links (DM-only):"]
+    lines = ["Here are Lucas’s official links (DM-only) + what each one is for:"]
 
     if CHATABURATE_URL:
         lines.append(f"- Chaturbate: {CHATABURATE_URL}")
+        lines.append(f"  {LINK_BLURBS['chaturbate']}")
+
     if ONLYFANS_FREE_URL:
         lines.append(f"- OnlyFans (free): {ONLYFANS_FREE_URL}")
+        lines.append(f"  {LINK_BLURBS['onlyfans_free']}")
+
     if ONLYFANS_PAID_URL:
         lines.append(f"- OnlyFans (paid): {ONLYFANS_PAID_URL}")
+        lines.append(f"  {LINK_BLURBS['onlyfans_paid']}")
+
     if X_URL:
         lines.append(f"- X: {X_URL}")
+        lines.append(f"  {LINK_BLURBS['x']}")
+
     if INSTAGRAM_URL:
         lines.append(f"- Instagram: {INSTAGRAM_URL}")
+        lines.append(f"  {LINK_BLURBS['instagram']}")
+
     if SERVER_INVITE:
         lines.append(f"- Discord: {SERVER_INVITE}")
+        lines.append(f"  {LINK_BLURBS['discord']}")
 
+    lines.append("")
+    lines.append("If you want, tell me which vibe you want (live / premium / socials) and I’ll narrow it down.")
     return "\n".join(lines)
 
 
@@ -1268,7 +1281,11 @@ def dm_link_router(content_lower: str) -> str | None:
         lines.append("If you want everything, just say `links`.")
         return "\n".join(lines)
 
-    # 2) Any “links/socials” request -> full list
+    # 2) If they ask for info/explanations with links, return the annotated list
+    if (("info" in t) or ("information" in t) or ("explain" in t) or ("what is this" in t) or ("what are these" in t)) and is_links_request(t):
+        return build_official_links_all_message()
+
+    # 3) Any “links/socials” request -> full list (annotated)
     if is_links_request(t) or t in ["all links", "link list", "contact"]:
         return build_official_links_all_message()
 
@@ -1681,6 +1698,52 @@ def looks_like_question(text: str) -> bool:
     starters = ("who", "what", "when", "where", "why", "how", "can", "do", "is", "are", "does")
     return t.startswith(starters)
 
+def is_greeting(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+
+    # very short greeting-y messages
+    if len(t) > 40:
+        return False
+
+    # ignore if it's clearly not just a greeting
+    if any(w in t for w in ["link", "links", "discord", "onlyfans", "chaturbate", "instagram", "x.com", "twitter", "ig"]):
+        return False
+
+    greetings = [
+        "hi", "hey", "hello", "yo", "sup", "hiya",
+        "hey there", "hi there", "hello there",
+        "hii", "heyy", "heyya",
+    ]
+    if t in greetings:
+        return True
+
+    # "hey quiet reach", "hi @bot"
+    if t.startswith(("hi ", "hey ", "hello ")):
+        return True
+
+    return False
+
+
+def is_purpose_question(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    phrases = [
+        "what are you", "who are you", "what is this", "what is your purpose",
+        "what's your purpose", "whats your purpose",
+        "why are you here", "what do you do",
+    ]
+    return any(p in t for p in phrases)
+
+
+def is_who_is_lucas_question(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    return ("who is lucas" in t) or ("who's lucas" in t) or ("whos lucas" in t)
+
 # ============================================================
 # 🧭 INTENT HELPERS (contact / links / platform questions)
 # ============================================================
@@ -1793,12 +1856,17 @@ DM_SOFTENERS = [
     "Good question —",
 ]
 
-PUBLIC_SMALLTALK = [
-    "Ooo good question.",
-    "Love that you asked.",
-    "Okay wait—yes.",
-    "Real quick:",
-    "Alright, trail-guide mode on:",
+PUBLIC_GREETING_OPENERS = [
+    "Hey!",
+    "Hi there.",
+    "Yo.",
+    "Hey hey.",
+]
+
+PUBLIC_QUESTION_OPENERS = [
+    "Good question.",
+    "Yep — I can help with that.",
+    "For sure.",
 ]
 
 BOT_BACKSTORY_LINES = [
@@ -1812,42 +1880,62 @@ def optin_footer() -> str:
 
 async def build_public_response(user_text: str, touches: int) -> str:
     """
-    Returns a public reply that feels conversational:
-    - If they asked a question -> answer it using generate_ai_reply()
-    - Otherwise -> light engagement + invite a question
+    Public replies should be:
+    - Genuine on greetings (no "good question", no "preview/details")
+    - Safe/non-hallucinatory for "who is lucas" + "what are you"
+    - Otherwise: short helpful prompt + offer DM only when relevant
     """
     msg = (user_text or "").strip()
+    raw = msg.lower().strip()
 
-    # If it's a question (or early touches), answer with AI using KB
+    # 1) Greetings: keep it natural + non-salesy
+    if is_greeting(msg):
+        opener = random.choice(PUBLIC_GREETING_OPENERS)
+        return (
+            f"{opener} I’m Quiet Reach — Lucas’s assistant. "
+            "What can I help you with?"
+        )
+
+    # 2) Public FAQ overrides (reduce weird AI drift / hallucinations)
     if looks_like_question(msg):
+        if is_purpose_question(msg):
+            return (
+                "I’m Lucas’s assistant — I answer quick questions and help point people "
+                "to his official pages. If you ever want links, I can DM them so the channel stays clean."
+            )
+
+        if is_who_is_lucas_question(msg):
+            return (
+                "Lucas is a content creator. If you tell me what you’re looking for (live, premium, or socials), "
+                "I can point you the right way — and I can DM official links if you ask."
+            )
+
+        # Normal question: KB-grounded AI answer, then soft DM offer
+        opener = random.choice(PUBLIC_QUESTION_OPENERS)
         ai = await generate_ai_reply(msg)
         if ai:
-            return f"{ai}{optin_footer()}"
-        return f"I'm not 100% sure on that, but I can try to help here.{optin_footer()}"
+            return f"{opener} {ai}{optin_footer()}"
+        return f"{opener} I’m not 100% sure on that, but I can try to help.{optin_footer()}"
 
-    # Not a question: make it more organic + varied by touch count
-    prefix = random.choice(PUBLIC_SMALLTALK)
-
+    # 3) Non-question, non-greeting (mentions/replies that are vague)
+    # Keep it simple and human
     if touches <= 1:
         return (
-            f"{prefix} I’m Lucas’s assistant. What were you looking for—"
-            f"preview or details?{optin_footer()}"
+            "Hey — I’m Lucas’s assistant. "
+            "If you tell me what you’re looking for, I’ll point you the right way."
         )
-    elif touches < NUDGE_AFTER_TOUCHES:
+
+    # Later touches: gently steer
+    if touches == 3:
         return (
-            f"{prefix} Tell me what you’re into / what you’re looking for and I’ll point you right."
-            f"{optin_footer()}"
+            "Quick heads up: I keep server replies limited so I don’t spam the channel. "
+            "If you want details, I can DM you — just reply “yes”."
         )
-    else:
-        if touches == 3:
-            return (
-                f"{prefix} Quick heads up: I keep server replies limited so I don’t spam the channel."
-                f" If you want details, I can DM you — just reply “yes”."
-            )
-        return (
-            f"{prefix} Want me to keep it here in chat, or DM you details?"
-            f" (Reply 'yes' and I’ll DM you.)"
-        )
+
+    return (
+        "Got you. What are you looking for — info about Lucas, or where to find him? "
+        "If you want links, I can DM them."
+    )
 
 @client.event
 async def on_message(message):
