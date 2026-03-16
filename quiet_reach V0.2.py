@@ -1910,6 +1910,44 @@ async def build_public_response(user_text: str, touches: int) -> str:
                 "I can point you the right way — and I can DM official links if you ask."
             )
 
+        PUBLIC_IGNORE_AFTER_HOSTILE_SECONDS = 60 * 10  # 10 min
+_public_ignore_until = {}  # (channel_id, user_id) -> datetime
+
+
+def is_hostile(text: str) -> bool:
+    t = (text or "").lower()
+    if not t:
+        return False
+
+    # Keep it simple and high-signal
+    hostile_phrases = [
+        "fuck you", "go fuck yourself", "go to hell",
+        "get the hell out", "shut up", "leave me alone",
+        "dumb bot", "stupid bot", "trash bot",
+    ]
+    if any(p in t for p in hostile_phrases):
+        return True
+
+    # light profanity + direct attack
+    if ("bot" in t) and any(w in t for w in ["dumb", "stupid", "idiot"]):
+        return True
+
+    return False
+
+
+def ignoring_user(channel_id: int, user_id: int) -> bool:
+    until = _public_ignore_until.get((channel_id, user_id))
+    if not until:
+        return False
+    if datetime.now() >= until:
+        _public_ignore_until.pop((channel_id, user_id), None)
+        return False
+    return True
+
+
+def set_ignore_user(channel_id: int, user_id: int):
+    _public_ignore_until[(channel_id, user_id)] = datetime.now() + timedelta(seconds=PUBLIC_IGNORE_AFTER_HOSTILE_SECONDS)
+
         # Normal question: KB-grounded AI answer, then soft DM offer
         opener = random.choice(PUBLIC_QUESTION_OPENERS)
         ai = await generate_ai_reply(msg)
@@ -1955,10 +1993,32 @@ async def on_message(message):
 
     raw = (message.content or "").strip().lower()
 
+    # If user is currently being ignored due to hostility, do nothing
+    if ignoring_user(message.channel.id, message.author.id):
+        return
+
+    # Hostility handling (one calm response, then ignore window)
+    if is_hostile(raw):
+        # end any follow-up / DM offer state so we don't keep engaging
+        clear_dm_offer(message.channel.id, message.author.id)
+        _followups.pop((message.channel.id, message.author.id), None)
+
+        await server_reply(
+            message,
+            "Got it — I’ll back off. If you need anything later (info about Lucas or links in DM), just ask.",
+            mention_author=False,
+        )
+        set_ignore_user(message.channel.id, message.author.id)
+        return
+
     # 🔒 Never share links publicly (Discord + socials). DM-only.
     if (
         "discord" in raw
         or re.search(r"\bx\b", raw)
+        or re.search(r"\blinks?\b", raw)
+        or re.search(r"\bsocials?\b", raw)
+        or "send me a link" in raw
+        or "your link" in raw
         or re.search(r"(?:^|\s)ig(?:$|\s)", raw)
         or "discord.gg" in raw
         or "discord.com/invite" in raw
@@ -2202,13 +2262,16 @@ async def on_message(message):
     if can_followup(message.channel.id, message.author.id):
         consume_followup(message.channel.id, message.author.id)
 
-        reply = await generate_ai_reply(message.content)
-        if not reply:
-            reply = "Tell me what you’re looking for and I’ll point you the right way."
+        # Use the SAME public response logic (prevents hallucinations on FAQ)
+        touches = get_touches(message.author.id)
+        if touches <= 0:
+        touches = 1
 
-        reply = _strip_links_and_discord_words(reply)
-        reply = _shorten(reply, AI_MAX_CHARS_PUBLIC)
-        await server_reply(message, reply, mention_author=False)
+        reply_text = await build_public_response(message.content, touches)
+        reply_text = _strip_links_and_discord_words(reply_text)
+        reply_text = _shorten(reply_text, AI_MAX_CHARS_PUBLIC)
+
+        await server_reply(message, reply_text, mention_author=False)
         return
 
     # ==========================
