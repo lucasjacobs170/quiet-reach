@@ -1347,9 +1347,25 @@ def dm_link_router(content_lower: str) -> str | None:
 
     # OnlyFans
     if wants_onlyfans:
-        # If they specify free vs paid, give only that one
-        if wants_free and ONLYFANS_FREE_URL:
-            return (
+        # If they asked about BOTH free + paid, show both (fall through)
+        if wants_free and wants_paid:
+            pass
+        else:
+            # If they specify free vs paid, give only that one
+            if wants_free and ONLYFANS_FREE_URL:
+                return (
+                    f"{soft}\n"
+                    f"OnlyFans (free): {ONLYFANS_FREE_URL}\n"
+                    f"{LINK_BLURBS['onlyfans_free']}\n\n"
+                    f"{build_other_options_hint(['onlyfans'])}"
+                )
+            if wants_paid and ONLYFANS_PAID_URL:
+                return (
+                    f"{soft}\n"
+                    f"OnlyFans (paid): {ONLYFANS_PAID_URL}\n"
+                    f"{LINK_BLURBS['onlyfans_paid']}\n\n"
+                    f"{build_other_options_hint(['onlyfans'])}"
+                )
                 f"{soft}\n"
                 f"OnlyFans (free): {ONLYFANS_FREE_URL}\n"
                 f"{LINK_BLURBS['onlyfans_free']}\n\n"
@@ -1402,7 +1418,14 @@ async def handle_dm_reply(message):
     await dm_human_delay(message.channel)
 
     # Bot identity / lore (DM-only)
-    if any(p in content_lower for p in ["who are you", "what are you", "your backstory", "how old are you", "who made you"]):
+    if any(p in content_lower for p in [
+    "who are you", "what are you", "who made you", "how old are you",
+    "your backstory", "backstory",
+    "your story", "tell me your story", "tell me about you",
+    "who is quiet reach", "what is quiet reach",
+    "what's your deal", "whats your deal",
+    "your vibe", "what's your vibe", "whats your vibe",
+    ]):
         lore = random.choice(BOT_BACKSTORY_LINES)
         msg = f"{lore}\n\nWhat do you want — links, a preview, or info about Lucas?"
         await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
@@ -1908,7 +1931,23 @@ async def on_message(message):
         if is_affirmative(message.content) or is_dm_request_phrase(message.content):
             clear_dm_offer(message.channel.id, message.author.id)
             set_opt_in(message.author.id, str(message.author), 1)
-            await message.reply("Perfect — I’ll DM you details.", mention_author=False)
+
+            # public acknowledgement (logged)
+            await reply_logged(message, "Perfect — check your DMs.", mention_author=False)
+
+            # Fulfill the exact request they made in public (if any)
+            pending_text = pop_pending_dm_request(message.channel.id, message.author.id)
+            if pending_text:
+                try:
+                    dm = await message.author.create_dm()
+                    link_reply = dm_link_router((pending_text or "").lower().strip())
+                    if link_reply:
+                        await send_logged(dm, guild_id="", content=link_reply, is_dm=1)
+                        return
+                except Exception as e:
+                    log(f"⚠️ Pending-DM fulfill failed: {e}")
+
+            # Fallback: normal outreach if we couldn't fulfill a specific request
             await send_outreach_dm(message.author, message.guild.id)
             return
 
