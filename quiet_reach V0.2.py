@@ -1822,9 +1822,12 @@ async def on_message(message):
 
         await reply_logged(
             message,
-            f"✅ Promo configured + enabled.\n"
-            f"- Channel: <#{message.channel.id}>\n"
-            ...
+            (
+                f"✅ Promo configured + enabled.\n"
+                f"- Channel: <#{message.channel.id}>\n"
+                f"- Window (PT): {start_pt}:00–{end_pt}:00\n"
+                f"- Promos: ON"
+            ),
             mention_author=False
         )
         return
