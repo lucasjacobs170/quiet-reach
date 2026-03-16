@@ -1741,15 +1741,16 @@ async def on_message(message):
     
     # If we recently engaged this user in this channel, allow a short multi-turn convo
     if can_followup(message.channel.id, message.author.id):
-        consume_followup(message.channel.id, message.author.id)
+    consume_followup(message.channel.id, message.author.id)
 
-        reply = await generate_ai_reply(message.content)
-        if not reply:
-            reply = "Tell me what you’re looking for and I’ll point you the right way."
+    reply = await generate_ai_reply(message.content)
+    if not reply:
+        reply = "Tell me what you’re looking for and I’ll point you the right way."
 
-        await message.reply(reply, mention_author=False)
-        # Don't mark_channel_replied here; follow-ups are already capped per-user
-        return
+    reply = _strip_links_and_discord_words(reply)
+    reply = _shorten(reply, AI_MAX_CHARS_PUBLIC)
+    await message.reply(reply, mention_author=False)
+    return
 
     # If they reply to the bot or mention it, answer publicly (no DM needed)
     is_mention = bool(client.user and client.user.mentioned_in(message))
