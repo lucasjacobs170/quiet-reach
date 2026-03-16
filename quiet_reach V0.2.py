@@ -1534,6 +1534,8 @@ async def on_message(message):
     # 🔒 Never share links publicly (Discord + socials). DM-only.
     if (
         "discord" in raw
+        or re.search(r"\bx\b", raw)
+        or re.search(r"(?:^|\s)ig(?:$|\s)", raw)
         or "discord.gg" in raw
         or "discord.com/invite" in raw
         or "invite" in raw
