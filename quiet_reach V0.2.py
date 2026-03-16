@@ -1414,92 +1414,6 @@ def dm_link_router(content_lower: str) -> str | None:
 
     return None
 
-    # ---- Single-platform cases ----
-
-    # Discord
-    if wants_discord:
-        if SERVER_INVITE:
-            return (
-                f"{soft}\n"
-                f"Discord invite: {SERVER_INVITE}\n"
-                f"{LINK_BLURBS['discord']}\n\n"
-                f"{build_other_options_hint(['discord'])}"
-            )
-        return "I don’t have the Discord invite saved right now."
-
-    # Instagram
-    if wants_instagram:
-        if INSTAGRAM_URL:
-            return (
-                f"{soft}\n"
-                f"Instagram: {INSTAGRAM_URL}\n"
-                f"{LINK_BLURBS['instagram']}\n\n"
-                f"{build_other_options_hint(['instagram'])}"
-            )
-        return "I don’t have the Instagram link saved right now."
-
-    # X / Twitter
-    if wants_x:
-        if X_URL:
-            return (
-                f"{soft}\n"
-                f"X: {X_URL}\n"
-                f"{LINK_BLURBS['x']}\n\n"
-                f"{build_other_options_hint(['x'])}"
-            )
-        return "I don’t have the X link saved right now."
-
-    # Chaturbate
-    if wants_chaturbate:
-        if CHATABURATE_URL:
-            return (
-                f"{soft}\n"
-                f"Chaturbate: {CHATABURATE_URL}\n"
-                f"{LINK_BLURBS['chaturbate']}\n\n"
-                f"{build_other_options_hint(['chaturbate'])}"
-            )
-        return "I don’t have the Chaturbate link saved right now."
-
-    # OnlyFans
-    if wants_onlyfans:
-        # If they asked about BOTH free + paid, show both (fall through)
-        if wants_free and wants_paid:
-            pass
-        else:
-            # If they specify free vs paid, give only that one
-            if wants_free and ONLYFANS_FREE_URL:
-                return (
-                    f"{soft}\n"
-                    f"OnlyFans (free): {ONLYFANS_FREE_URL}\n"
-                    f"{LINK_BLURBS['onlyfans_free']}\n\n"
-                    f"{build_other_options_hint(['onlyfans'])}"
-                )
-            if wants_paid and ONLYFANS_PAID_URL:
-                return (
-                    f"{soft}\n"
-                    f"OnlyFans (paid): {ONLYFANS_PAID_URL}\n"
-                    f"{LINK_BLURBS['onlyfans_paid']}\n\n"
-                    f"{build_other_options_hint(['onlyfans'])}"
-                )
-
-        # Otherwise give both OF links (but not every platform)
-        lines = [soft, "OnlyFans links:"]
-        if ONLYFANS_FREE_URL:
-            lines.append(f"- Free: {ONLYFANS_FREE_URL}")
-            lines.append(f"  {LINK_BLURBS['onlyfans_free']}")
-        if ONLYFANS_PAID_URL:
-            lines.append(f"- Paid: {ONLYFANS_PAID_URL}")
-            lines.append(f"  {LINK_BLURBS['onlyfans_paid']}")
-
-        if len(lines) <= 2:
-            return "I don’t have the OnlyFans links saved right now."
-
-        lines.append("")
-        lines.append(build_other_options_hint(["onlyfans"]))
-        return "\n".join(lines)
-
-    return None
-
 DM_DELAY_MIN_SECONDS = 3
 DM_DELAY_MAX_SECONDS = 5
 
@@ -1967,6 +1881,7 @@ async def on_message(message):
         or "instagram" in raw
         or "twitter" in raw
         or "x.com" in raw
+        or is_contact_intent(raw)
     ):
         # Remember what they asked for, so when they consent we DM the exact thing
         remember_pending_dm_request(message.channel.id, message.author.id, message.content)
