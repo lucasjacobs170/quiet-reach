@@ -2227,44 +2227,71 @@ class QuietReachUI:
         self.bot_thread.start()
 
     def run_bot(self):
-    try:
-        self.loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self.loop)
-
-        async def runner():
-            try:
-                await client.start(BOT_TOKEN)
-            finally:
-                try:
-                    await client.close()
-                except Exception:
-                    pass
-                asyncio.get_running_loop().stop()
-
-        self.loop.create_task(runner())
-        self.loop.run_forever()
-
-    except Exception as e:
-        log(f"❌ Bot error: {e}")
-        self.bot_running = False
-        self.root.after(0, self.reset_buttons)
-
-    finally:
+        """
+        Run discord.py on its own event loop inside the bot thread.
+        Uses create_task + run_forever to avoid aiohttp "Timeout context manager..." issues.
+        """
         try:
-            if self.loop and not self.loop.is_closed():
-                self.loop.close()
-        except Exception:
-            pass
+            self.loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.loop)
+
+            async def runner():
+                try:
+                    await client.start(BOT_TOKEN)
+                except Exception as e:
+                    log(f"❌ Bot error: {e}")
+                finally:
+                    # Make sure UI unlocks even if startup fails
+                    self.bot_running = False
+                    self.root.after(0, self.reset_buttons)
+
+                    # Stop the loop so the thread can exit
+                    try:
+                        self.loop.stop()
+                    except Exception:
+                        pass
+
+            self.loop.create_task(runner())
+            self.loop.run_forever()
+
+        except Exception as e:
+            log(f"❌ Bot loop error: {e}")
+            self.bot_running = False
+            self.root.after(0, self.reset_buttons)
+
+        finally:
+            try:
+                if self.loop and not self.loop.is_closed():
+                    self.loop.run_until_complete(self.loop.shutdown_asyncgens())
+            except Exception:
+                pass
+            try:
+                if self.loop and not self.loop.is_closed():
+                    self.loop.close()
+            except Exception:
+                pass
 
     def stop_bot(self):
         if not self.bot_running:
             return
+
         self.append_log("⏹ Stopping bot...")
-        if self.loop:
-            asyncio.run_coroutine_threadsafe(client.close(), self.loop)
         self.bot_running = False
+
+        if self.loop and self.loop.is_running():
+            async def _shutdown():
+                try:
+                    await client.close()
+                finally:
+                    try:
+                        self.loop.stop()
+                    except Exception:
+                        pass
+
+            asyncio.run_coroutine_threadsafe(_shutdown(), self.loop)
+
         self.reset_buttons()
-        self.status_label.config(text="⚫ Offline", fg='#aaaaaa')
+        self.status_label.config(text="⚫ Offline", fg="#aaaaaa")
 
     def reset_buttons(self):
         self.start_btn.config(state='normal')
