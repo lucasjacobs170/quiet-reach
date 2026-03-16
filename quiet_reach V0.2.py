@@ -167,6 +167,17 @@ OPT_OUT_RESPONSES=["Done! You've been opted out — I won't message you again. T
 # 🔐 CONFIG / LOGIN (local, per-machine)
 # ============================================================
 
+def normalize_bot_token(tok: str) -> str:
+    tok = (tok or "").strip()
+
+    # If user pasted "Bot <token>", strip prefix
+    if tok.lower().startswith("bot "):
+        tok = tok[4:].strip()
+
+    # Remove ANY whitespace anywhere (spaces/newlines/tabs)
+    tok = "".join(tok.split())
+    return tok
+
 def load_config():
     """Load config from CONFIG_PATH (if present)."""
     if not os.path.exists(CONFIG_PATH):
@@ -191,7 +202,7 @@ def apply_config(cfg: dict):
     global BOT_TOKEN, SERVER_INVITE
 
     if "BOT_TOKEN" in cfg:
-        BOT_TOKEN = (cfg.get("BOT_TOKEN") or "").strip()
+        BOT_TOKEN = normalize_bot_token(cfg.get("BOT_TOKEN") or "")
 
     if "SERVER_INVITE" in cfg and cfg.get("SERVER_INVITE"):
         SERVER_INVITE = (cfg.get("SERVER_INVITE") or "").strip()
@@ -234,7 +245,14 @@ def login_dialog(root):
 
     def on_continue():
         merged = cfg or {}
-        merged["BOT_TOKEN"] = token_var.get().strip()
+        tok = normalize_bot_token(token_var.get())
+
+        # Optional validation (prevents bad pastes)
+        if not tok or tok.count(".") < 2:
+        messagebox.showerror("Invalid Token", "BOT_TOKEN looks invalid. Paste the raw bot token (one line).")
+        return
+
+        merged["BOT_TOKEN"] = tok
         save_config(merged)
         apply_config(merged)
         win.destroy()
