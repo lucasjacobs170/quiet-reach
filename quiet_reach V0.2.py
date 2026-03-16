@@ -76,7 +76,6 @@ Personality:
 Safety/accuracy rules:
 - Use only the KNOWLEDGE BASE facts when answering about Lucas.
 - Do NOT invent links.
-- If the user asks for a link, ONLY give this Discord invite: {SERVER_INVITE}
 - If you don't know, say so and offer the Discord invite.
 """.strip()
 
@@ -1175,7 +1174,7 @@ def dm_link_router(content_lower: str) -> str | None:
         return "I don’t have the Discord invite saved right now."
 
     # Instagram
-    if "instagram" in t or "ig" in t:
+    if "instagram" in t or re.search(r"(?:^|\\s)ig(?:$|\\s)", t):
         if INSTAGRAM_URL:
             return f"Instagram: {INSTAGRAM_URL}\n\n{build_other_options_hint(['instagram'])}"
         return "I don’t have the Instagram link saved right now."
@@ -1243,14 +1242,6 @@ async def handle_dm_reply(message):
     link_reply = dm_link_router(content_lower)
     if link_reply:
         await send_logged(message.channel, guild_id="", content=link_reply, is_dm=1)
-        return
-    
-        # Discord stays DM-only too (allowed here)
-        if SERVER_INVITE:
-            lines.append(f"- Discord: {SERVER_INVITE}")
-
-        lines.append("\nTell me which one you prefer and I’ll point you the right way.")
-        await send_logged(message.channel, guild_id="", content="\n".join(lines), is_dm=1)
         return
     
     # If they are asking for info about Lucas, answer with AI (KB-grounded)
