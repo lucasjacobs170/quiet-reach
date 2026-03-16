@@ -905,6 +905,24 @@ async def reply_logged(message, content: str, mention_author: bool = False, file
     return await message.reply(content, mention_author=mention_author)
 
 # ============================================================
+# ✅ SERVER REPLY HELPER (logs all public replies)
+# ============================================================
+
+async def server_reply(message, content: str, mention_author: bool = False, file=None):
+    """
+    Use this instead of message.reply(...) anywhere in SERVER channels.
+    It logs the outbound message via reply_logged().
+    """
+    return await reply_logged(message, content, mention_author=mention_author, file=file)
+
+
+async def server_send(channel, guild_id, content: str = "", file=None):
+    """
+    Use this instead of channel.send(...) for SERVER sends (promos).
+    """
+    return await send_logged(channel, guild_id=str(guild_id or ""), content=content, file=file, is_dm=0)
+
+# ============================================================
 # 📣 PROMO AUTOPOST (daily PT window -> stored UTC)
 # ============================================================
 
@@ -1057,12 +1075,10 @@ async def _post_promo(guild_id: int, channel_id: int, caption: str, image_path: 
     try:
         if image_path:
             with open(image_path, "rb") as f:
-                await channel.send(
-                    content=caption,
-                    file=discord.File(f, filename=os.path.basename(image_path))
-                )
+                file = discord.File(f, filename=os.path.basename(image_path))
+                await server_send(channel, guild_id=guild_id, content=caption, file=file)
         else:
-            await channel.send(content=caption)
+            await server_send(channel, guild_id=guild_id, content=caption)
 
         promo_record_history(guild_id, channel_id, image_path or "", caption)
         log(f"📣 Promo posted in {guild.name} #{getattr(channel,'name','?')}")
@@ -1071,7 +1087,7 @@ async def _post_promo(guild_id: int, channel_id: int, caption: str, image_path: 
     except FileNotFoundError:
         log(f"⚠️ Promo image missing: {image_path} (posting text only)")
         try:
-            await channel.send(content=caption)
+            await server_send(channel, guild_id=guild_id, content=caption)
             promo_record_history(guild_id, channel_id, "", caption)
             return True
         except Exception as e:
@@ -1761,7 +1777,7 @@ async def on_message(message):
         text = COMMANDS_HELP_TEXT
         if len(text) > 1900:
             text = text[:1900] + "\n…(truncated)"
-        await message.reply(f"```{text}```", mention_author=False)
+        await reply_logged(message, f"```{text}```", mention_author=False)
         return
 
     # (optional comment)
@@ -1774,7 +1790,7 @@ async def on_message(message):
             is_reply = await is_reply_to_bot(message)
             if is_reply and is_affirmative(message.content) and (not get_opt_in(message.author.id)):
                 set_opt_in(message.author.id, str(message.author), 1)
-                await message.reply("Perfect — I’ll DM you a preview.", mention_author=False)
+                await reply_logged(message, "Perfect — I’ll DM you a preview.", mention_author=False)
                 await send_outreach_dm(message.author, message.guild.id)
                 return
     except Exception as e:
@@ -1804,11 +1820,11 @@ async def on_message(message):
         promo_set_window(message.guild.id, start_pt, end_pt)
         promo_set_enabled(message.guild.id, True)
 
-        await message.reply(
+        await reply_logged(
+            message,
             f"✅ Promo configured + enabled.\n"
             f"- Channel: <#{message.channel.id}>\n"
-            f"- Window (PT): {start_pt}:00–{end_pt}:00\n"
-            f"Run `!promonow` to test or `!promostatus`.",
+            ...
             mention_author=False
         )
         return
@@ -1822,7 +1838,7 @@ async def on_message(message):
             promo_set_channel(message.guild.id, message.channel.id)
             # ensure a default window + next schedule exists
             promo_set_window(message.guild.id, PROMO_DEFAULT_WINDOW_START, PROMO_DEFAULT_WINDOW_END)
-            await message.reply("✅ Promo channel set for this server.", mention_author=False)
+            await reply_logged(message, "✅ Promo channel set for this server.", mention_author=False)
             return
 
         if raw.startswith("!promowindow"):
