@@ -689,6 +689,20 @@ async def classify_reply_with_ai(user_message: str) -> str:
 AI_MAX_CHARS_DM = 260
 AI_MAX_CHARS_PUBLIC = 220
 
+_dm_cta_counter = {}  # user_id -> int
+
+def maybe_add_dm_cta(user_id: int, text: str) -> str:
+    """
+    Add the server CTA occasionally (every 4th DM), not every message.
+    """
+    n = _dm_cta_counter.get(user_id, 0) + 1
+    _dm_cta_counter[user_id] = n
+
+    if n % 4 != 0:
+        return text
+
+    return (text.rstrip() + "\n\nIf you want to join the server, just type `link`.").strip()
+
 def _strip_links_and_discord_words(text: str) -> str:
     t = (text or "").strip()
 
@@ -1366,18 +1380,6 @@ def dm_link_router(content_lower: str) -> str | None:
                     f"{LINK_BLURBS['onlyfans_paid']}\n\n"
                     f"{build_other_options_hint(['onlyfans'])}"
                 )
-                f"{soft}\n"
-                f"OnlyFans (free): {ONLYFANS_FREE_URL}\n"
-                f"{LINK_BLURBS['onlyfans_free']}\n\n"
-                f"{build_other_options_hint(['onlyfans'])}"
-            )
-        if wants_paid and ONLYFANS_PAID_URL:
-            return (
-                f"{soft}\n"
-                f"OnlyFans (paid): {ONLYFANS_PAID_URL}\n"
-                f"{LINK_BLURBS['onlyfans_paid']}\n\n"
-                f"{build_other_options_hint(['onlyfans'])}"
-            )
 
         # Otherwise give both OF links (but not every platform)
         lines = [soft, "OnlyFans links:"]
@@ -1454,7 +1456,7 @@ async def handle_dm_reply(message):
         reply = await generate_ai_reply(content)
         if not reply:
             reply = "I don’t have that detail yet. If you want, ask me a more specific question about Lucas."
-        reply += "\n\nIf you want to join the server, say `link`."
+        reply = maybe_add_dm_cta(user_id, reply)
         await send_logged(message.channel, guild_id="", content=reply, is_dm=1)
         return
 
@@ -1487,7 +1489,7 @@ async def handle_dm_reply(message):
     reply = await generate_ai_reply(content)
     if not reply:
         reply = "Got you. What do you want to know about Lucas?"
-    reply += "\n\nIf you want to join the server, say `link`."
+    reply = maybe_add_dm_cta(user_id, reply)
     await send_logged(message.channel, guild_id="", content=reply, is_dm=1)
     log(f"🤖 AI replied to {username}")
     
