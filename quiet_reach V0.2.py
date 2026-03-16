@@ -1212,69 +1212,168 @@ def build_other_options_hint(except_keys: list[str] | None = None) -> str:
 
 
 def dm_link_router(content_lower: str) -> str | None:
-
-    soft = random.choice(DM_SOFTENERS)
-    return f"{soft}\nChaturbate: {CHATABURATE_URL}\n{LINK_BLURBS['chaturbate']}\n\n{build_other_options_hint(['chaturbate'])}"
-    
     """
     Returns a DM response string if this message is requesting links/contact.
     Otherwise returns None so normal DM logic continues.
     """
-    t = (content_lower or "").strip()
+    t = (content_lower or "").strip().lower()
+    if not t:
+        return None
+
+    soft = random.choice(DM_SOFTENERS)
 
     # 1) Explicit "give me all links"
     if t in ["links", "link list", "all links", "socials", "social", "contact"]:
         return build_official_links_all_message()
 
-    # 2) Specific requests (return only relevant link(s))
-    # Discord
-    if (
+    # Detect platform intents (supports multi-platform asks like "x instagram discord")
+    wants_discord = (
         t in ["link", "invite", "server"]
         or "discord" in t
         or "discord.gg" in t
         or "discord.com/invite" in t
-    ):
+    )
+    wants_instagram = ("instagram" in t) or bool(re.search(r"(?:^|\s)ig(?:$|\s)", t))
+    wants_x = ("x.com" in t) or ("twitter" in t) or bool(re.search(r"\bx\b", t))
+    wants_chaturbate = "chaturbate" in t
+    wants_onlyfans = ("onlyfans" in t) or (t == "of") or (" onlyfans" in t) or ("of " in t)
+
+    wants_free = ("free" in t)
+    wants_paid = ("paid" in t) or ("vip" in t)
+
+    requested = []
+    if wants_discord:
+        requested.append("discord")
+    if wants_instagram:
+        requested.append("instagram")
+    if wants_x:
+        requested.append("x")
+    if wants_chaturbate:
+        requested.append("chaturbate")
+    if wants_onlyfans:
+        requested.append("onlyfans")
+
+    # If they mentioned 2+ platforms, give those (not the entire list)
+    if len(requested) >= 2:
+        lines = [soft, "Here you go:"]
+        except_keys = []
+
+        if "discord" in requested and SERVER_INVITE:
+            lines.append(f"- Discord: {SERVER_INVITE}")
+            lines.append(f"  {LINK_BLURBS['discord']}")
+            except_keys.append("discord")
+
+        if "instagram" in requested and INSTAGRAM_URL:
+            lines.append(f"- Instagram: {INSTAGRAM_URL}")
+            lines.append(f"  {LINK_BLURBS['instagram']}")
+            except_keys.append("instagram")
+
+        if "x" in requested and X_URL:
+            lines.append(f"- X: {X_URL}")
+            lines.append(f"  {LINK_BLURBS['x']}")
+            except_keys.append("x")
+
+        if "chaturbate" in requested and CHATABURATE_URL:
+            lines.append(f"- Chaturbate: {CHATABURATE_URL}")
+            lines.append(f"  {LINK_BLURBS['chaturbate']}")
+            except_keys.append("chaturbate")
+
+        if "onlyfans" in requested:
+            # If they specify free/paid in the same sentence, honor it
+            if wants_free and ONLYFANS_FREE_URL:
+                lines.append(f"- OnlyFans (free): {ONLYFANS_FREE_URL}")
+                lines.append(f"  {LINK_BLURBS['onlyfans_free']}")
+            elif wants_paid and ONLYFANS_PAID_URL:
+                lines.append(f"- OnlyFans (paid): {ONLYFANS_PAID_URL}")
+                lines.append(f"  {LINK_BLURBS['onlyfans_paid']}")
+            else:
+                if ONLYFANS_FREE_URL:
+                    lines.append(f"- OnlyFans (free): {ONLYFANS_FREE_URL}")
+                    lines.append(f"  {LINK_BLURBS['onlyfans_free']}")
+                if ONLYFANS_PAID_URL:
+                    lines.append(f"- OnlyFans (paid): {ONLYFANS_PAID_URL}")
+                    lines.append(f"  {LINK_BLURBS['onlyfans_paid']}")
+            except_keys.append("onlyfans")
+
+        lines.append("")
+        lines.append(build_other_options_hint(except_keys))
+        return "\n".join(lines)
+
+    # ---- Single-platform cases ----
+
+    # Discord
+    if wants_discord:
         if SERVER_INVITE:
-            return f"Discord invite: {SERVER_INVITE}\n\n{build_other_options_hint(['discord'])}"
+            return (
+                f"{soft}\n"
+                f"Discord invite: {SERVER_INVITE}\n"
+                f"{LINK_BLURBS['discord']}\n\n"
+                f"{build_other_options_hint(['discord'])}"
+            )
         return "I don’t have the Discord invite saved right now."
 
     # Instagram
-    if "instagram" in t or re.search(r"(?:^|\\s)ig(?:$|\\s)", t):
+    if wants_instagram:
         if INSTAGRAM_URL:
-            return f"X: {X_URL}\n{LINK_BLURBS['x']}\n\n{build_other_options_hint(['x'])}"
+            return (
+                f"{soft}\n"
+                f"Instagram: {INSTAGRAM_URL}\n"
+                f"{LINK_BLURBS['instagram']}\n\n"
+                f"{build_other_options_hint(['instagram'])}"
+            )
         return "I don’t have the Instagram link saved right now."
 
-    # X / Twitter (match "x" as a standalone word too)
-    if "x.com" in t or "twitter" in t or re.search(r"\bx\b", t):
+    # X / Twitter
+    if wants_x:
         if X_URL:
-            return f"X: {X_URL}\n{LINK_BLURBS['x']}\n\n{build_other_options_hint(['x'])}"
+            return (
+                f"{soft}\n"
+                f"X: {X_URL}\n"
+                f"{LINK_BLURBS['x']}\n\n"
+                f"{build_other_options_hint(['x'])}"
+            )
         return "I don’t have the X link saved right now."
 
     # Chaturbate
-    if "chaturbate" in t:
+    if wants_chaturbate:
         if CHATABURATE_URL:
-            return f"X: {X_URL}\n{LINK_BLURBS['x']}\n\n{build_other_options_hint(['x'])}"
+            return (
+                f"{soft}\n"
+                f"Chaturbate: {CHATABURATE_URL}\n"
+                f"{LINK_BLURBS['chaturbate']}\n\n"
+                f"{build_other_options_hint(['chaturbate'])}"
+            )
         return "I don’t have the Chaturbate link saved right now."
 
     # OnlyFans
-    if "onlyfans" in t or t == "of":
+    if wants_onlyfans:
         # If they specify free vs paid, give only that one
-        wants_free = ("free" in t)
-        wants_paid = ("paid" in t or "vip" in t)
-
         if wants_free and ONLYFANS_FREE_URL:
-            return f"X: {X_URL}\n{LINK_BLURBS['x']}\n\n{build_other_options_hint(['x'])}"
+            return (
+                f"{soft}\n"
+                f"OnlyFans (free): {ONLYFANS_FREE_URL}\n"
+                f"{LINK_BLURBS['onlyfans_free']}\n\n"
+                f"{build_other_options_hint(['onlyfans'])}"
+            )
         if wants_paid and ONLYFANS_PAID_URL:
-            return f"X: {X_URL}\n{LINK_BLURBS['x']}\n\n{build_other_options_hint(['x'])}"
+            return (
+                f"{soft}\n"
+                f"OnlyFans (paid): {ONLYFANS_PAID_URL}\n"
+                f"{LINK_BLURBS['onlyfans_paid']}\n\n"
+                f"{build_other_options_hint(['onlyfans'])}"
+            )
 
-        # Generic "onlyfans link" -> give both OF links (still not “everything”)
-        lines = ["OnlyFans links:"]
+        # Otherwise give both OF links (but not every platform)
+        lines = [soft, "OnlyFans links:"]
         if ONLYFANS_FREE_URL:
             lines.append(f"- Free: {ONLYFANS_FREE_URL}")
             lines.append(f"  {LINK_BLURBS['onlyfans_free']}")
         if ONLYFANS_PAID_URL:
             lines.append(f"- Paid: {ONLYFANS_PAID_URL}")
             lines.append(f"  {LINK_BLURBS['onlyfans_paid']}")
+
+        if len(lines) <= 2:
+            return "I don’t have the OnlyFans links saved right now."
 
         lines.append("")
         lines.append(build_other_options_hint(["onlyfans"]))
@@ -1547,10 +1646,10 @@ async def build_public_response(user_text: str, touches: int) -> str:
         )
     else:
         if touches == 3:
-        return (
-            f"{prefix} Quick heads up: I keep server replies limited so I don’t spam the channel."
-            f" If you want details, I can DM you — just reply “yes”."
-        )
+            return (
+                f"{prefix} Quick heads up: I keep server replies limited so I don’t spam the channel."
+                f" If you want details, I can DM you — just reply “yes”."
+            )
         return (
             f"{prefix} Want me to keep it here in chat, or DM you details?"
             f" (Reply 'yes' and I’ll DM you.)"
