@@ -1311,16 +1311,18 @@ def dm_link_router(content_lower: str) -> str | None:
         return build_official_links_all_message()
 
     # Detect platform intents (supports multi-platform asks like "x instagram discord")
+    explicit_link = is_explicit_link_ask(t) or is_links_request(t) or is_contact_intent(t)
     wants_discord = (
         t in ["link", "invite", "server"]
-        or "discord" in t
+        or (explicit_link and ("discord" in t))
         or "discord.gg" in t
         or "discord.com/invite" in t
     )
-    wants_instagram = ("instagram" in t) or bool(re.search(r"(?:^|\s)ig(?:$|\s)", t))
-    wants_x = ("x.com" in t) or ("twitter" in t) or bool(re.search(r"\bx\b", t))
-    wants_chaturbate = "chaturbate" in t
-    wants_onlyfans = ("onlyfans" in t) or (t.strip() == "of")
+
+    wants_instagram = explicit_link and (("instagram" in t) or bool(re.search(r"(?:^|\s)ig(?:$|\s)", t)))
+    wants_x = explicit_link and (("x.com" in t) or ("twitter" in t) or bool(re.search(r"\bx\b", t)))
+    wants_chaturbate = explicit_link and ("chaturbate" in t)
+    wants_onlyfans = explicit_link and (("onlyfans" in t) or (t.strip() == "of"))
 
     wants_free = ("free" in t)
     wants_paid = ("paid" in t) or ("vip" in t)
@@ -1521,7 +1523,8 @@ async def handle_dm_reply(message):
     if is_platform_info_question(content):
         key = platform_key_from_text(content_lower)
         if key and key in PLATFORM_INFO:
-            await send_logged(message.channel, guild_id="", content=PLATFORM_INFO[key], is_dm=1)
+            msg = (PLATFORM_INFO[key] + "\n\nIf you want the official link(s) too, just say “send the link”.").strip()
+            await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
             return
 
     link_reply = dm_link_router(content_lower)
@@ -1869,23 +1872,34 @@ def is_links_request(text: str) -> bool:
 
 def is_platform_info_question(text: str) -> bool:
     """
-    True when they ask what a platform is LIKE (not asking for the link).
-    Example: "what is his discord server like?"
+    True when they are asking for info/description about a platform
+    (what it is like / what content is there), NOT asking for the link.
     """
     t = (text or "").strip().lower()
     if not t:
         return False
 
-    has_platform = any(w in t for w in ["discord", "onlyfans", "chaturbate", "instagram", "twitter", "x.com", " x "])
+    # If they are explicitly asking for links, let the link router handle it
+    if is_explicit_link_ask(t) or is_links_request(t) or is_contact_intent(t):
+        return False
+
+    has_platform = any(w in t for w in [
+        "discord", "onlyfans", "chaturbate", "instagram", "twitter", "x.com",
+    ]) or bool(re.search(r"(?:^|\s)ig(?:$|\s)", t)) or bool(re.search(r"\bx\b", t))
+
     if not has_platform:
         return False
 
-    vibe_phrases = [
-        "what is it like", "what's it like", "what is his", "what's his",
-        "tell me about", "what goes on", "what do people do", "what kind of",
-        "what is the vibe", "what's the vibe",
+    info_phrases = [
+        "what is it like", "what's it like",
+        "tell me about", "describe", "summary", "synopsis",
+        "what kind of", "what do you get", "what’s on", "whats on",
+        "what does he post", "what content", "what kind of content",
+        "so he",  # catches “so he makes outdoor content on onlyfans?”
     ]
-    return looks_like_question(t) and any(p in t for p in vibe_phrases)
+
+    # If they used a question mark OR used any info phrase, treat as info request
+    return ("?" in t) or any(p in t for p in info_phrases)
 
 
 PLATFORM_INFO = {
