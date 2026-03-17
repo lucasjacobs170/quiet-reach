@@ -1285,6 +1285,27 @@ def dm_link_router(content_lower: str) -> str | None:
     if (("info" in t) or ("information" in t) or ("explain" in t) or ("what is this" in t) or ("what are these" in t)) and is_links_request(t):
         return build_official_links_all_message()
 
+   def is_explicit_link_ask(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+
+    # direct asks
+    if re.search(r"\blinks?\b", t) or "invite" in t or "url" in t:
+        return True
+
+    # "send/drop/give/share" + platform word
+    verbs = ["send", "drop", "give", "share", "dm", "pm"]
+    platforms = ["discord", "onlyfans", "chaturbate", "instagram", "twitter", "x.com", "ig"]
+    if any(v in t for v in verbs) and any(p in t for p in platforms):
+        return True
+
+    # "where do I find/follow/join" patterns
+    if any(p in t for p in ["where", "how do i", "how can i"]) and any(pf in t for pf in platforms):
+        return True
+
+    return False
+    
     # 3) Any “links/socials” request -> full list (annotated)
     if is_links_request(t) or t in ["all links", "link list", "contact"]:
         return build_official_links_all_message()
@@ -1792,6 +1813,31 @@ def set_ignore_user(channel_id: int, user_id: int):
 # 🧭 INTENT HELPERS (contact / links / platform questions)
 # ============================================================
 
+def is_explicit_link_ask(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+
+    # direct asks
+    if re.search(r"\blinks?\b", t) or "invite" in t or "url" in t:
+        return True
+
+    # "send/drop/give/share" + platform word
+    verbs = ["send", "drop", "give", "share", "dm", "pm"]
+    platforms = ["discord", "onlyfans", "chaturbate", "instagram", "twitter", "x.com", "ig"]
+    if any(v in t for v in verbs) and any(p in t for p in platforms):
+        return True
+
+    # "where do I find/follow/join" patterns
+    if any(p in t for p in ["where", "how do i", "how can i"]) and any(pf in t for pf in platforms):
+        return True
+
+    # if they literally paste an invite/link domain
+    if "discord.gg" in t or "discord.com/invite" in t:
+        return True
+
+    return False
+
 def is_contact_intent(text: str) -> bool:
     t = (text or "").strip().lower()
     if not t:
@@ -2026,25 +2072,25 @@ async def on_message(message):
         return
 
     # 🔒 Never share links publicly (Discord + socials). DM-only.
+    # 🔒 Never share links publicly (DM-only), but ONLY when they explicitly ask for links/contact.
     if (
-        "discord" in raw
-        or re.search(r"\bx\b", raw)
-        or re.search(r"\blinks?\b", raw)
-        or re.search(r"\bsocials?\b", raw)
-        or "send me a link" in raw
-        or "your link" in raw
-        or re.search(r"(?:^|\s)ig(?:$|\s)", raw)
+        is_contact_intent(raw)
+        or is_links_request(raw)
+        or is_explicit_link_ask(raw)
         or "discord.gg" in raw
         or "discord.com/invite" in raw
-        or "invite" in raw
-        or "server link" in raw
-        or "onlyfans" in raw
-        or "chaturbate" in raw
-        or "instagram" in raw
-        or "twitter" in raw
-        or "x.com" in raw
-        or is_contact_intent(raw)
     ):
+        # Remember what they asked for, so when they consent we DM the exact thing
+        remember_pending_dm_request(message.channel.id, message.author.id, message.content)
+
+        await server_reply(
+            message,
+            "I keep links out of the channel so it doesn’t turn into spam. "
+            "Reply “yes” and I’ll DM it privately.",
+            mention_author=False,
+        )
+        start_dm_offer(message.channel.id, message.author.id)
+        return
         # Remember what they asked for, so when they consent we DM the exact thing
         remember_pending_dm_request(message.channel.id, message.author.id, message.content)
 
