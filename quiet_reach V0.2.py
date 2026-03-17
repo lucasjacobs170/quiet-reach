@@ -1284,27 +1284,6 @@ def dm_link_router(content_lower: str) -> str | None:
     # 2) If they ask for info/explanations with links, return the annotated list
     if (("info" in t) or ("information" in t) or ("explain" in t) or ("what is this" in t) or ("what are these" in t)) and is_links_request(t):
         return build_official_links_all_message()
-
-   def is_explicit_link_ask(text: str) -> bool:
-    t = (text or "").strip().lower()
-    if not t:
-        return False
-
-    # direct asks
-    if re.search(r"\blinks?\b", t) or "invite" in t or "url" in t:
-        return True
-
-    # "send/drop/give/share" + platform word
-    verbs = ["send", "drop", "give", "share", "dm", "pm"]
-    platforms = ["discord", "onlyfans", "chaturbate", "instagram", "twitter", "x.com", "ig"]
-    if any(v in t for v in verbs) and any(p in t for p in platforms):
-        return True
-
-    # "where do I find/follow/join" patterns
-    if any(p in t for p in ["where", "how do i", "how can i"]) and any(pf in t for pf in platforms):
-        return True
-
-    return False
     
     # 3) Any “links/socials” request -> full list (annotated)
     if is_links_request(t) or t in ["all links", "link list", "contact"]:
@@ -2101,17 +2080,6 @@ async def on_message(message):
             message,
             "I keep links out of the channel so it doesn’t turn into spam. "
             "Reply “yes” and I’ll DM it privately.",
-            mention_author=False,
-        )
-        start_dm_offer(message.channel.id, message.author.id)
-        return
-        # Remember what they asked for, so when they consent we DM the exact thing
-        remember_pending_dm_request(message.channel.id, message.author.id, message.content)
-
-        await server_reply(
-            message,
-            "I keep links out of the channel so it doesn’t turn into spam. "
-            "Reply “yes” and I’ll DM you the link privately.",
             mention_author=False,
         )
         start_dm_offer(message.channel.id, message.author.id)
