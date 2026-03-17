@@ -727,6 +727,44 @@ def _shorten(text: str, max_chars: int) -> str:
     t = t[: max_chars - 1].rstrip()
     return t + "…"
 
+def chunk_text(s: str, max_len: int = 1700) -> list[str]:
+    """
+    Split long text into Discord-safe chunks without cutting mid-paragraph.
+    Falls back to hard slicing if a single paragraph is too long.
+    """
+    s = (s or "").strip()
+    if not s:
+        return []
+
+    parts: list[str] = []
+    buf = ""
+
+    for para in s.split("\n\n"):
+        para = para.strip()
+        if not para:
+            continue
+
+        candidate = (buf + ("\n\n" if buf else "") + para).strip()
+        if len(candidate) <= max_len:
+            buf = candidate
+            continue
+
+        if buf:
+            parts.append(buf)
+            buf = ""
+
+        if len(para) <= max_len:
+            buf = para
+        else:
+            # Hard-slice very long paragraphs
+            for i in range(0, len(para), max_len):
+                parts.append(para[i:i + max_len])
+
+    if buf:
+        parts.append(buf)
+
+    return parts
+
 async def generate_ai_reply(user_message: str) -> str:
     try:
         prompt = f"""{ABOUT_LUCAS}
