@@ -221,8 +221,8 @@ def apply_config(cfg: dict):
 
 def discord_login_dialog(root):
     """
-    Always prompt on startup.
-    Prefills values from saved config, saves on Continue.
+    Open the Discord setup dialog.
+    Prefills values from saved config and saves on Continue.
     """
     cfg = load_config()
     log("🔐 Login dialog opened (waiting for input)")
