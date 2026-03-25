@@ -219,7 +219,7 @@ def apply_config(cfg: dict):
         SERVER_INVITE = (cfg.get("SERVER_INVITE") or "").strip()
         rebuild_invite_texts()
 
-def login_dialog(root):
+def discord_login_dialog(root):
     """
     Always prompt on startup.
     Prefills values from saved config, saves on Continue.
@@ -232,13 +232,13 @@ def login_dialog(root):
     win.attributes("-topmost", True)
     win.after(250, lambda: win.attributes("-topmost", False))
     win.focus_force()
-    win.title("Quiet Reach — Login")
+    win.title("Quiet Reach — Discord Setup")
     win.configure(bg="#1a1a2e")
     win.resizable(False, False)
     win.geometry("520x220+200+200")
 
     tk.Label(
-        win, text="Bot Login / Setup",
+        win, text="Discord Bot Setup",
         font=("Helvetica", 14, "bold"),
         bg="#1a1a2e", fg="white"
     ).pack(padx=16, pady=(14, 6))
@@ -2863,6 +2863,9 @@ class QuietReachUI:
 
         # Sections
         bot_controls = make_collapsible_section(self.discord_controls_page, "⚙️ Bot Controls", t["accent"], open_by_default=True)
+
+        make_button(bot_controls, "🔐 Discord Login / Setup", self.open_discord_setup, t["accent2"])
+
         self.start_btn = make_button(bot_controls, "▶  Start Bot", self.start_bot, t["accent"])
         self.stop_btn  = make_button(bot_controls, "⏹  Stop Bot",  self.stop_bot,  t["danger"])
         self.stop_btn.config(state="disabled")
@@ -3123,6 +3126,16 @@ class QuietReachUI:
         except Exception:
             pass
     
+    def open_discord_setup(self):
+        """
+        Open the Discord token/setup dialog from the Discord section.
+        """
+        try:
+            discord_login_dialog(self.root)
+            self.append_log("🔐 Opened Discord setup.")
+        except Exception as e:
+            self.append_log(f"❌ Failed opening Discord setup: {e}")
+    
     def append_log(self, message):
         def _update():
             self.log_area.config(state='normal')
@@ -3135,9 +3148,18 @@ class QuietReachUI:
     def start_bot(self):
         if self.bot_running:
             return
+
         if not BOT_TOKEN:
-            messagebox.showerror("Token Missing!", "Enter BOT_TOKEN in the Login dialog.")
-            return
+            self.switch_platform("discord")
+            discord_login_dialog(self.root)
+
+            if not BOT_TOKEN:
+                messagebox.showerror(
+                    "Discord Token Missing",
+                    "Add your Discord BOT_TOKEN in the Discord section before starting the bot."
+                )
+                return
+
         self.bot_running = True
         self.start_btn.config(state='disabled')
         self.stop_btn.config(state='normal')
@@ -3768,11 +3790,13 @@ class QuietReachUI:
 # ============================================================
 if __name__ == "__main__":
     setup_database()
+
+    # Load any saved config first, but do NOT force Discord login on startup
+    cfg = load_config()
+    apply_config(cfg)
+
     root = tk.Tk()
-    root.withdraw()          # hide main window during login
-    login_dialog(root)       # always prompt on launch
-    root.deiconify()         # show UI after login dialog closes
-    app  = QuietReachUI(root)
+    app = QuietReachUI(root)
     root.mainloop()
 
 
