@@ -2623,7 +2623,7 @@ class QuietReachUI:
         self.bot_thread  = None
         self.bot_running = False
         self.loop        = None
-        self.active_platform = "discord"
+        self.active_platform = "home"
 
         self.root.title("🤫 Quiet Reach — Control Panel")
         self.root.geometry("950x700")
@@ -2686,12 +2686,30 @@ class QuietReachUI:
             fg=t["muted"],
         ).pack(side="left", padx=(0, 10))
 
+        self.home_tab_btn = tk.Button(
+            nav_frame,
+            text="🏠 Home",
+            command=lambda: self.switch_platform("home"),
+            bg=t["accent"],
+            fg=t["text"],
+            font=self.font_button,
+            relief="flat",
+            cursor="hand2",
+            padx=14,
+            pady=7,
+            activebackground=t["border"],
+            activeforeground=t["text"],
+            highlightthickness=1,
+            highlightbackground=t["border"],
+        )
+        self.home_tab_btn.pack(side="left", padx=(0, 8))
+
         self.discord_tab_btn = tk.Button(
             nav_frame,
             text="💬 Discord",
             command=lambda: self.switch_platform("discord"),
-            bg=t["accent"],
-            fg=t["text"],
+            bg=t["card"],
+            fg=t["muted"],
             font=self.font_button,
             relief="flat",
             cursor="hand2",
@@ -2752,7 +2770,8 @@ class QuietReachUI:
         )
         left_card.pack(fill="x", padx=8, pady=8)
         
-        # Two switchable control pages inside the left card
+        # Three switchable control pages inside the left card
+        self.home_page = tk.Frame(left_card, bg=t["card"])
         self.discord_controls_page = tk.Frame(left_card, bg=t["card"])
         self.telegram_controls_page = tk.Frame(left_card, bg=t["card"])
 
@@ -2928,6 +2947,91 @@ class QuietReachUI:
             font=("Helvetica", 10),
         ).pack(anchor="w", padx=10, pady=(2, 10))
         
+        # =========================
+        # HOME / LANDING PAGE
+        # =========================
+        home_card = tk.Frame(self.home_page, bg=t["card"])
+        home_card.pack(fill="x", padx=8, pady=(10, 6))
+
+        tk.Label(
+            home_card,
+            text="Welcome",
+            font=self.font_section,
+            bg=t["card"],
+            fg=t["text"],
+        ).pack(anchor="w", padx=10, pady=(8, 4))
+
+        tk.Label(
+            home_card,
+            text=(
+                "Choose which platform you want to manage.\n"
+                "Discord is your current live bot setup.\n"
+                "Telegram is the new workspace we’ll build next."
+            ),
+            bg=t["card"],
+            fg=t["muted"],
+            justify="left",
+            wraplength=220,
+            font=("Helvetica", 10),
+        ).pack(anchor="w", padx=10, pady=(0, 10))
+
+        home_divider = tk.Frame(home_card, bg=t["accent"], height=2)
+        home_divider.pack(fill="x", padx=10, pady=(0, 10))
+
+        tk.Button(
+            home_card,
+            text="💬 Open Discord",
+            command=lambda: self.switch_platform("discord"),
+            bg=t["accent"],
+            fg=t["text"],
+            font=self.font_button,
+            relief="flat",
+            cursor="hand2",
+            padx=12,
+            pady=9,
+            activebackground=t["border"],
+            activeforeground=t["text"],
+            highlightthickness=1,
+            highlightbackground=t["border"],
+        ).pack(fill="x", padx=10, pady=(0, 8))
+
+        tk.Label(
+            home_card,
+            text="Current bot controls, outreach flow, lists, promos, and logs.",
+            bg=t["card"],
+            fg=t["muted"],
+            justify="left",
+            wraplength=220,
+            font=("Helvetica", 9),
+        ).pack(anchor="w", padx=12, pady=(0, 10))
+
+        tk.Button(
+            home_card,
+            text="📱 Open Telegram",
+            command=lambda: self.switch_platform("telegram"),
+            bg=t["accent2"],
+            fg=t["text"],
+            font=self.font_button,
+            relief="flat",
+            cursor="hand2",
+            padx=12,
+            pady=9,
+            activebackground=t["border"],
+            activeforeground=t["text"],
+            highlightthickness=1,
+            highlightbackground=t["border"],
+        ).pack(fill="x", padx=10, pady=(0, 8))
+
+        tk.Label(
+            home_card,
+            text="New setup area for Telegram private chats, groups, and future controls.",
+            bg=t["card"],
+            fg=t["muted"],
+            justify="left",
+            wraplength=220,
+            font=("Helvetica", 9),
+        ).pack(anchor="w", padx=12, pady=(0, 12))
+        
         # ---- RIGHT SIDE: LOG AREA (as a card) ----
         log_frame = tk.Frame(main_frame, bg=t["bg"])
         log_frame.pack(side="right", fill="both", expand=True)
@@ -2967,27 +3071,39 @@ class QuietReachUI:
             bg=t["bg"], fg=t["muted"]
         ).pack(pady=(8, 12))
 
+        self.switch_platform("home")
+
     def switch_platform(self, platform: str):
         """
-        Show either the Discord controls or the Telegram controls.
+        Show Home, Discord, or Telegram controls.
         The right-side live log stays shared.
         """
         t = self.THEME
         self.active_platform = platform
 
-        # Hide both first
+        # Hide all first
+        if hasattr(self, "home_page"):
+            self.home_page.pack_forget()
         if hasattr(self, "discord_controls_page"):
             self.discord_controls_page.pack_forget()
         if hasattr(self, "telegram_controls_page"):
             self.telegram_controls_page.pack_forget()
 
         # Show selected page
-        if platform == "discord":
+        if platform == "home":
+            self.home_page.pack(fill="x")
+        elif platform == "discord":
             self.discord_controls_page.pack(fill="x")
         else:
             self.telegram_controls_page.pack(fill="x")
 
         # Button styling
+        if hasattr(self, "home_tab_btn"):
+            self.home_tab_btn.config(
+                bg=t["accent"] if platform == "home" else t["card"],
+                fg=t["text"] if platform == "home" else t["muted"],
+            )
+
         if hasattr(self, "discord_tab_btn"):
             self.discord_tab_btn.config(
                 bg=t["accent"] if platform == "discord" else t["card"],
