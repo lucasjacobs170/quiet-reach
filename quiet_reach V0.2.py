@@ -333,14 +333,14 @@ def telegram_login_dialog(root):
 
     def on_continue():
         merged = cfg or {}
-        tok = (token_var.get() or "").strip()
+        tok = normalize_telegram_token(token_var.get())
 
-        if not tok:
-            messagebox.showerror(
-                "Invalid Token",
-                "Telegram BOT_TOKEN cannot be empty."
-            )
-            return
+        if not tok or ":" not in tok:
+        messagebox.showerror(
+            "Invalid Token",
+            "Telegram BOT_TOKEN looks invalid. Paste the raw token from BotFather on one line."
+        )
+        return
 
         merged["TELEGRAM_BOT_TOKEN"] = tok
         save_config(merged)
