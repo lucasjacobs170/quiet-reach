@@ -2623,6 +2623,7 @@ class QuietReachUI:
         self.bot_thread  = None
         self.bot_running = False
         self.loop        = None
+        self.active_platform = "discord"
 
         self.root.title("🤫 Quiet Reach — Control Panel")
         self.root.geometry("950x700")
@@ -2673,12 +2674,61 @@ class QuietReachUI:
         # DIVIDER
         tk.Frame(self.root, bg=t["accent"], height=2).pack(fill="x", padx=20, pady=(0, 10))
 
+        # PLATFORM SWITCHER
+        nav_frame = tk.Frame(self.root, bg=t["bg"])
+        nav_frame.pack(fill="x", padx=20, pady=(0, 8))
+
+        tk.Label(
+            nav_frame,
+            text="Platform",
+            font=self.font_section,
+            bg=t["bg"],
+            fg=t["muted"],
+        ).pack(side="left", padx=(0, 10))
+
+        self.discord_tab_btn = tk.Button(
+            nav_frame,
+            text="💬 Discord",
+            command=lambda: self.switch_platform("discord"),
+            bg=t["accent"],
+            fg=t["text"],
+            font=self.font_button,
+            relief="flat",
+            cursor="hand2",
+            padx=14,
+            pady=7,
+            activebackground=t["border"],
+            activeforeground=t["text"],
+            highlightthickness=1,
+            highlightbackground=t["border"],
+        )
+        self.discord_tab_btn.pack(side="left", padx=(0, 8))
+
+        self.telegram_tab_btn = tk.Button(
+            nav_frame,
+            text="📱 Telegram",
+            command=lambda: self.switch_platform("telegram"),
+            bg=t["card"],
+            fg=t["muted"],
+            font=self.font_button,
+            relief="flat",
+            cursor="hand2",
+            padx=14,
+            pady=7,
+            activebackground=t["border"],
+            activeforeground=t["text"],
+            highlightthickness=1,
+            highlightbackground=t["border"],
+        )
+        self.telegram_tab_btn.pack(side="left")
+        
         # MAIN AREA
         main_frame = tk.Frame(self.root, bg=t["bg"])
         main_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
         # ---- LEFT SIDE: SCROLLABLE BUTTON PANEL ----
-        btn_canvas = tk.Canvas(main_frame, bg=t["bg"], width=240, highlightthickness=0)
+        self.btn_canvas = tk.Canvas(main_frame, bg=t["bg"], width=240, highlightthickness=0)
+        btn_canvas = self.btn_canvas
         btn_scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=btn_canvas.yview)
         btn_scroll_frame = tk.Frame(btn_canvas, bg=t["bg"])
 
@@ -2701,6 +2751,10 @@ class QuietReachUI:
             highlightthickness=1
         )
         left_card.pack(fill="x", padx=8, pady=8)
+        
+        # Two switchable control pages inside the left card
+        self.discord_controls_page = tk.Frame(left_card, bg=t["card"])
+        self.telegram_controls_page = tk.Frame(left_card, bg=t["card"])
 
         # Button helper
         def make_button(parent, text, command, color, fg=None):
@@ -2789,17 +2843,17 @@ class QuietReachUI:
             return content
 
         # Sections
-        bot_controls = make_collapsible_section(left_card, "⚙️ Bot Controls", t["accent"], open_by_default=True)
+        bot_controls = make_collapsible_section(self.discord_controls_page, "⚙️ Bot Controls", t["accent"], open_by_default=True)
         self.start_btn = make_button(bot_controls, "▶  Start Bot", self.start_bot, t["accent"])
         self.stop_btn  = make_button(bot_controls, "⏹  Stop Bot",  self.stop_bot,  t["danger"])
         self.stop_btn.config(state="disabled")
 
-        view_lists = make_collapsible_section(left_card, "📋 View Lists", t["accent2"], open_by_default=False)
+        view_lists = make_collapsible_section(self.discord_controls_page, "📋 View Lists", t["accent2"], open_by_default=False)
         make_button(view_lists, "🔥  Warm List",    lambda: self.view_list("warm"), t["accent2"])
         make_button(view_lists, "❄️  Cold List",    lambda: self.view_list("cold"), t["accent2"])
         make_button(view_lists, "😐  Neutral List", lambda: self.view_list("neutral"), t["accent2"])
 
-        tools = make_collapsible_section(left_card, "🛠️ Tools", t["accent2"], open_by_default=False)
+        tools = make_collapsible_section(self.discord_controls_page, "🛠️ Tools", t["accent2"], open_by_default=False)
         make_button(tools, "🔍  Review Ambiguous", self.review_ambiguous, t["accent2"])
         make_button(tools, "✏️  Edit Keywords",    self.edit_keywords,   t["accent2"])
         make_button(tools, "📊  Stats",            self.show_stats,      t["accent2"])
@@ -2808,7 +2862,7 @@ class QuietReachUI:
         make_button(tools, "🧪  Dev Commands", self.open_dev_commands, t["accent2"])
         make_button(tools, "📖  Commands / Help", self.show_commands_help, t["accent2"])
 
-        reset_tools = make_collapsible_section(left_card, "🔄 Reset Tools", t["danger"], open_by_default=False)
+        reset_tools = make_collapsible_section(self.discord_controls_page, "🔄 Reset Tools", t["danger"], open_by_default=False)
         make_button(reset_tools, "🔄  Reset Warm",        self.reset_warm,      t["danger"])
         make_button(reset_tools, "🔄  Reset Cold",        self.reset_cold,      t["danger"])
         make_button(reset_tools, "🔄  Reset Neutral",     self.reset_neutral,   t["danger"])
@@ -2816,6 +2870,64 @@ class QuietReachUI:
         make_button(reset_tools, "🔄  Reset Server Caps", self.reset_caps,      t["danger"])
         make_button(reset_tools, "💀  WIPE ALL DATA",     self.reset_all,       "#7b241c")
 
+        # =========================
+        # TELEGRAM CONTROLS (placeholder for next build step)
+        # =========================
+        tg_setup = make_collapsible_section(
+            self.telegram_controls_page,
+            "📱 Telegram Setup",
+            t["accent2"],
+            open_by_default=True
+        )
+
+        tk.Label(
+            tg_setup,
+            text="Telegram support is being added next.\nThis section will hold Telegram token setup,\nprivate/group controls, and Telegram-specific actions.",
+            bg=t["card"],
+            fg=t["muted"],
+            justify="left",
+            wraplength=220,
+            font=("Helvetica", 10),
+        ).pack(anchor="w", padx=10, pady=(2, 10))
+
+        tg_status = tk.Frame(self.telegram_controls_page, bg=t["card"])
+        tg_status.pack(fill="x", padx=8, pady=(6, 4))
+
+        tk.Label(
+            tg_status,
+            text="Current status",
+            font=self.font_section,
+            bg=t["card"],
+            fg=t["text"],
+        ).pack(anchor="w", padx=6, pady=(4, 2))
+
+        tk.Label(
+            tg_status,
+            text="• UI section ready\n• Bot logic not wired yet\n• Next step: token + Telegram handlers",
+            bg=t["card"],
+            fg=t["muted"],
+            justify="left",
+            wraplength=220,
+            font=("Helvetica", 10),
+        ).pack(anchor="w", padx=10, pady=(0, 8))
+
+        tg_future = make_collapsible_section(
+            self.telegram_controls_page,
+            "🛠️ Planned Telegram Tools",
+            t["accent2"],
+            open_by_default=False
+        )
+
+        tk.Label(
+            tg_future,
+            text="Planned:\n- Set Telegram bot token\n- Start/stop Telegram bot\n- Group/private chat routing\n- Telegram logs and tests",
+            bg=t["card"],
+            fg=t["muted"],
+            justify="left",
+            wraplength=220,
+            font=("Helvetica", 10),
+        ).pack(anchor="w", padx=10, pady=(2, 10))
+        
         # ---- RIGHT SIDE: LOG AREA (as a card) ----
         log_frame = tk.Frame(main_frame, bg=t["bg"])
         log_frame.pack(side="right", fill="both", expand=True)
@@ -2855,6 +2967,46 @@ class QuietReachUI:
             bg=t["bg"], fg=t["muted"]
         ).pack(pady=(8, 12))
 
+    def switch_platform(self, platform: str):
+        """
+        Show either the Discord controls or the Telegram controls.
+        The right-side live log stays shared.
+        """
+        t = self.THEME
+        self.active_platform = platform
+
+        # Hide both first
+        if hasattr(self, "discord_controls_page"):
+            self.discord_controls_page.pack_forget()
+        if hasattr(self, "telegram_controls_page"):
+            self.telegram_controls_page.pack_forget()
+
+        # Show selected page
+        if platform == "discord":
+            self.discord_controls_page.pack(fill="x")
+        else:
+            self.telegram_controls_page.pack(fill="x")
+
+        # Button styling
+        if hasattr(self, "discord_tab_btn"):
+            self.discord_tab_btn.config(
+                bg=t["accent"] if platform == "discord" else t["card"],
+                fg=t["text"] if platform == "discord" else t["muted"],
+            )
+
+        if hasattr(self, "telegram_tab_btn"):
+            self.telegram_tab_btn.config(
+                bg=t["accent2"] if platform == "telegram" else t["card"],
+                fg=t["text"] if platform == "telegram" else t["muted"],
+            )
+
+        # Refresh scroll area
+        try:
+            self.btn_canvas.update_idletasks()
+            self.btn_canvas.configure(scrollregion=self.btn_canvas.bbox("all"))
+        except Exception:
+            pass
+    
     def append_log(self, message):
         def _update():
             self.log_area.config(state='normal')
