@@ -219,7 +219,7 @@ def apply_config(cfg: dict):
         BOT_TOKEN = normalize_bot_token(cfg.get("BOT_TOKEN") or "")
 
     if "TELEGRAM_BOT_TOKEN" in cfg:
-        TELEGRAM_BOT_TOKEN = (cfg.get("TELEGRAM_BOT_TOKEN") or "").strip()
+        TELEGRAM_BOT_TOKEN = normalize_telegram_token(cfg.get("TELEGRAM_BOT_TOKEN") or "")
 
     if "SERVER_INVITE" in cfg and cfg.get("SERVER_INVITE"):
         SERVER_INVITE = (cfg.get("SERVER_INVITE") or "").strip()
