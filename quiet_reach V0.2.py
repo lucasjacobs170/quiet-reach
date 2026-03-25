@@ -2764,6 +2764,7 @@ class QuietReachUI:
         # Telegram runtime
         self.telegram_thread = None
         self.telegram_running = False
+        self.telegram_loop = None
 
         self.active_platform = "home"
 
@@ -3434,6 +3435,9 @@ class QuietReachUI:
         global telegram_app
 
         try:
+            self.telegram_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.telegram_loop)
+
             app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
             telegram_app = app
 
@@ -3452,24 +3456,15 @@ class QuietReachUI:
         finally:
             self.telegram_running = False
             telegram_app = None
+
+            try:
+                if self.telegram_loop and not self.telegram_loop.is_closed():
+                    self.telegram_loop.close()
+            except Exception as e:
+                self.append_log(f"⚠️ Telegram loop close error: {e}")
+
+            self.telegram_loop = None
             self.root.after(0, self.reset_telegram_buttons)
-
-    def stop_telegram_bot(self):
-        global telegram_app
-
-        if not self.telegram_running:
-            return
-
-        self.append_log("⏹ Stopping Telegram bot...")
-        self.telegram_running = False
-
-        try:
-            if telegram_app:
-                telegram_app.stop_running()
-        except Exception as e:
-            self.append_log(f"⚠️ Telegram stop error: {e}")
-
-        self.reset_telegram_buttons()
 
     def reset_telegram_buttons(self):
         if hasattr(self, "telegram_start_btn"):
