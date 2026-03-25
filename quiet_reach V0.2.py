@@ -192,6 +192,12 @@ def normalize_bot_token(tok: str) -> str:
     tok = "".join(tok.split())
     return tok
 
+def normalize_telegram_token(tok: str) -> str:
+    tok = (tok or "").strip()
+    # Remove ANY whitespace anywhere (spaces/newlines/tabs)
+    tok = "".join(tok.split())
+    return tok
+
 def load_config():
     """Load config from CONFIG_PATH (if present)."""
     if not os.path.exists(CONFIG_PATH):
