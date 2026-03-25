@@ -2756,16 +2756,16 @@ class QuietReachUI:
     def __init__(self, root):
         self.root = root
 
-    # Discord runtime
-    self.bot_thread = None
-    self.bot_running = False
-    self.loop = None
-    
-    # Telegram runtime
-    self.telegram_thread = None
-    self.telegram_running = False
+        # Discord runtime
+        self.bot_thread = None
+        self.bot_running = False
+        self.loop = None
 
-    self.active_platform = "home"
+        # Telegram runtime
+        self.telegram_thread = None
+        self.telegram_running = False
+
+        self.active_platform = "home"
 
         self.root.title("🤫 Quiet Reach — Control Panel")
         self.root.geometry("950x700")
