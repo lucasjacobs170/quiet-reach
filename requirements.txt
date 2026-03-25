@@ -1,3 +1,4 @@
 discord.py
 requests
 tzdata
+python-telegram-bot>=21,<22
