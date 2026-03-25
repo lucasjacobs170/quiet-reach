@@ -6,6 +6,8 @@ from datetime import datetime, date, timedelta
 import requests
 from datetime import time, timezone
 from zoneinfo import ZoneInfo
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 BOT_TOKEN=''
 TELEGRAM_BOT_TOKEN=''
@@ -700,6 +702,8 @@ def record_touch(did: int, username: str) -> int:
 
 intents=discord.Intents.default();intents.message_content=True;intents.members=True;intents.presences=True
 client=discord.Client(intents=intents);ui_log=None
+telegram_app = None
+telegram_ui_ref = None
 # ============================================================
 # 🤖 OLLAMA AI SETUP
 # ============================================================
@@ -2557,6 +2561,62 @@ async def send_outreach_dm(user, sid):
         log(f"❌ Error DMing {user}: {e}")
 
 # ============================================================
+# 📱 TELEGRAM RUNTIME (basic skeleton)
+# ============================================================
+
+async def telegram_start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        user = update.effective_user
+        chat = update.effective_chat
+
+        if telegram_ui_ref:
+            telegram_ui_ref.append_log(
+                f"📱 Telegram /start from {getattr(user, 'username', None) or user.id} "
+                f"in chat {getattr(chat, 'id', 'unknown')}"
+            )
+
+        if update.message:
+            await update.message.reply_text(
+                "Hey — I’m Quiet Reach. Telegram support is live now, and I’m still being wired up."
+            )
+    except Exception as e:
+        if telegram_ui_ref:
+            telegram_ui_ref.append_log(f"❌ Telegram /start handler error: {e}")
+
+
+async def telegram_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        if not update.message:
+            return
+
+        user = update.effective_user
+        chat = update.effective_chat
+        text = (update.message.text or "").strip()
+
+        if telegram_ui_ref:
+            telegram_ui_ref.append_log(
+                f"📱 Telegram message from {getattr(user, 'username', None) or user.id} "
+                f"in chat {getattr(chat, 'id', 'unknown')}: {text[:120]}"
+            )
+
+        await update.message.reply_text(
+            "Got your message. Telegram behavior is being connected next."
+        )
+    except Exception as e:
+        if telegram_ui_ref:
+            telegram_ui_ref.append_log(f"❌ Telegram text handler error: {e}")
+
+
+async def telegram_on_startup(app):
+    if telegram_ui_ref:
+        telegram_ui_ref.append_log("📱 Telegram bot connected.")
+
+
+async def telegram_on_shutdown(app):
+    if telegram_ui_ref:
+        telegram_ui_ref.append_log("📱 Telegram bot stopped.")
+
+# ============================================================
 # 🖥️ TKINTER DESKTOP UI
 # ============================================================
 
@@ -2694,11 +2754,18 @@ class QuietReachUI:
         )
 
     def __init__(self, root):
-        self.root        = root
-        self.bot_thread  = None
-        self.bot_running = False
-        self.loop        = None
-        self.active_platform = "home"
+        self.root = root
+
+    # Discord runtime
+    self.bot_thread = None
+    self.bot_running = False
+    self.loop = None
+    
+    # Telegram runtime
+    self.telegram_thread = None
+    self.telegram_running = False
+
+    self.active_platform = "home"
 
         self.root.title("🤫 Quiet Reach — Control Panel")
         self.root.geometry("950x700")
@@ -2978,6 +3045,9 @@ class QuietReachUI:
         )
 
         make_button(tg_setup, "🔐 Telegram Login / Setup", self.open_telegram_setup, t["accent2"])
+        self.telegram_start_btn = make_button(tg_setup, "▶ Start Telegram Bot", self.start_telegram_bot, t["accent"])
+        self.telegram_stop_btn = make_button(tg_setup, "⏹ Stop Telegram Bot", self.stop_telegram_bot, t["danger"])
+        self.telegram_stop_btn.config(state="disabled")
 
         tk.Label(
             tg_setup,
@@ -3002,7 +3072,7 @@ class QuietReachUI:
 
         tk.Label(
             tg_status,
-            text="• UI section ready\n• Telegram token can be configured here\n• Bot logic not wired yet",
+            text="• UI section ready\n• Telegram token can be configured here\n• Basic runtime can be started here\n• Full Telegram behavior comes next",
             bg=t["card"],
             fg=t["muted"],
             justify="left",
@@ -3327,6 +3397,85 @@ class QuietReachUI:
     def reset_buttons(self):
         self.start_btn.config(state='normal')
         self.stop_btn.config(state='disabled')
+
+    def start_telegram_bot(self):
+        global telegram_ui_ref
+
+        if self.telegram_running:
+            return
+
+        if not TELEGRAM_BOT_TOKEN:
+            self.switch_platform("telegram")
+            telegram_login_dialog(self.root)
+
+            if not TELEGRAM_BOT_TOKEN:
+                messagebox.showerror(
+                    "Telegram Token Missing",
+                    "Add your Telegram BOT_TOKEN in the Telegram section before starting the bot."
+                )
+                return
+
+        self.telegram_running = True
+        telegram_ui_ref = self
+
+        if hasattr(self, "telegram_start_btn"):
+            self.telegram_start_btn.config(state="disabled")
+        if hasattr(self, "telegram_stop_btn"):
+            self.telegram_stop_btn.config(state="normal")
+
+        self.append_log("📱 Starting Telegram bot...")
+        self.telegram_thread = threading.Thread(
+            target=self.run_telegram_bot,
+            daemon=True
+        )
+        self.telegram_thread.start()
+
+    def run_telegram_bot(self):
+        global telegram_app
+
+        try:
+            app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+            telegram_app = app
+
+            app.add_handler(CommandHandler("start", telegram_start_cmd))
+            app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, telegram_text_handler))
+
+            app.post_init = telegram_on_startup
+            app.post_shutdown = telegram_on_shutdown
+
+            self.append_log("📱 Telegram polling started.")
+            app.run_polling(close_loop=False)
+
+        except Exception as e:
+            self.append_log(f"❌ Telegram bot error: {e}")
+
+        finally:
+            self.telegram_running = False
+            telegram_app = None
+            self.root.after(0, self.reset_telegram_buttons)
+
+    def stop_telegram_bot(self):
+        global telegram_app
+
+        if not self.telegram_running:
+            return
+
+        self.append_log("⏹ Stopping Telegram bot...")
+        self.telegram_running = False
+
+        try:
+            if telegram_app:
+                telegram_app.stop_running()
+        except Exception as e:
+            self.append_log(f"⚠️ Telegram stop error: {e}")
+
+        self.reset_telegram_buttons()
+
+    def reset_telegram_buttons(self):
+        if hasattr(self, "telegram_start_btn"):
+            self.telegram_start_btn.config(state="normal")
+        if hasattr(self, "telegram_stop_btn"):
+            self.telegram_stop_btn.config(state="disabled")
 
     def view_list(self, list_type):
         users = get_users_by_list(list_type)
