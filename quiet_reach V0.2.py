@@ -341,12 +341,12 @@ def telegram_login_dialog(root):
         merged = cfg or {}
         tok = normalize_telegram_token(token_var.get())
 
-        if not tok or ":" not in tok:
-        messagebox.showerror(
-            "Invalid Token",
-            "Telegram BOT_TOKEN looks invalid. Paste the raw token from BotFather on one line."
-        )
-        return
+            if not tok or ":" not in tok:
+            messagebox.showerror(
+                "Invalid Token",
+                "Telegram BOT_TOKEN looks invalid. Paste the raw token from BotFather on one line."
+            )
+            return
 
         merged["TELEGRAM_BOT_TOKEN"] = tok
         save_config(merged)
