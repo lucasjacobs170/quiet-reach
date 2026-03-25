@@ -3204,23 +3204,24 @@ class QuietReachUI:
             pass
     
     def open_discord_setup(self):
-    def open_telegram_setup(self):
-        """
-        Open the Telegram token/setup dialog from the Telegram section.
-        """
-        try:
-            telegram_login_dialog(self.root)
-            self.append_log("📱 Opened Telegram setup.")
-        except Exception as e:
-            self.append_log(f"❌ Failed opening Telegram setup: {e}")
-        """
-        Open the Discord token/setup dialog from the Discord section.
-        """
-        try:
-            discord_login_dialog(self.root)
-            self.append_log("🔐 Opened Discord setup.")
-        except Exception as e:
-            self.append_log(f"❌ Failed opening Discord setup: {e}")
+    """
+    Open the Discord token/setup dialog from the Discord section.
+    """
+    try:
+        discord_login_dialog(self.root)
+        self.append_log("🔐 Opened Discord setup.")
+    except Exception as e:
+        self.append_log(f"❌ Failed opening Discord setup: {e}")
+
+def open_telegram_setup(self):
+    """
+    Open the Telegram token/setup dialog from the Telegram section.
+    """
+    try:
+        telegram_login_dialog(self.root)
+        self.append_log("📱 Opened Telegram setup.")
+    except Exception as e:
+        self.append_log(f"❌ Failed opening Telegram setup: {e}")
     
     def append_log(self, message):
         def _update():
