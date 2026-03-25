@@ -346,7 +346,7 @@ def telegram_login_dialog(root):
                 "Invalid Token",
                 "Telegram BOT_TOKEN looks invalid. Paste the raw token from BotFather on one line."
             )
-             return
+            return
 
         merged["TELEGRAM_BOT_TOKEN"] = tok
         save_config(merged)
