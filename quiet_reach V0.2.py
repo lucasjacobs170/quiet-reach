@@ -3431,40 +3431,58 @@ class QuietReachUI:
         )
         self.telegram_thread.start()
 
-    def run_telegram_bot(self):
+    def stop_telegram_bot(self):
+        """
+        Stop the Telegram bot safely from the UI thread.
+        """
         global telegram_app
 
+        if not self.telegram_running:
+            self.append_log("📱 Telegram bot is not running.")
+            return
+
+        self.append_log("📱 Stopping Telegram bot...")
+        self.telegram_running = False
+
         try:
-            self.telegram_loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(self.telegram_loop)
+            if self.telegram_loop and self.telegram_loop.is_running():
 
-            app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
-            telegram_app = app
+                async def _shutdown_telegram():
+                    global telegram_app
+                    try:
+                        if telegram_app:
+                            try:
+                                await telegram_app.updater.stop()
+                            except Exception:
+                                pass
 
-            app.add_handler(CommandHandler("start", telegram_start_cmd))
-            app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, telegram_text_handler))
+                            try:
+                                await telegram_app.stop()
+                            except Exception:
+                                pass
 
-            app.post_init = telegram_on_startup
-            app.post_shutdown = telegram_on_shutdown
+                            try:
+                                await telegram_app.shutdown()
+                            except Exception:
+                                pass
 
-            self.append_log("📱 Telegram polling started.")
-            app.run_polling(close_loop=False)
+                    except Exception as e:
+                        self.append_log(f"❌ Telegram shutdown error: {e}")
+                    finally:
+                        telegram_app = None
+                        try:
+                            self.telegram_loop.stop()
+                        except Exception:
+                            pass
+
+                self.telegram_loop.call_soon_threadsafe(
+                    lambda: asyncio.create_task(_shutdown_telegram())
+                )
 
         except Exception as e:
-            self.append_log(f"❌ Telegram bot error: {e}")
+            self.append_log(f"❌ Failed stopping Telegram bot: {e}")
 
-        finally:
-            self.telegram_running = False
-            telegram_app = None
-
-            try:
-                if self.telegram_loop and not self.telegram_loop.is_closed():
-                    self.telegram_loop.close()
-            except Exception as e:
-                self.append_log(f"⚠️ Telegram loop close error: {e}")
-
-            self.telegram_loop = None
-            self.root.after(0, self.reset_telegram_buttons)
+        self.reset_telegram_buttons()
 
     def reset_telegram_buttons(self):
         if hasattr(self, "telegram_start_btn"):
