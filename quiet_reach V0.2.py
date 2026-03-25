@@ -8,6 +8,7 @@ from datetime import time, timezone
 from zoneinfo import ZoneInfo
 
 BOT_TOKEN=''
+TELEGRAM_BOT_TOKEN=''
 OWNER_ID=434809771124719616
 SERVER_INVITE='https://discord.gg/yAvVewhD3c'
 # Official Lucas links (DM-only)
@@ -210,10 +211,13 @@ def save_config(cfg: dict):
 
 def apply_config(cfg: dict):
     """Apply config values into globals used by the bot."""
-    global BOT_TOKEN, SERVER_INVITE
+    global BOT_TOKEN, TELEGRAM_BOT_TOKEN, SERVER_INVITE
 
     if "BOT_TOKEN" in cfg:
         BOT_TOKEN = normalize_bot_token(cfg.get("BOT_TOKEN") or "")
+
+    if "TELEGRAM_BOT_TOKEN" in cfg:
+        TELEGRAM_BOT_TOKEN = (cfg.get("TELEGRAM_BOT_TOKEN") or "").strip()
 
     if "SERVER_INVITE" in cfg and cfg.get("SERVER_INVITE"):
         SERVER_INVITE = (cfg.get("SERVER_INVITE") or "").strip()
@@ -288,6 +292,77 @@ def discord_login_dialog(root):
     win.grab_set()
     token_ent.focus_set()
     root.wait_window(win)
+
+def telegram_login_dialog(root):
+    """
+    Open the Telegram setup dialog.
+    Prefills values from saved config and saves on Continue.
+    """
+    cfg = load_config()
+    log("📱 Telegram setup dialog opened")
+
+    win = tk.Toplevel(root)
+    win.update_idletasks()
+    win.lift()
+    win.attributes("-topmost", True)
+    win.after(250, lambda: win.attributes("-topmost", False))
+    win.focus_force()
+    win.title("Quiet Reach — Telegram Setup")
+    win.configure(bg="#1a1a2e")
+    win.resizable(False, False)
+    win.geometry("520x220+230+230")
+
+    tk.Label(
+        win, text="Telegram Bot Setup",
+        font=("Helvetica", 14, "bold"),
+        bg="#1a1a2e", fg="white"
+    ).pack(padx=16, pady=(14, 6))
+
+    form = tk.Frame(win, bg="#1a1a2e")
+    form.pack(padx=16, pady=8)
+
+    tk.Label(form, text="Telegram BOT_TOKEN", bg="#1a1a2e", fg="#cccccc").grid(row=0, column=0, sticky="w")
+    token_var = tk.StringVar(value=cfg.get("TELEGRAM_BOT_TOKEN", ""))
+    token_ent = tk.Entry(form, textvariable=token_var, width=48, show="•")
+    token_ent.grid(row=1, column=0, pady=(2, 10))
+
+    btns = tk.Frame(win, bg="#1a1a2e")
+    btns.pack(padx=16, pady=(0, 14), fill="x")
+
+    def on_continue():
+        merged = cfg or {}
+        tok = (token_var.get() or "").strip()
+
+        if not tok:
+            messagebox.showerror(
+                "Invalid Token",
+                "Telegram BOT_TOKEN cannot be empty."
+            )
+            return
+
+        merged["TELEGRAM_BOT_TOKEN"] = tok
+        save_config(merged)
+        apply_config(merged)
+        win.destroy()
+
+    def on_cancel():
+        apply_config(cfg)
+        win.destroy()
+
+    tk.Button(
+        btns, text="Continue", command=on_continue,
+        bg="#27ae60", fg="white", relief="flat", padx=12, pady=6
+    ).pack(side="right")
+
+    tk.Button(
+        btns, text="Cancel", command=on_cancel,
+        bg="#444455", fg="white", relief="flat", padx=12, pady=6
+    ).pack(side="right", padx=8)
+
+    win.grab_set()
+    token_ent.focus_set()
+    root.wait_window(win)
+    
 def setup_database():
     c = sqlite3.connect(DB_PATH)
     k = c.cursor()
@@ -2902,6 +2977,8 @@ class QuietReachUI:
             open_by_default=True
         )
 
+        make_button(tg_setup, "🔐 Telegram Login / Setup", self.open_telegram_setup, t["accent2"])
+
         tk.Label(
             tg_setup,
             text="Telegram support is being added next.\nThis section will hold Telegram token setup,\nprivate/group controls, and Telegram-specific actions.",
@@ -2925,7 +3002,7 @@ class QuietReachUI:
 
         tk.Label(
             tg_status,
-            text="• UI section ready\n• Bot logic not wired yet\n• Next step: token + Telegram handlers",
+            text="• UI section ready\n• Telegram token can be configured here\n• Bot logic not wired yet",
             bg=t["card"],
             fg=t["muted"],
             justify="left",
@@ -3127,6 +3204,15 @@ class QuietReachUI:
             pass
     
     def open_discord_setup(self):
+    def open_telegram_setup(self):
+        """
+        Open the Telegram token/setup dialog from the Telegram section.
+        """
+        try:
+            telegram_login_dialog(self.root)
+            self.append_log("📱 Opened Telegram setup.")
+        except Exception as e:
+            self.append_log(f"❌ Failed opening Telegram setup: {e}")
         """
         Open the Discord token/setup dialog from the Discord section.
         """
