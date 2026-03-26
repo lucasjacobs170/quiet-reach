@@ -69,97 +69,76 @@ def rebuild_invite_texts():
     global ABOUT_LUCAS, YES_RESPONSES
 
     ABOUT_LUCAS = f"""
-You are Quiet Reach, Lucas Jacobs's assistant (not Lucas).
+import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, re
+from tkinter import ttk, scrolledtext, messagebox
+from datetime import datetime, date
+import google.generativeai as genai
 
-- Lucas Jacobs is a man. Use he/him pronouns.
-- Never refer to Lucas as she/her or they/them.
-- Never reference time of day (morning/afternoon/evening/night/tonight/today).
-- Do not say things like “tonight”, “this morning”, “later today”, “late-night”, etc.
+BOT_TOKEN=''
+OWNER_ID=434809771124719616
+SERVER_INVITE='https://discord.gg/yAvVewhD3c'
+DB_PATH='quiet_reach.db'
+GEMINI_API_KEY = ''  # ← Paste your Gemini API key here
 
-Identity rules:
-- Never claim you are Lucas.
-- If asked "are you Lucas?", say: "No—I'm Lucas's assistant."
-- Speak in first-person as the assistant ("I can help you connect with Lucas"), not as Lucas.
+OFFICIAL_LINKS = {
+    'chaturbate': 'https://chaturbate.com/b/lucas_jacobs/',
+    'onlyfans_free': 'https://onlyfans.com/lucas_jacobs_free',
+    'onlyfans_paid': 'https://onlyfans.com/lucasjacobs170',
+    'x': 'https://x.com/lucasjacobs170',
+    'instagram': 'https://www.instagram.com/lucas_jacobs17/?hl=en',
+    'discord': SERVER_INVITE,
+}
 
-Personality:
-- Bubbly, upbeat, outdoorsy vibe (nature/outdoors metaphors are okay).
-- Friendly and concise.
+ABOUT_LUCAS = f"""
+You are Quiet Reach, Lucas Jacobs's assistant.
 
-Safety/accuracy rules:
-- Use only the KNOWLEDGE BASE facts when answering about Lucas.
-- Do NOT invent links.
-- If you don't know, say so and ask if they want links in DM ("say `link` or `links`").
-- Keep replies SHORT: 1–2 sentences, max ~240 characters.
-- Never output any URLs/links in AI responses (links are handled by system routing).
-""".strip()
+Goal:
+- Answer questions about Lucas and his platforms.
+- Share only official links from the approved list below.
+- Stay concise, direct, and friendly.
 
-    YES_RESPONSES = [
-        f"Yesss okay! 🎉 Here's an invite to Lucas's server, come hang: {SERVER_INVITE}",
-        f"Ugh okay let's gooo 🙌 — drop into the server and we can chat more: {SERVER_INVITE}",
-        f"Ahh okay I love that for you 😏 — here's the link, come through: {SERVER_INVITE}",
-        f"Yay!! 🎉 Okay here's the server link — it's chill in there I promise 😊: {SERVER_INVITE}",
-        f"Okay yes! 👏 Come hang with us — here's the invite: {SERVER_INVITE}",
-        f"Let's gooo! 🔥 Here's where the fun is: {SERVER_INVITE}",
-        f"Omg hi yes! 😊 Jump in here and we can chat more: {SERVER_INVITE}",
-        f"Ayyy welcome! 🎊 Here's the link — see you in there: {SERVER_INVITE}",
-    ]
+Approved links:
+- Chaturbate: {OFFICIAL_LINKS['chaturbate']}
+- OnlyFans free: {OFFICIAL_LINKS['onlyfans_free']}
+- OnlyFans paid: {OFFICIAL_LINKS['onlyfans_paid']}
+- X: {OFFICIAL_LINKS['x']}
+- Instagram: {OFFICIAL_LINKS['instagram']}
+- Discord: {OFFICIAL_LINKS['discord']}
 
+Rules:
+- Never invent links, prices, promotions, or platform details.
+- If a user asks to stop or not be contacted, acknowledge once and stop replying until they explicitly reset with /start or help.
+- If a user asks for one platform, send only that platform.
+- If a user asks for both OnlyFans links, send both together.
+"""
 
-COMMANDS_HELP_TEXT = """
-Quiet Reach — Commands Reference
+WELCOME_MESSAGE = "Hey — I’m Quiet Reach, Lucas’s assistant. I can explain what he does, break down his platforms, or send official links if you want."
+LUCAS_SUMMARY = "Lucas is a content creator. He has live interactive content on Chaturbate, premium content on OnlyFans, and updates on X, Instagram, and Discord."
+ASSISTANT_SUMMARY = "I’m Quiet Reach — Lucas’s assistant. I can explain what he does, break down his platforms, or send official links if you want."
+STORY_REPLY = "I’m Lucas’s assistant. I answer questions, share official links, and keep things simple for people who want to find his pages."
+ACK_REPLY = "Yep — I can send official links, explain his platforms, or share a picture if you want."
+CLARIFY_REPLY = "Sorry — I didn’t quite catch that. You can ask about Lucas, ask for a picture, or ask for one specific link like Instagram, X, Chaturbate, or OnlyFans."
+PHOTO_FALLBACK_REPLY = "I don’t have another picture available right now, but Instagram or the free OnlyFans page are the best places to see more."
 
-OWNER / PROMO
-- !promosetup [start end]
-  Configure promo channel (current channel) + set PT window hours + enable promos.
-  Example: !promosetup 18 22
+OPT_OUT_PATTERNS = [
+    r'\bstop\b',
+    r'\bremove\b',
+    r'\bopt\s*out\b',
+    r"don't message me",
+    r'dont message me',
+    r'never message me again',
+    r'go away',
+    r'leave me alone',
+    r'not interested',
+    r'piss off',
+    r'bugger off',
+    r'fuck you',
+    r'go fuck yourself',
+    r'eat shit',
+]
 
-- !setpromochannel
-  Set promo channel to the current channel (also schedules a default window).
-
-- !promowindow <start end>
-  Set the promo window in PT hours (0–23). Schedules next post randomly in-window.
-
-- !promoon
-  Enable promos for this server.
-
-- !promooff
-  Disable promos for this server.
-
-- !promonow
-  Post a promo immediately (then schedules the next run).
-
-- !promostatus
-  Show promo configuration + next/last post time.
-
-OPT-IN / DM CONTROL (server chat)
-- !optin / !opt-in / !dmme / !dm me
-  Opt the user into DMs and immediately DM outreach.
-
-- !optout / !opt-out / !nodm / !no dm
-  Opt the user out of DMs.
-
-DM COMMANDS (DMs to the bot)
-- stop / remove / opt out / optout
-  Opt out of future contact.
-
-- link / server / invite
-  Return the current SERVER_INVITE.
-
-GENERAL BEHAVIOR (automatic)
-- Keyword trigger engagement:
-  If KEYWORD_MODE_ENABLED is True and a trigger keyword is detected, the bot replies publicly
-  and offers DM opt-in; opted-in users may be DM’d (cap + cooldown rules apply).
-
-DEV UI (Tkinter)
-- Tools → Dev Commands
-  Includes “Post Promo Now (all enabled)”, stats, toggles for keyword mode + logging.
-
-Notes:
-- Some actions are OWNER-only by OWNER_ID.
-- Public replies are visible; “invisible” interaction requires slash commands + ephemeral (not implemented).
-""".strip()
-
-rebuild_invite_texts()
+RESET_WORDS = {'/start', 'start', 'help'}
+GREETING_WORDS = {'hi', 'hello', 'hey', 'yo'}
 DM_OPENERS = [
     "Hey, I represent a cammer and content creator named Lucas Jacobs — are you interested in seeing more? 😏",
     "Hi there! I'm reaching out on behalf of Lucas Jacobs, a content creator — would you be curious to check out what he's offering?",
@@ -375,336 +354,372 @@ def setup_database():
     c = sqlite3.connect(DB_PATH)
     k = c.cursor()
 
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS users('
-        'discord_id TEXT PRIMARY KEY,'
-        'username TEXT,'
-        'list_type TEXT DEFAULT "neutral",'
-        'last_contacted TEXT,'
-        'opt_out INTEGER DEFAULT 0)'
-    )
+    k.execute("""
+        CREATE TABLE IF NOT EXISTS users(
+            discord_id TEXT PRIMARY KEY,
+            username TEXT,
+            list_type TEXT DEFAULT "neutral",
+            last_contacted TEXT,
+            opt_out INTEGER DEFAULT 0,
+            conversation_state TEXT DEFAULT "active",
+            last_offer TEXT DEFAULT ""
+        )
+    """)
+    k.execute("""
+        CREATE TABLE IF NOT EXISTS server_caps(
+            server_id TEXT,
+            date TEXT,
+            dm_count INTEGER DEFAULT 0,
+            PRIMARY KEY(server_id, date)
+        )
+    """)
+    k.execute('CREATE TABLE IF NOT EXISTS keywords(word TEXT PRIMARY KEY,list_name TEXT)')
+    k.execute("""
+        CREATE TABLE IF NOT EXISTS ambiguous(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            discord_id TEXT,
+            username TEXT,
+            message TEXT,
+            timestamp TEXT
+        )
+    """)
+    k.execute("""
+        CREATE TABLE IF NOT EXISTS sent_media(
+            discord_id TEXT,
+            media_name TEXT,
+            sent_at TEXT,
+            PRIMARY KEY(discord_id, media_name)
+        )
+    """)
 
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS server_caps('
-        'server_id TEXT,'
-        'date TEXT,'
-        'dm_count INTEGER DEFAULT 0,'
-        'PRIMARY KEY(server_id,date))'
-    )
-
-    k.execute('CREATE TABLE IF NOT EXISTS keywords(word TEXT PRIMARY KEY, list_name TEXT)')
-
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS dm_optins('
-        'discord_id TEXT PRIMARY KEY,'
-        'username TEXT,'
-        'opted_in INTEGER DEFAULT 0,'
-        'opted_in_at TEXT)'
-    )
-
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS public_touches('
-        'discord_id TEXT PRIMARY KEY,'
-        'username TEXT,'
-        'touches INTEGER DEFAULT 0,'
-        'last_touch TEXT)'
-    )
+    for statement in [
+        'ALTER TABLE users ADD COLUMN conversation_state TEXT DEFAULT "active"',
+        'ALTER TABLE users ADD COLUMN last_offer TEXT DEFAULT ""',
+    ]:
+        try:
+            k.execute(statement)
+        except sqlite3.OperationalError:
+            pass
 
     k.execute("SELECT COUNT(*) FROM keywords")
     if k.fetchone()[0] == 0:
-        for w, l in [
-            ('thirsty','trigger'),('live','trigger'),('of','trigger'),('cam','trigger'),
-            ('preview','trigger'),('link','trigger'),
-            ('yes','yes'),('yep','yes'),('sure','yes'),('yeah','yes'),('ok','yes'),
-            ('interested','yes'),('tell me more','yes'),('lmk','yes'),('facts','yes'),
-            ('no','no'),('nah','no'),('pass','no'),('no thanks','no'),('not interested','no'),
-            ('stop','no'),('leave me alone','no'),('nope','no')
+        for word, list_name in [
+            ('thirsty', 'trigger'),
+            ('live', 'trigger'),
+            ('of', 'trigger'),
+            ('cam', 'trigger'),
+            ('preview', 'trigger'),
+            ('link', 'trigger'),
+            ('yes', 'yes'),
+            ('yep', 'yes'),
+            ('sure', 'yes'),
+            ('yeah', 'yes'),
+            ('ok', 'yes'),
+            ('interested', 'yes'),
+            ('tell me more', 'yes'),
+            ('lmk', 'yes'),
+            ('facts', 'yes'),
+            ('no', 'no'),
+            ('nah', 'no'),
+            ('pass', 'no'),
+            ('no thanks', 'no'),
+            ('not interested', 'no'),
+            ('stop', 'no'),
+            ('leave me alone', 'no'),
+            ('nope', 'no'),
+            ('do not contact me', 'no'),
+            ('dont message me', 'no'),
+            ('never message me again', 'no'),
         ]:
-            k.execute("INSERT INTO keywords VALUES(?,?)", (w, l))
+            k.execute("INSERT INTO keywords VALUES(?,?)", (word, list_name))
 
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS ambiguous('
-        'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-        'discord_id TEXT,'
-        'username TEXT,'
-        'message TEXT,'
-        'timestamp TEXT)'
-    )
-
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS promo_channels('
-        'guild_id TEXT PRIMARY KEY,'
-        'channel_id TEXT,'
-        'enabled INTEGER DEFAULT 0,'
-        'window_start_pt INTEGER DEFAULT 18,'
-        'window_end_pt INTEGER DEFAULT 22,'
-        'next_post_at_utc TEXT,'
-        'last_post_at_utc TEXT)'
-    )
-
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS promo_history('
-        'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-        'guild_id TEXT,'
-        'channel_id TEXT,'
-        'posted_at_utc TEXT,'
-        'image_path TEXT,'
-        'caption TEXT)'
-    )
-    
-    k.execute(
-        "CREATE TABLE IF NOT EXISTS conversation_log ("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "ts_utc TEXT,"
-        "guild_id TEXT,"
-        "channel_id TEXT,"
-        "user_id TEXT,"
-        "username TEXT,"
-        "is_dm INTEGER,"
-        "direction TEXT,"
-        "message TEXT"
-        ")"
-    )
     c.commit()
     c.close()
     print("✅ Database ready!")
 
-# ============================================================
-# 📣 PROMO SCHEDULING HELPERS (PT window, stored as UTC)
-# ============================================================
 
-def _pt_now():
-    return datetime.now(PROMO_TZ)
+def get_keywords(list_name):
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("SELECT word FROM keywords WHERE list_name=?", (list_name,))
+    words = [row[0].lower().strip() for row in k.fetchall()]
+    c.close()
+    return words
 
-def _compute_next_post_at_utc(window_start_pt: int, window_end_pt: int) -> str:
-    """
-    Picks a random datetime inside today's (or next day's) PT window.
-    Stores as ISO UTC string.
-    Supports windows crossing midnight (e.g. 22 -> 2).
-    """
-    window_start_pt = int(window_start_pt) % 24
-    window_end_pt   = int(window_end_pt) % 24
 
-    now_pt = _pt_now()
-    base_date = now_pt.date()
+def get_user(discord_id):
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("SELECT * FROM users WHERE discord_id=?", (str(discord_id),))
+    user = k.fetchone()
+    c.close()
+    return user
 
-    start_dt = datetime.combine(base_date, time(window_start_pt, 0), tzinfo=PROMO_TZ)
-    end_dt   = datetime.combine(base_date, time(window_end_pt, 0), tzinfo=PROMO_TZ)
 
-    # window crosses midnight
-    if window_end_pt <= window_start_pt:
-        end_dt += timedelta(days=1)
+def upsert_user(discord_id, username, list_type, opt_out=0, state=None, last_offer=None):
+    current = get_user(discord_id)
+    if state is None:
+        state = current[5] if current and len(current) > 5 else 'active'
+    if last_offer is None:
+        last_offer = current[6] if current and len(current) > 6 else ''
 
-    # if we're already past the window, schedule for next day's window
-    if now_pt >= end_dt:
-        start_dt += timedelta(days=1)
-        end_dt   += timedelta(days=1)
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("""
+        INSERT INTO users(discord_id, username, list_type, last_contacted, opt_out, conversation_state, last_offer)
+        VALUES(?,?,?,?,?,?,?)
+        ON CONFLICT(discord_id) DO UPDATE SET
+            username=excluded.username,
+            list_type=excluded.list_type,
+            last_contacted=excluded.last_contacted,
+            opt_out=excluded.opt_out,
+            conversation_state=excluded.conversation_state,
+            last_offer=excluded.last_offer
+    """, (str(discord_id), username, list_type, str(datetime.now()), opt_out, state, last_offer))
+    c.commit()
+    c.close()
 
-    span = int((end_dt - start_dt).total_seconds())
-    offset = random.randint(0, max(0, span - 1))
-    scheduled_pt = start_dt + timedelta(seconds=offset)
 
-    scheduled_utc = scheduled_pt.astimezone(timezone.utc)
-    return scheduled_utc.isoformat()
+def set_conversation_state(discord_id, state):
+    user = get_user(discord_id)
+    if not user:
+        return
+    upsert_user(discord_id, user[1], user[2], user[4], state, user[6] if len(user) > 6 else '')
 
-def promo_set_channel(guild_id: int, channel_id: int):
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "INSERT INTO promo_channels(guild_id, channel_id) VALUES(?,?) "
-        "ON CONFLICT(guild_id) DO UPDATE SET channel_id=excluded.channel_id",
-        (str(guild_id), str(channel_id))
-    )
-    c.commit(); c.close()
 
-def promo_set_window(guild_id: int, start_pt: int, end_pt: int):
-    next_utc = _compute_next_post_at_utc(start_pt, end_pt)
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "INSERT INTO promo_channels(guild_id, window_start_pt, window_end_pt, next_post_at_utc) "
-        "VALUES(?,?,?,?) "
-        "ON CONFLICT(guild_id) DO UPDATE SET window_start_pt=excluded.window_start_pt, "
-        "window_end_pt=excluded.window_end_pt, next_post_at_utc=excluded.next_post_at_utc",
-        (str(guild_id), int(start_pt), int(end_pt), next_utc)
-    )
-    c.commit(); c.close()
+def get_conversation_state(discord_id):
+    user = get_user(discord_id)
+    return user[5] if user and len(user) > 5 else 'active'
 
-def promo_set_enabled(guild_id: int, enabled: bool):
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "INSERT INTO promo_channels(guild_id, enabled) VALUES(?,?) "
-        "ON CONFLICT(guild_id) DO UPDATE SET enabled=excluded.enabled",
-        (str(guild_id), 1 if enabled else 0)
-    )
-    c.commit(); c.close()
 
-def promo_get_config_row(guild_id: int):
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "SELECT guild_id, channel_id, enabled, window_start_pt, window_end_pt, next_post_at_utc, last_post_at_utc "
-        "FROM promo_channels WHERE guild_id=?",
-        (str(guild_id),)
-    )
+def set_last_offer(discord_id, offer):
+    user = get_user(discord_id)
+    if not user:
+        return
+    upsert_user(discord_id, user[1], user[2], user[4], user[5] if len(user) > 5 else 'active', offer)
+
+
+def get_last_offer(discord_id):
+    user = get_user(discord_id)
+    return user[6] if user and len(user) > 6 else ''
+
+
+def check_server_cap(server_id):
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("SELECT dm_count FROM server_caps WHERE server_id=? AND date=?", (str(server_id), str(date.today())))
     row = k.fetchone()
     c.close()
-    return row
+    return (row[0] if row else 0) >= 5
 
-def promo_get_enabled_rows():
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
+
+def increment_server_cap(server_id):
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("""
+        INSERT INTO server_caps VALUES(?,?,1)
+        ON CONFLICT(server_id,date) DO UPDATE SET dm_count=dm_count+1
+    """, (str(server_id), str(date.today())))
+    c.commit()
+    c.close()
+
+
+def user_on_cooldown(discord_id):
+    user = get_user(discord_id)
+    if not user or not user[3]:
+        return False
+    return (datetime.now() - datetime.fromisoformat(user[3])).days < 7
+
+
+def add_ambiguous(discord_id, username, message):
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
     k.execute(
-        "SELECT guild_id, channel_id, window_start_pt, window_end_pt, next_post_at_utc "
-        "FROM promo_channels WHERE enabled=1 AND channel_id IS NOT NULL"
+        "INSERT INTO ambiguous(discord_id,username,message,timestamp) VALUES(?,?,?,?)",
+        (str(discord_id), username, message, str(datetime.now()))
     )
-    rows = k.fetchall()
+    c.commit()
+    c.close()
+
+
+def get_users_by_list(list_type):
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("SELECT discord_id,username,last_contacted FROM users WHERE list_type=? AND opt_out=0", (list_type,))
+    users = k.fetchall()
+    c.close()
+    return users
+
+
+def get_ambiguous_entries():
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("SELECT id,discord_id,username,message,timestamp FROM ambiguous")
+    entries = k.fetchall()
+    c.close()
+    return entries
+
+
+def delete_ambiguous(entry_id):
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("DELETE FROM ambiguous WHERE id=?", (entry_id,))
+    c.commit()
+    c.close()
+
+
+def get_sent_media(discord_id):
+    c = sqlite3.connect(DB_PATH)
+    k = c.cursor()
+    k.execute("SELECT media_name FROM sent_media WHERE discord_id=?", (str(discord_id),))
+    rows = [row[0] for row in k.fetchall()]
     c.close()
     return rows
 
-def promo_update_next(guild_id: int, start_pt: int, end_pt: int):
-    next_utc = _compute_next_post_at_utc(start_pt, end_pt)
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "UPDATE promo_channels SET next_post_at_utc=? WHERE guild_id=?",
-        (next_utc, str(guild_id))
-    )
-    c.commit(); c.close()
 
-def promo_record_history(guild_id: int, channel_id: int, image_path: str, caption: str):
-    now_utc = datetime.now(timezone.utc).isoformat()
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "INSERT INTO promo_history(guild_id, channel_id, posted_at_utc, image_path, caption) "
-        "VALUES(?,?,?,?,?)",
-        (str(guild_id), str(channel_id), now_utc, image_path, caption)
-    )
-    k.execute(
-        "UPDATE promo_channels SET last_post_at_utc=? WHERE guild_id=?",
-        (now_utc, str(guild_id))
-    )
-    c.commit(); c.close()
-
-def get_keywords(ln):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT word FROM keywords WHERE list_name=?",(ln,));w=[r[0].lower().strip()for r in k.fetchall()];c.close();return w
-
-def get_user(did):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT*FROM users WHERE discord_id=?",(str(did),));u=k.fetchone();c.close();return u
-
-def upsert_user(did, un, lt, opt_out=0):
+def record_sent_media(discord_id, media_name):
     c = sqlite3.connect(DB_PATH)
     k = c.cursor()
     k.execute(
-        'INSERT INTO users VALUES(?,?,?,?,?) '
-        'ON CONFLICT(discord_id) DO UPDATE SET '
-        'list_type=excluded.list_type, '
-        'last_contacted=excluded.last_contacted, '
-        'opt_out=excluded.opt_out',
-        (str(did), un, lt, str(datetime.now()), opt_out)
+        "INSERT OR REPLACE INTO sent_media(discord_id,media_name,sent_at) VALUES(?,?,?)",
+        (str(discord_id), media_name, str(datetime.now()))
     )
     c.commit()
     c.close()
 
-def check_server_cap(sid):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT dm_count FROM server_caps WHERE server_id=? AND date=?",(str(sid),str(date.today())));r=k.fetchone();c.close();return(r[0]if r else 0)>=5
-
-def increment_server_cap(sid):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute('INSERT INTO server_caps VALUES(?,?,1)ON CONFLICT(server_id,date)DO UPDATE SET dm_count=dm_count+1',(str(sid),str(date.today())));c.commit();c.close()
-
-def user_on_cooldown(did):
-    u=get_user(did)
-    if not u:return False
-    if not u[3]:return False
-    return(datetime.now()-datetime.fromisoformat(u[3])).days<7
-
-def add_ambiguous(did,un,msg):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("INSERT INTO ambiguous(discord_id,username,message,timestamp)VALUES(?,?,?,?)",(str(did),un,msg,str(datetime.now())));c.commit();c.close()
-
-def get_users_by_list(lt):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT discord_id,username,last_contacted FROM users WHERE list_type=? AND opt_out=0",(lt,));u=k.fetchall();c.close();return u
-
-def get_ambiguous_entries():
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT id,discord_id,username,message,timestamp FROM ambiguous");e=k.fetchall();c.close();return e
-
-def delete_ambiguous(eid):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("DELETE FROM ambiguous WHERE id=?",(eid,));c.commit();c.close()
 
 def get_stats():
-    c=sqlite3.connect(DB_PATH);k=c.cursor()
-    k.execute("SELECT COUNT(*)FROM users WHERE list_type='warm'");w=k.fetchone()[0]
-    k.execute("SELECT COUNT(*)FROM users WHERE list_type='cold'");co=k.fetchone()[0]
-    k.execute("SELECT COUNT(*)FROM users WHERE list_type='neutral'");n=k.fetchone()[0]
-    k.execute("SELECT SUM(dm_count)FROM server_caps");t=k.fetchone()[0]or 0
-    k.execute("SELECT COUNT(*)FROM ambiguous");p=k.fetchone()[0];c.close();return w,co,n,t,p
-def get_opt_in(did: int) -> bool:
     c = sqlite3.connect(DB_PATH)
     k = c.cursor()
-    k.execute("SELECT opted_in FROM dm_optins WHERE discord_id=?", (str(did),))
-    row = k.fetchone()
+    k.execute("SELECT COUNT(*) FROM users WHERE list_type='warm'")
+    warm = k.fetchone()[0]
+    k.execute("SELECT COUNT(*) FROM users WHERE list_type='cold'")
+    cold = k.fetchone()[0]
+    k.execute("SELECT COUNT(*) FROM users WHERE list_type='neutral'")
+    neutral = k.fetchone()[0]
+    k.execute("SELECT SUM(dm_count) FROM server_caps")
+    total_dms = k.fetchone()[0] or 0
+    k.execute("SELECT COUNT(*) FROM ambiguous")
+    pending = k.fetchone()[0]
     c.close()
-    return bool(row and row[0] == 1)
+    return warm, cold, neutral, total_dms, pending
 
-def set_opt_in(did: int, username: str, opted_in: int = 1):
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
-    k.execute(
-        "INSERT INTO dm_optins(discord_id, username, opted_in, opted_in_at) "
-        "VALUES(?,?,?,?) "
-        "ON CONFLICT(discord_id) DO UPDATE SET "
-        "username=excluded.username, opted_in=excluded.opted_in, opted_in_at=excluded.opted_in_at",
-        (str(did), username, int(opted_in), str(datetime.now()))
-    )
-    c.commit()
-    c.close()
 
-def get_touches(did: int) -> int:
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
-    k.execute("SELECT touches FROM public_touches WHERE discord_id=?", (str(did),))
-    row = k.fetchone()
-    c.close()
-    return int(row[0]) if row else 0
+def normalize_text(content):
+    return re.sub(r'\s+', ' ', content.lower()).strip()
 
-def can_public_touch(did: int) -> bool:
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
-    k.execute("SELECT last_touch FROM public_touches WHERE discord_id=?", (str(did),))
-    row = k.fetchone()
-    c.close()
-    if not row or not row[0]:
-        return True
-    try:
-        last = datetime.fromisoformat(row[0])
-    except Exception:
-        return True
-    return (datetime.now() - last).total_seconds() >= PUBLIC_TOUCH_COOLDOWN_SECONDS
 
-def record_touch(did: int, username: str) -> int:
-    """Increment touch counter; return new touches count."""
-    now = datetime.now().isoformat()
+def matches_any_pattern(content, patterns):
+    return any(re.search(pattern, content) for pattern in patterns)
 
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
 
-    # Fetch current count
-    k.execute(
-        "SELECT touches FROM public_touches WHERE discord_id=?",
-        (str(did),)
-    )
-    row = k.fetchone()
+def is_reset_request(content):
+    return content in RESET_WORDS
 
-    if row:
-        touches = int(row[0]) + 1
-        k.execute(
-            "UPDATE public_touches SET username=?, touches=?, last_touch=? WHERE discord_id=?",
-            (username, touches, now, str(did))
+
+def is_opt_out_request(content):
+    return matches_any_pattern(content, OPT_OUT_PATTERNS)
+
+
+def wants_picture(content):
+    return any(word in content for word in ['picture', 'photo', 'pic', 'image'])
+
+
+def asks_who_is_lucas(content):
+    return 'who is lucas' in content or 'tell me about lucas' in content
+
+
+def asks_identity(content):
+    return content in {'what are you', 'who are you'}
+
+
+def asks_story(content):
+    return 'what is your story' in content or 'your story' in content
+
+
+def is_greeting(content):
+    return content in GREETING_WORDS
+
+
+def is_acknowledgement(content):
+    return content in {'oh okay so you do', 'oh okay', 'got it', 'okay so you do'}
+
+
+def load_image_list():
+    if os.path.exists('images.txt'):
+        with open('images.txt', 'r') as file_handle:
+            return [line.strip() for line in file_handle.readlines() if line.strip()]
+    return ['preview.jpg'] if os.path.exists('preview.jpg') else []
+
+
+def pick_next_image(discord_id):
+    available = load_image_list()
+    if not available:
+        return None
+    sent = set(get_sent_media(discord_id))
+    for image_name in available:
+        if image_name not in sent:
+            return image_name
+    return None
+
+
+def detect_link_targets(content, discord_id):
+    last_offer = get_last_offer(discord_id)
+
+    if 'instagram' in content:
+        return ['instagram']
+    if re.search(r'\bx\b', content) or 'twitter' in content:
+        return ['x']
+    if 'discord' in content or 'server' in content:
+        return ['discord']
+    if 'chaturbate' in content:
+        return ['chaturbate']
+    if 'all links' in content or 'his pages' in content or 'official link list' in content:
+        return ['chaturbate', 'onlyfans_free', 'onlyfans_paid', 'x', 'instagram', 'discord']
+    if 'onlyfans' in content:
+        if 'both' in content or ('free' in content and 'paid' in content):
+            return ['onlyfans_free', 'onlyfans_paid']
+        if 'free' in content:
+            return ['onlyfans_free']
+        if 'paid' in content:
+            return ['onlyfans_paid']
+        return ['onlyfans_offer']
+    if ('both' in content or 'them both' in content or 'send both' in content) and last_offer == 'onlyfans_links':
+        return ['onlyfans_free', 'onlyfans_paid']
+    return []
+
+
+def format_link_message(targets):
+    if targets == ['instagram']:
+        return f"Sure — here’s his official Instagram link:\n{OFFICIAL_LINKS['instagram']}\nPics + casual updates — the most daily-life vibe."
+    if targets == ['onlyfans_free']:
+        return f"Sure — here’s his official OnlyFans (free) link:\n{OFFICIAL_LINKS['onlyfans_free']}\nFree follow page — lighter previews and updates."
+    if targets == ['onlyfans_paid']:
+        return f"Sure — here’s his official OnlyFans (paid) link:\n{OFFICIAL_LINKS['onlyfans_paid']}\nPaid page — the full premium content."
+    if targets == ['onlyfans_free', 'onlyfans_paid']:
+        return (
+            "Here you go:\n\n"
+            f"• OnlyFans (free)\n  {OFFICIAL_LINKS['onlyfans_free']}\n  Free follow page — lighter previews and updates.\n\n"
+            f"• OnlyFans (paid)\n  {OFFICIAL_LINKS['onlyfans_paid']}\n  Paid page — the full premium content."
         )
-    else:
-        touches = 1
-        k.execute(
-            "INSERT INTO public_touches(discord_id, username, touches, last_touch) VALUES(?,?,?,?)",
-            (str(did), username, touches, now)
-        )
+    if targets == ['onlyfans_offer']:
+        return "Yep — he has a free OnlyFans page for lighter previews and a paid OnlyFans page for the full premium content. If you want, I can send one or both links."
+    if targets == ['chaturbate']:
+        return f"Sure — here’s his official Chaturbate link:\n{OFFICIAL_LINKS['chaturbate']}\nHis live cam page — where you can catch him live and interact in real time."
+    if targets == ['x']:
+        return f"Sure — here’s his official X link:\n{OFFICIAL_LINKS['x']}\nFast updates and teasers when he posts something new."
+    if targets == ['discord']:
+        return f"Sure — here’s his official Discord link:\n{OFFICIAL_LINKS['discord']}\nHis community hub for updates, drops, and chat."
 
-    c.commit()
-    c.close()
-    return touches
+    return (
+        "Here’s Lucas’s full official link list:\n\n"
+        f"• Chaturbate\n  {OFFICIAL_LINKS['chaturbate']}\n\n"
+        f"• OnlyFans (free)\n  {OFFICIAL_LINKS['onlyfans_free']}\n\n"
+        f"• OnlyFans (paid)\n  {OFFICIAL_LINKS['onlyfans_paid']}\n\n"
+        f"• X\n  {OFFICIAL_LINKS['x']}\n\n"
+        f"• Instagram\n  {OFFICIAL_LINKS['instagram']}\n\n"
+        f"• Discord\n  {OFFICIAL_LINKS['discord']}"
+    )
 
 intents=discord.Intents.default();intents.message_content=True;intents.members=True;intents.presences=True
 client=discord.Client(intents=intents);ui_log=None
@@ -3512,44 +3527,30 @@ async def on_message(message):
 
 
 async def send_outreach_dm(user, sid):
-    if not get_opt_in(user.id):
-        log(f"🚫 DM blocked (not opted-in): {user}")
-        return
-
-    """Send outreach DM and notify owner."""
     opener = random.choice(DM_OPENERS)
-
     try:
-        d = random.randint(5, 30)
-        log(f"⏳ Waiting {d}s before DMing {user}...")
-        await asyncio.sleep(d)
+        delay = random.randint(5, 30)
+        log(f"⏳ Waiting {delay}s before DMing {user}...")
+        await asyncio.sleep(delay)
 
         dm = await user.create_dm()
         async with dm.typing():
             await asyncio.sleep(random.randint(1, 3))
 
-        image_list = load_shared_images()
-        if not image_list:
-            image_list = ["preview.jpg"]
-        ip = random.choice(image_list)
-
-        try:
-            with open(ip, "rb") as f:
-                file = discord.File(f, filename=os.path.basename(ip))
-                await send_logged(dm, guild_id="", content=opener, file=file, is_dm=1)
+        image_path = pick_next_image(user.id)
+        if image_path and os.path.exists(image_path):
+            with open(image_path, 'rb') as file_handle:
+                await dm.send(content=opener, file=discord.File(file_handle, filename=image_path))
+            record_sent_media(user.id, image_path)
             log(f"📸 Sent DM with image to {user}")
-        except FileNotFoundError:
-            await send_logged(dm, guild_id="", content=opener, is_dm=1)
-            log(f"⚠️ Image not found — text only to {user}")
-        except Exception:
-            await send_logged(dm, guild_id="", content=opener, is_dm=1)
-            log(f"⚠️ Image error — text only to {user}")
+        else:
+            await dm.send(opener)
+            log(f"⚠️ No image available — text only to {user}")
 
-        upsert_user(user.id, str(user), "neutral")
+        upsert_user(user.id, str(user), 'neutral', 0, 'active', '')
         increment_server_cap(sid)
         log(f"✅ DM sent to {user}")
 
-        # 🔥 NOTIFY OWNER OF NEW CONTACT (unchanged)
         try:
             owner = await client.fetch_user(OWNER_ID)
             await owner.send(
@@ -3560,13 +3561,219 @@ async def send_outreach_dm(user, sid):
                 f"🕐 Time: {datetime.now().strftime('%H:%M:%S')}"
             )
             log(f"✅ Owner notified of new contact with {user}")
-        except Exception as e:
-            log(f"⚠️ Couldn't notify owner: {e}")
+        except Exception as exc:
+            log(f"⚠️ Couldn't notify owner: {exc}")
 
     except discord.Forbidden:
         log(f"🔒 Couldn't DM {user} — DMs closed")
-    except Exception as e:
-        log(f"❌ Error DMing {user}: {e}")
+    except Exception as exc:
+        log(f"❌ Error DMing {user}: {exc}")
+
+
+async def send_picture_reply(message):
+    image_path = pick_next_image(message.author.id)
+    if not image_path or not os.path.exists(image_path):
+        await message.channel.send(PHOTO_FALLBACK_REPLY)
+        return
+
+    with open(image_path, 'rb') as file_handle:
+        await message.channel.send(
+            content="Here you go — if you want more visuals after this, Instagram or the free OnlyFans page are the best places to start.",
+            file=discord.File(file_handle, filename=image_path)
+        )
+    record_sent_media(message.author.id, image_path)
+
+
+async def handle_owner_command(message):
+    content = normalize_text(message.content)
+    parts = content.split()
+
+    if len(parts) == 2 and parts[0] in ['warm', 'cold', 'ignore']:
+        action = parts[0]
+        target_id = parts[1]
+
+        if action == 'warm':
+            upsert_user(target_id, 'Unknown', 'warm')
+            await message.channel.send(f"✅ User {target_id} moved to WARM list!")
+            log(f"🔥 Owner moved {target_id} to warm list")
+            return
+
+        if action == 'cold':
+            upsert_user(target_id, 'Unknown', 'cold')
+            await message.channel.send(f"✅ User {target_id} moved to COLD list!")
+            log(f"❄️ Owner moved {target_id} to cold list")
+            return
+
+        await message.channel.send(f"✅ User {target_id} left in neutral — no action taken.")
+        log(f"😐 Owner ignored {target_id}")
+        return
+
+    if content == '!stats':
+        warm, cold, neutral, total_dms, pending = get_stats()
+        await message.channel.send(
+            f"📊 **Quiet Reach Stats**\n"
+            f"🔥 Warm: {warm}\n"
+            f"❄️ Cold: {cold}\n"
+            f"😐 Neutral: {neutral}\n"
+            f"📨 Total DMs: {total_dms}\n"
+            f"⚠️ Pending Review: {pending}"
+        )
+        return
+
+    if content == '!help':
+        await message.channel.send(
+            "🤫 **Quiet Reach Commands**\n\n"
+            "`warm [user_id]` → Move user to warm list\n"
+            "`cold [user_id]` → Move user to cold list\n"
+            "`ignore [user_id]` → Leave user in neutral\n"
+            "`!stats` → View current stats\n"
+            "`!help` → Show this menu"
+        )
+        return
+
+    log("💬 Owner sent a chat message — passing to Gemini...")
+    try:
+        async with message.channel.typing():
+            prompt = f"""
+You are the AI assistant for Quiet Reach, a Discord outreach bot for Lucas Jacobs.
+
+Lucas just sent you this message via Discord DM:
+\"{message.content}\"
+
+Reply naturally and helpfully as his assistant. Keep it conversational and concise.
+"""
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, lambda: gemini_model.generate_content(prompt))
+            reply = response.text.strip()
+            if len(reply) <= 2000:
+                await message.channel.send(reply)
+            else:
+                for index in range(0, len(reply), 1900):
+                    await message.channel.send(reply[index:index + 1900])
+            log("🤖 Gemini responded to owner chat")
+    except Exception as exc:
+        log(f"❌ Gemini chat error: {exc}")
+        await message.channel.send(f"❌ AI error: {exc}")
+
+
+async def handle_dm_reply(message):
+    user_id = message.author.id
+    username = str(message.author)
+    content = normalize_text(message.content)
+
+    if user_id == OWNER_ID:
+        await handle_owner_command(message)
+        return
+
+    user = get_user(user_id)
+    if not user:
+        upsert_user(user_id, username, 'neutral', 0, 'active', '')
+
+    if is_reset_request(content):
+        upsert_user(user_id, username, 'neutral', 0, 'active', '')
+        await message.channel.send(WELCOME_MESSAGE)
+        return
+
+    if get_conversation_state(user_id) == 'silenced':
+        log(f"🔇 Ignoring silenced user {username}")
+        return
+
+    if is_opt_out_request(content):
+        upsert_user(user_id, username, 'cold', 1, 'silenced', '')
+        await message.channel.send(random.choice(OPT_OUT_RESPONSES))
+        log(f"🛑 {username} opted out and was silenced")
+        return
+
+    if asks_who_is_lucas(content):
+        await message.channel.send(LUCAS_SUMMARY)
+        return
+
+    if asks_identity(content):
+        await message.channel.send(ASSISTANT_SUMMARY)
+        return
+
+    if asks_story(content):
+        await message.channel.send(STORY_REPLY)
+        return
+
+    if is_greeting(content):
+        await message.channel.send(WELCOME_MESSAGE)
+        return
+
+    if is_acknowledgement(content):
+        await message.channel.send(ACK_REPLY)
+        return
+
+    if wants_picture(content):
+        await send_picture_reply(message)
+        return
+
+    targets = detect_link_targets(content, user_id)
+    if targets:
+        if targets == ['onlyfans_offer']:
+            set_last_offer(user_id, 'onlyfans_links')
+        elif 'onlyfans_free' in targets or 'onlyfans_paid' in targets:
+            set_last_offer(user_id, 'onlyfans_links')
+        else:
+            set_last_offer(user_id, '')
+        await message.channel.send(format_link_message(targets))
+        return
+
+    yes_words = get_keywords('yes')
+    no_words = get_keywords('no')
+
+    ai_result = await classify_reply_with_ai(message.content)
+
+    if ai_result == 'yes':
+        upsert_user(user_id, username, 'warm')
+        await message.channel.send(random.choice(YES_RESPONSES))
+        log(f"🔥 {username} added to WARM list (AI classified)")
+        try:
+            owner = await client.fetch_user(OWNER_ID)
+            await owner.send(f"🔥 New warm lead! {username} (ID: {user_id}) said yes!")
+        except Exception as exc:
+            log(f"❌ Couldn't notify owner: {exc}")
+        return
+
+    if ai_result == 'no':
+        upsert_user(user_id, username, 'cold')
+        await message.channel.send(random.choice(NO_RESPONSES))
+        log(f"❄️ {username} added to COLD list (AI classified)")
+        return
+
+    if any(word in content for word in yes_words):
+        upsert_user(user_id, username, 'warm')
+        await message.channel.send(random.choice(YES_RESPONSES))
+        log(f"🔥 {username} added to WARM list (keyword match)")
+        try:
+            owner = await client.fetch_user(OWNER_ID)
+            await owner.send(f"🔥 New warm lead! {username} (ID: {user_id}) said yes!")
+        except Exception as exc:
+            log(f"❌ Couldn't notify owner: {exc}")
+        return
+
+    if any(word in content for word in no_words):
+        upsert_user(user_id, username, 'cold')
+        await message.channel.send(random.choice(NO_RESPONSES))
+        log(f"❄️ {username} added to COLD list (keyword match)")
+        return
+
+    add_ambiguous(user_id, username, message.content)
+    log(f"😐 Ambiguous reply from {username} — forwarding to owner")
+    try:
+        owner = await client.fetch_user(OWNER_ID)
+        await owner.send(
+            f"⚠️ Ambiguous reply from **{username}** (ID: `{user_id}`):\n"
+            f"💬 \"{message.content}\"\n\n"
+            f"Reply with:\n"
+            f"`warm {user_id}` → move to warm list\n"
+            f"`cold {user_id}` → move to cold list\n"
+            f"`ignore {user_id}` → leave in neutral"
+        )
+    except Exception as exc:
+        log(f"❌ Couldn't notify owner: {exc}")
+
+    await message.channel.send(CLARIFY_REPLY)
 
 # ============================================================
 # 📱 TELEGRAM RUNTIME
