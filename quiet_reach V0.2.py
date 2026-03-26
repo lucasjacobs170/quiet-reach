@@ -2039,6 +2039,34 @@ def set_dm_topic(user_id: int, topic: str):
     _dm_topic[user_id] = {"topic": topic, "expires": datetime.now() + timedelta(seconds=DM_TOPIC_WINDOW_SECONDS)}
 
 def get_dm_topic(user_id: int) -> str | None:
+    DM_LINK_CONTEXT_WINDOW_SECONDS = 300
+_dm_last_links = {}  # user_key -> {"keys": list[str], "expires": datetime}
+
+def remember_dm_link_context(user_key, keys: list[str]):
+    clean = []
+    for k in (keys or []):
+        if k and k not in clean:
+            clean.append(k)
+
+    if not clean:
+        _dm_last_links.pop(user_key, None)
+        return
+
+    _dm_last_links[user_key] = {
+        "keys": clean,
+        "expires": datetime.now() + timedelta(seconds=DM_LINK_CONTEXT_WINDOW_SECONDS),
+    }
+
+def get_dm_link_context(user_key) -> list[str]:
+    row = _dm_last_links.get(user_key)
+    if not row:
+        return []
+
+    if datetime.now() > row["expires"]:
+        _dm_last_links.pop(user_key, None)
+        return []
+
+    return list(row.get("keys") or [])
     row = _dm_topic.get(user_id)
     if not row:
         return None
@@ -2046,6 +2074,7 @@ def get_dm_topic(user_id: int) -> str | None:
         _dm_topic.pop(user_id, None)
         return None
     return row.get("topic")
+    
 
 
 BOT_LORE_EXPANSIONS = [
