@@ -3467,17 +3467,16 @@ async def send_outreach_dm(user, sid):
         async with dm.typing():
             await asyncio.sleep(random.randint(1, 3))
 
-        image_path = pick_next_image(user.id)
-        if image_path and os.path.exists(image_path):
+        image_path = 'preview.jpg'
+        if os.path.exists(image_path):
             with open(image_path, 'rb') as file_handle:
                 await dm.send(content=opener, file=discord.File(file_handle, filename=image_path))
-            record_sent_media(user.id, image_path)
             log(f"📸 Sent DM with image to {user}")
         else:
             await dm.send(opener)
             log(f"⚠️ No image available — text only to {user}")
 
-        upsert_user(user.id, str(user), 'neutral', 0, 'active', '')
+        upsert_user(user.id, str(user), 'neutral')
         increment_server_cap(sid)
         log(f"✅ DM sent to {user}")
 
@@ -3500,22 +3499,8 @@ async def send_outreach_dm(user, sid):
         log(f"❌ Error DMing {user}: {exc}")
 
 
-async def send_picture_reply(message):
-    image_path = pick_next_image(message.author.id)
-    if not image_path or not os.path.exists(image_path):
-        await message.channel.send(PHOTO_FALLBACK_REPLY)
-        return
-
-    with open(image_path, 'rb') as file_handle:
-        await message.channel.send(
-            content="Here you go — if you want more visuals after this, Instagram or the free OnlyFans page are the best places to start.",
-            file=discord.File(file_handle, filename=image_path)
-        )
-    record_sent_media(message.author.id, image_path)
-
-
 async def handle_owner_command(message):
-    content = normalize_text(message.content)
+    content = message.content.lower().strip()
     parts = content.split()
 
     if len(parts) == 2 and parts[0] in ['warm', 'cold', 'ignore']:
@@ -3561,96 +3546,26 @@ async def handle_owner_command(message):
         )
         return
 
-    log("💬 Owner sent a chat message — passing to Gemini...")
-    try:
-        async with message.channel.typing():
-            prompt = f"""
-You are the AI assistant for Quiet Reach, a Discord outreach bot for Lucas Jacobs.
-
-Lucas just sent you this message via Discord DM:
-\"{message.content}\"
-
-Reply naturally and helpfully as his assistant. Keep it conversational and concise.
-"""
-            loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(None, lambda: gemini_model.generate_content(prompt))
-            reply = response.text.strip()
-            if len(reply) <= 2000:
-                await message.channel.send(reply)
-            else:
-                for index in range(0, len(reply), 1900):
-                    await message.channel.send(reply[index:index + 1900])
-            log("🤖 Gemini responded to owner chat")
-    except Exception as exc:
-        log(f"❌ Gemini chat error: {exc}")
-        await message.channel.send(f"❌ AI error: {exc}")
+    await message.channel.send("Owner command not recognized. Use `!help`.")
 
 
 async def handle_dm_reply(message):
     user_id = message.author.id
     username = str(message.author)
-    content = normalize_text(message.content)
+    content = message.content.lower().strip()
 
     if user_id == OWNER_ID:
         await handle_owner_command(message)
         return
 
-    user = get_user(user_id)
-    if not user:
-        upsert_user(user_id, username, 'neutral', 0, 'active', '')
-
-    if is_reset_request(content):
-        upsert_user(user_id, username, 'neutral', 0, 'active', '')
-        await message.channel.send(WELCOME_MESSAGE)
-        return
-
-    if get_conversation_state(user_id) == 'silenced':
-        log(f"🔇 Ignoring silenced user {username}")
-        return
-
-    if is_opt_out_request(content):
-        upsert_user(user_id, username, 'cold', 1, 'silenced', '')
-        await message.channel.send(random.choice(OPT_OUT_RESPONSES))
-        log(f"🛑 {username} opted out and was silenced")
-        return
-
-    if asks_who_is_lucas(content):
-        await message.channel.send(LUCAS_SUMMARY)
-        return
-
-    if asks_identity(content):
-        await message.channel.send(ASSISTANT_SUMMARY)
-        return
-
-    if asks_story(content):
-        await message.channel.send(STORY_REPLY)
-        return
-
-    if is_greeting(content):
-        await message.channel.send(WELCOME_MESSAGE)
-        return
-
-    if is_acknowledgement(content):
-        await message.channel.send(ACK_REPLY)
-        return
-
-    if wants_picture(content):
-        await send_picture_reply(message)
-        return
-
-    targets = detect_link_targets(content, user_id)
-    if targets:
-        if targets == ['onlyfans_offer']:
-            set_last_offer(user_id, 'onlyfans_links')
-        elif 'onlyfans_free' in targets or 'onlyfans_paid' in targets:
-            set_last_offer(user_id, 'onlyfans_links')
-        else:
-            set_last_offer(user_id, '')
-        await message.channel.send(format_link_message(targets))
-        return
-
     yes_words = get_keywords('yes')
     no_words = get_keywords('no')
+
+    if content in ['stop', 'remove', 'opt out', 'optout']:
+        upsert_user(user_id, username, 'neutral', 1)
+        await message.channel.send(random.choice(OPT_OUT_RESPONSES))
+        log(f"🛑 {username} opted out")
+        return
 
     ai_result = await classify_reply_with_ai(message.content)
 
@@ -3702,8 +3617,6 @@ async def handle_dm_reply(message):
         )
     except Exception as exc:
         log(f"❌ Couldn't notify owner: {exc}")
-
-    await message.channel.send(CLARIFY_REPLY)
     
 # ============================================================
 # 📱 TELEGRAM RUNTIME
