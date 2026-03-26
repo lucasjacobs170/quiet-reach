@@ -1574,6 +1574,259 @@ def build_single_link_clarifier(keys: list[str]) -> str:
 
     return "Got it — just one. Which one do you want: " + ", ".join(display) + "?"
 
+# ============================================================
+# 📱 TELEGRAM / DM CONTROL HELPERS
+# ============================================================
+
+DM_OPTOUT_WINDOW_SECONDS = 60 * 60 * 24 * 30
+DM_LOW_PROMO_WINDOW_SECONDS = 60 * 15
+
+_dm_opted_out = {}        # user_key -> expires datetime
+_dm_low_promo_until = {}  # user_key -> expires datetime
+
+
+def _state_active(bucket: dict, key) -> bool:
+    until = bucket.get(key)
+    if not until:
+        return False
+    if datetime.now(timezone.utc) >= until:
+        bucket.pop(key, None)
+        return False
+    return True
+
+
+def set_dm_opt_out(user_key, seconds: int = DM_OPTOUT_WINDOW_SECONDS):
+    _dm_opted_out[user_key] = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+
+
+def clear_dm_opt_out(user_key):
+    _dm_opted_out.pop(user_key, None)
+
+
+def dm_is_opted_out(user_key) -> bool:
+    return _state_active(_dm_opted_out, user_key)
+
+
+def is_resume_message(text: str) -> bool:
+    t = (text or "").strip().lower()
+    return t in {
+        "start",
+        "/start",
+        "hi",
+        "hello",
+        "hey",
+        "help",
+        "can you help me",
+        "okay you can reply",
+        "you can reply",
+    }
+
+
+def is_stop_request(text: str) -> bool:
+    t = (text or "").strip().lower()
+    phrases = [
+        "stop messaging me",
+        "stop replying",
+        "stop talking",
+        "do not message me",
+        "leave me alone",
+        "go away",
+        "fuck off",
+        "please fuck off",
+        "stop",
+        "quit",
+    ]
+    return any(p in t for p in phrases)
+
+
+def set_dm_low_promo(user_key, seconds: int = DM_LOW_PROMO_WINDOW_SECONDS):
+    _dm_low_promo_until[user_key] = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+
+
+def dm_in_low_promo_mode(user_key) -> bool:
+    return _state_active(_dm_low_promo_until, user_key)
+
+
+def is_pushback_feedback(text: str) -> bool:
+    t = (text or "").strip().lower()
+    phrases = [
+        "you shouldn't push so hard",
+        "stop pushing",
+        "too pushy",
+        "too salesy",
+        "too promotional",
+        "you keep mentioning",
+        "you need more fine tuning",
+        "annoying",
+        "you're annoying",
+        "you are annoying",
+    ]
+    return any(p in t for p in phrases)
+
+
+def is_one_link_request(text: str) -> bool:
+    t = (text or "").strip().lower()
+    phrases = [
+        "one link",
+        "just one link",
+        "only one link",
+        "single link",
+        "one of his links",
+        "one of them",
+        "just one",
+        "i just wanted one",
+        "i only want one",
+        "i only wanted one",
+    ]
+    return any(p in t for p in phrases)
+
+
+def is_direct_platform_access_request(text: str) -> bool:
+    t = (text or "").strip().lower()
+    phrases = [
+        "send me his",
+        "send me the",
+        "show me his",
+        "show me the",
+        "give me his",
+        "give me the",
+        "i want his",
+        "i want the",
+        "i would like to see his",
+        "let me see his",
+        "can i see his",
+    ]
+    return any(p in t for p in phrases)
+
+
+def build_generic_single_link_clarifier() -> str:
+    return (
+        "Sure — which one do you want: Chaturbate, OnlyFans free, "
+        "OnlyFans paid, Instagram, X, or Discord?"
+    )
+
+
+def link_label_for_key(key: str) -> str:
+    labels = {
+        "chaturbate": "Chaturbate",
+        "onlyfans_free": "OnlyFans (free)",
+        "onlyfans_paid": "OnlyFans (paid)",
+        "x": "X",
+        "instagram": "Instagram",
+        "discord": "Discord",
+    }
+    return labels.get(key, key.title())
+
+
+def link_url_for_key(key: str) -> str:
+    url_map = {
+        "chaturbate": CHATABURATE_URL,
+        "onlyfans_free": ONLYFANS_FREE_URL,
+        "onlyfans_paid": ONLYFANS_PAID_URL,
+        "x": X_URL,
+        "instagram": INSTAGRAM_URL,
+        "discord": DISCORD_INVITE_URL,
+    }
+    return url_map.get(key, "")
+
+
+def build_single_link_message(key: str) -> str:
+    label = link_label_for_key(key)
+    url = link_url_for_key(key)
+    blurb = LINK_BLURBS.get(key, "")
+
+    if not url:
+        return "I can send one link — just tell me which platform you want."
+
+    if blurb:
+        return f"Sure — here’s his official {label} link:\n{url}\n{blurb}"
+
+    return f"Sure — here’s his official {label} link:\n{url}"
+
+
+def is_nonrequest_reaction(text: str) -> bool:
+    t = (text or "").strip().lower()
+    phrases = [
+        "he sounds pretty diversified",
+        "sounds pretty diversified",
+        "that's cool",
+        "thats cool",
+        "that is cool",
+        "he's hot",
+        "hes hot",
+        "oh he's hot",
+        "oh hes hot",
+        "wow",
+        "nice",
+        "cool",
+    ]
+    return any(p in t for p in phrases)
+
+
+def build_nonrequest_reaction_reply(text: str) -> str:
+    t = (text or "").strip().lower()
+
+    if "divers" in t:
+        return "Yeah — he has a few different sides to what he does."
+    if "hot" in t:
+        return "Fair enough."
+    if "cool" in t:
+        return "Yeah, that’s the general idea."
+    if "nice" in t:
+        return "Glad that helps."
+    return "Yeah."
+
+
+def is_brief_acknowledgment(text: str) -> bool:
+    t = (text or "").strip().lower()
+    return t in {
+        "ok",
+        "okay",
+        "kk",
+        "got it",
+        "sure",
+        "alright",
+        "all right",
+        "thanks",
+        "thank you",
+    }
+
+
+def build_brief_acknowledgment_reply(text: str) -> str:
+    t = (text or "").strip().lower()
+
+    if t in {"thanks", "thank you"}:
+        return "Anytime."
+    if t in {"sure"}:
+        return "Alright."
+    return "Got it."
+
+
+def sanitize_ai_reply(text: str) -> str:
+    t = (text or "").strip()
+
+    if not t:
+        return "I can help with questions about Lucas, his platforms, or one specific link if you want."
+
+    if len(t) >= 2 and t[0] == '"' and t[-1] == '"':
+        t = t[1:-1].strip()
+
+    bad_fragments = [
+        " or ?",
+        " a ?",
+        " a to ",
+        " the –",
+        "the – just",
+        "send you the –",
+        "would you like a ?",
+        "would you like a to",
+    ]
+    tl = t.lower()
+    if any(frag in tl for frag in bad_fragments):
+        return "I can help with questions about Lucas, his platforms, or one specific link if you want."
+
+    return t
+
 
 def build_other_options_hint(except_keys: list[str] | None = None) -> str:
     except_keys = set(except_keys or [])
@@ -3048,160 +3301,239 @@ async def telegram_send_photo_logged(
         await update.message.reply_photo(photo=f, caption=(caption or None))
 
 async def handle_telegram_private_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """
-    Telegram private chat behavior:
-    mirrors Discord DM behavior where it makes sense,
-    but avoids Discord-specific outreach/invite flows.
-    """
-    if not update.message:
+    message = update.message
+    if not message or not message.text:
         return
 
-    telegram_log_inbound(update)
+    content = (message.text or "").strip()
+    if not content:
+        return
 
-    user = update.effective_user
-    user_key = tg_user_key(user.id)
-    username = telegram_display_name(user)
-
-    content = (update.message.text or "").strip()
     content_lower = content.lower().strip()
+    user = update.effective_user
+    user_key = tg_user_key(user.id if user else message.chat_id)
+    last_link_keys = get_dm_link_context(user_key)
+    requested_key = platform_key_from_text(content_lower)
 
-    # Full lore on request
-    if content_lower in ["full story", "full lore", "the full story", "tell me the full story"]:
-        set_dm_topic(user_key, "lore")
-        parts = chunk_text(QUIET_REACH_CANON_LORE_FULL, 1700)
-        if not parts:
-            parts = ["I tried to pull the full story, but it came up empty."]
-        for part in parts:
-            await telegram_reply_logged(update, context, part)
-        return
-
-    # Bot identity / lore
-    if any(p in content_lower for p in [
-        "how did you come about", "how were you made", "how were you created",
-        "how did you get made", "are you a bot", "you are a bot", "you're a bot",
-        "are you human", "what made you", "who built you",
-        "who are you", "what are you", "who made you", "how old are you",
-        "your backstory", "backstory",
-        "your story", "tell me your story", "tell me about you",
-        "who is quiet reach", "what is quiet reach",
-        "what's your deal", "whats your deal",
-        "your vibe", "what's your vibe", "whats your vibe",
-    ]):
-        lore = random.choice(BOT_BACKSTORY_LINES)
-        set_dm_topic(user_key, "lore")
-        msg = f"{lore}\n\nIf you want the full legend, just say: `full story`."
-        await telegram_reply_logged(update, context, msg)
-        return
-
-    # Opt-out
-    if content_lower in ["stop", "remove", "opt out", "optout"]:
-        upsert_user(user_key, username, "neutral", opt_out=1)
-        await telegram_reply_logged(update, context, random.choice(OPT_OUT_RESPONSES))
-        log(f"🛑 Telegram user opted out: {username}")
-        return
-
-    # Lore follow-up mode
-    topic = get_dm_topic(user_key)
-    if topic == "lore":
-        if any(p in content_lower for p in [
-            "more about you", "more detail", "more details", "tell me more",
-            "about you", "who are you really"
-        ]):
-            extra = random.choice(BOT_LORE_EXPANSIONS)
-            await telegram_reply_logged(update, context, extra)
-            return
-
-    # Direct FAQ / correction handling
-    if is_bot_correction_prompt(content):
-        if ("who is lucas" in content_lower) or is_who_is_lucas_question(content):
-            msg = "You’re right — let me answer that directly. " + build_dm_lucas_summary_reply(
-                include_why_care=is_why_should_i_care_question(content)
+    # ------------------------------------------------------------
+    # Hard opt-out / mute
+    # ------------------------------------------------------------
+    if dm_is_opted_out(user_key):
+        if is_resume_message(content_lower):
+            clear_dm_opt_out(user_key)
+            await telegram_reply_logged(
+                update,
+                context,
+                "Welcome back — how can I help?"
             )
-            await telegram_reply_logged(update, context, msg)
-            return
-
-        if is_what_are_you_question(content):
-            msg = "You’re right — let me answer that directly. " + build_dm_identity_reply()
-            await telegram_reply_logged(update, context, msg)
-            return
-
-    if is_what_are_you_question(content):
-        await telegram_reply_logged(update, context, build_dm_identity_reply())
         return
 
-    if is_who_is_lucas_question(content):
-        msg = build_dm_lucas_summary_reply(
-            include_why_care=is_why_should_i_care_question(content)
+    if is_stop_request(content_lower):
+        set_dm_opt_out(user_key)
+        await telegram_reply_logged(
+            update,
+            context,
+            "Understood — I’ll stop here. If you want help later, just say hi."
         )
-        await telegram_reply_logged(update, context, msg)
         return
 
-    if is_why_should_i_care_question(content):
-        await telegram_reply_logged(update, context, build_dm_why_care_reply())
+    # ------------------------------------------------------------
+    # Tone / feedback control
+    # ------------------------------------------------------------
+    if is_pushback_feedback(content_lower):
+        set_dm_low_promo(user_key)
+        await telegram_reply_logged(
+            update,
+            context,
+            "Fair point — I was pushing too hard. I’ll keep it simpler from here."
+        )
         return
 
-    if is_photo_request(content):
+    if is_bot_correction_prompt(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            "You’re right — let me answer more directly. Ask me one thing and I’ll keep it concise."
+        )
+        return
+
+    # ------------------------------------------------------------
+    # Greetings / simple reactions
+    # ------------------------------------------------------------
+    if is_greeting(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            "Hey — I’m Quiet Reach, Lucas’s assistant. I can answer questions or send one specific link if you want."
+        )
+        return
+
+    if is_nonrequest_reaction(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            build_nonrequest_reaction_reply(content_lower)
+        )
+        return
+
+    if is_brief_acknowledgment(content_lower):
+        if dm_in_low_promo_mode(user_key):
+            return
+        await telegram_reply_logged(
+            update,
+            context,
+            build_brief_acknowledgment_reply(content_lower)
+        )
+        return
+
+    # ------------------------------------------------------------
+    # Direct FAQ answers
+    # ------------------------------------------------------------
+    if is_what_are_you_question(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            build_dm_identity_reply()
+        )
+        return
+
+    if is_who_is_lucas_question(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            build_dm_lucas_summary_reply(include_why_care=False)
+        )
+        return
+
+    if is_why_should_i_care_question(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            build_dm_why_care_reply()
+        )
+        return
+
+    # ------------------------------------------------------------
+    # Photo request
+    # IMPORTANT: return immediately after photo path
+    # ------------------------------------------------------------
+    if is_photo_request(content_lower):
         image_path = pick_shared_image_path()
         if image_path:
-            try:
-                await telegram_send_photo_logged(
-                    update,
-                    context,
-                    image_path,
-                    "Here you go — if you want more visuals after this, Instagram or the free OnlyFans page are the best places to start."
-                )
-                return
-            except FileNotFoundError:
-                pass
-            except Exception:
-                pass
-
-        await telegram_reply_logged(update, context, build_photo_guidance_reply())
+            await telegram_send_photo_logged(
+                update,
+                context,
+                image_path,
+                "Here you go — if you want more visuals after this, Instagram or the free OnlyFans page are the best places to start."
+            )
+        else:
+            await telegram_reply_logged(
+                update,
+                context,
+                build_photo_guidance_reply()
+            )
         return
 
-    # If the last thing I sent was links, handle follow-ups cleanly
-    last_link_keys = get_dm_link_context(user_key)
-
-    if last_link_keys and is_single_link_followup(content):
-        msg = build_single_link_clarifier(last_link_keys)
-        await telegram_reply_logged(update, context, msg)
-        return
-
-    if last_link_keys and is_link_explainer_followup(content):
-        msg = build_link_breakdown_message(last_link_keys)
-        await telegram_reply_logged(update, context, msg)
-        return
-
-    # Platform vibe questions
-    if is_platform_info_question(content):
-        key = platform_key_from_text(content_lower)
-        if key and key in PLATFORM_INFO:
-            msg = (
-                PLATFORM_INFO[key]
-                + "\n\nIf you want the official link(s) too, just say `send the link`."
-            ).strip()
-            await telegram_reply_logged(update, context, msg)
+    # ------------------------------------------------------------
+    # Platform-info questions
+    # ------------------------------------------------------------
+    if requested_key and is_platform_info_question(content_lower):
+        info = PLATFORM_INFO.get(requested_key)
+        if info:
+            await telegram_reply_logged(
+                update,
+                context,
+                f"{info}\n\nIf you want the official link too, just say `send the link`."
+            )
             return
 
-    # Link routing
+    # ------------------------------------------------------------
+    # "One link" handling
+    # ------------------------------------------------------------
+    if is_one_link_request(content_lower) or is_single_link_followup(content_lower):
+        if requested_key:
+            reply = build_single_link_message(requested_key)
+            remember_dm_link_context(user_key, [requested_key])
+            await telegram_reply_logged(update, context, reply)
+            return
+
+        if last_link_keys:
+            await telegram_reply_logged(
+                update,
+                context,
+                build_single_link_clarifier(last_link_keys)
+            )
+            return
+
+        await telegram_reply_logged(
+            update,
+            context,
+            build_generic_single_link_clarifier()
+        )
+        return
+
+    # ------------------------------------------------------------
+    # If user directly asks to see a specific platform, send that one
+    # Example: "I would like to see his chaturbate"
+    # ------------------------------------------------------------
+    if requested_key and is_direct_platform_access_request(content_lower):
+        reply = build_single_link_message(requested_key)
+        remember_dm_link_context(user_key, [requested_key])
+        await telegram_reply_logged(update, context, reply)
+        return
+
+    # ------------------------------------------------------------
+    # Follow-up explainer after links
+    # Example: "what is all of that?" / "give me more info"
+    # ------------------------------------------------------------
+    if last_link_keys and is_link_explainer_followup(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            build_link_breakdown_message(last_link_keys)
+        )
+        return
+
+    # ------------------------------------------------------------
+    # Explicit link ask for a specific platform
+    # ------------------------------------------------------------
+    explicit_link = (
+        is_explicit_link_ask(content_lower)
+        or is_links_request(content_lower)
+        or is_contact_intent(content_lower)
+    )
+
+    if explicit_link and requested_key:
+        reply = build_single_link_message(requested_key)
+        remember_dm_link_context(user_key, [requested_key])
+        await telegram_reply_logged(update, context, reply)
+        return
+
+    # ------------------------------------------------------------
+    # General link router
+    # ------------------------------------------------------------
     link_reply = dm_link_router(content_lower)
     if link_reply:
         remember_dm_link_context(user_key, infer_link_keys_from_reply(link_reply))
         await telegram_reply_logged(update, context, link_reply)
         return
 
-    # AI answer for Lucas/info questions
-    if looks_like_question(content) or ("lucas" in content_lower):
-        reply = await generate_ai_reply(content)
-        if not reply:
-            reply = "I don’t have that detail yet. If you want, ask me something specific about Lucas or one of his platforms."
-        await telegram_reply_logged(update, context, reply)
+    # ------------------------------------------------------------
+    # Low-promo mode safe fallback
+    # ------------------------------------------------------------
+    if dm_in_low_promo_mode(user_key):
+        await telegram_reply_logged(
+            update,
+            context,
+            "Got it. I’ll keep it simple — ask me about Lucas, a platform, a picture, or one specific link."
+        )
         return
 
-    # General fallback
+    # ------------------------------------------------------------
+    # Final AI fallback
+    # ------------------------------------------------------------
     reply = await generate_ai_reply(content)
-    if not reply:
-        reply = "Got you — ask me about Lucas, one of his platforms, or say `links`."
+    reply = sanitize_ai_reply(reply)
     await telegram_reply_logged(update, context, reply)
 
 async def handle_telegram_group_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
