@@ -1827,6 +1827,151 @@ def sanitize_ai_reply(text: str) -> str:
 
     return t
 
+DM_PENDING_ACTION_WINDOW_SECONDS = 180
+_dm_pending_action = {}  # user_key -> {"type": str, "data": dict, "expires": datetime}
+
+
+def set_dm_pending_action(user_key, action_type: str, data: dict | None = None):
+    _dm_pending_action[user_key] = {
+        "type": action_type,
+        "data": dict(data or {}),
+        "expires": datetime.now(timezone.utc) + timedelta(seconds=DM_PENDING_ACTION_WINDOW_SECONDS),
+    }
+
+
+def get_dm_pending_action(user_key) -> dict | None:
+    row = _dm_pending_action.get(user_key)
+    if not row:
+        return None
+
+    if datetime.now(timezone.utc) >= row["expires"]:
+        _dm_pending_action.pop(user_key, None)
+        return None
+
+    return row
+
+
+def clear_dm_pending_action(user_key):
+    _dm_pending_action.pop(user_key, None)
+
+
+def build_onlyfans_variant_clarifier() -> str:
+    return "Sure — do you want his OnlyFans free page or the paid page?"
+
+
+def onlyfans_variant_from_text(text: str) -> str | None:
+    t = (text or "").strip().lower()
+    if not t:
+        return None
+
+    free_phrases = [
+        "free",
+        "free one",
+        "free page",
+        "the free one",
+        "the free page",
+    ]
+    paid_phrases = [
+        "paid",
+        "paid one",
+        "paid page",
+        "vip",
+        "premium",
+        "the paid one",
+        "the paid page",
+        "the premium one",
+    ]
+
+    if any(p in t for p in free_phrases):
+        return "onlyfans_free"
+    if any(p in t for p in paid_phrases):
+        return "onlyfans_paid"
+    return None
+
+
+def classify_single_link_choice(text: str) -> str | None:
+    t = (text or "").strip().lower()
+    if not t:
+        return None
+
+    variant = onlyfans_variant_from_text(t)
+    if variant:
+        return variant
+
+    key = platform_key_from_text(t)
+    if key in {"chaturbate", "instagram", "x", "discord", "onlyfans"}:
+        return key
+
+    if "server" in t or "invite" in t:
+        return "discord"
+
+    return None
+
+
+def is_are_you_lucas_question(text: str) -> bool:
+    t = (text or "").strip().lower()
+    phrases = [
+        "are you lucas",
+        "r u lucas",
+        "you lucas",
+        "is this lucas",
+    ]
+    return any(p in t for p in phrases)
+
+
+def is_are_you_a_bot_question(text: str) -> bool:
+    t = (text or "").strip().lower()
+    phrases = [
+        "are you a bot",
+        "are you bot",
+        "is this a bot",
+        "is this automated",
+        "is this automatic",
+        "is this ai",
+        "are you ai",
+        "are you real",
+    ]
+    return any(p in t for p in phrases)
+
+
+def is_banter_reaction(text: str) -> bool:
+    t = (text or "").strip().lower()
+    phrases = [
+        "lol",
+        "lmao",
+        "haha",
+        "hehe",
+        "just kidding",
+        "jk",
+        "kidding",
+    ]
+    return any(p == t or p in t for p in phrases)
+
+
+def build_banter_reaction_reply(text: str) -> str:
+    return "Haha, fair enough."
+
+
+def is_too_much_feedback(text: str) -> bool:
+    t = (text or "").strip().lower()
+    phrases = [
+        "that's a lot",
+        "thats a lot",
+        "too much",
+        "bit much",
+        "a bit much",
+        "you got carried away",
+        "you got a bit carried away",
+        "i just wanted one",
+        "i only wanted one",
+        "that was a lot",
+    ]
+    return any(p in t for p in phrases)
+
+
+def default_single_link_keys() -> list[str]:
+    return ["chaturbate", "onlyfans_free", "onlyfans_paid", "instagram", "x", "discord"]
+
 
 def build_other_options_hint(except_keys: list[str] | None = None) -> str:
     except_keys = set(except_keys or [])
@@ -3301,6 +3446,8 @@ async def telegram_send_photo_logged(
         await update.message.reply_photo(photo=f, caption=(caption or None))
 
 async def handle_telegram_private_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    telegram_log_inbound(update)
+
     message = update.message
     if not message or not message.text:
         return
@@ -3312,8 +3459,11 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
     content_lower = content.lower().strip()
     user = update.effective_user
     user_key = tg_user_key(user.id if user else message.chat_id)
+
     last_link_keys = get_dm_link_context(user_key)
+    pending = get_dm_pending_action(user_key)
     requested_key = platform_key_from_text(content_lower)
+    of_variant = onlyfans_variant_from_text(content_lower)
 
     # ------------------------------------------------------------
     # Hard opt-out / mute
@@ -3321,6 +3471,7 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
     if dm_is_opted_out(user_key):
         if is_resume_message(content_lower):
             clear_dm_opt_out(user_key)
+            clear_dm_pending_action(user_key)
             await telegram_reply_logged(
                 update,
                 context,
@@ -3329,6 +3480,7 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         return
 
     if is_stop_request(content_lower):
+        clear_dm_pending_action(user_key)
         set_dm_opt_out(user_key)
         await telegram_reply_logged(
             update,
@@ -3338,10 +3490,39 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         return
 
     # ------------------------------------------------------------
-    # Tone / feedback control
+    # Corrections / too-much feedback
+    # ------------------------------------------------------------
+    if is_bot_correction_prompt(content_lower) or is_too_much_feedback(content_lower):
+        set_dm_low_promo(user_key)
+
+        choice_keys = []
+        if pending and isinstance(pending.get("data"), dict):
+            choice_keys = list(pending["data"].get("keys") or [])
+        if not choice_keys:
+            choice_keys = list(last_link_keys or [])
+
+        if choice_keys:
+            set_dm_pending_action(user_key, "single_link_choice", {"keys": choice_keys})
+            await telegram_reply_logged(
+                update,
+                context,
+                "Fair point — let’s keep it simple. " + build_single_link_clarifier(choice_keys)
+            )
+            return
+
+        await telegram_reply_logged(
+            update,
+            context,
+            "Fair point — I got too broad there. Ask me one thing and I’ll keep it concise."
+        )
+        return
+
+    # ------------------------------------------------------------
+    # Pushback / anti-promo feedback
     # ------------------------------------------------------------
     if is_pushback_feedback(content_lower):
         set_dm_low_promo(user_key)
+        clear_dm_pending_action(user_key)
         await telegram_reply_logged(
             update,
             context,
@@ -3349,16 +3530,8 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         )
         return
 
-    if is_bot_correction_prompt(content_lower):
-        await telegram_reply_logged(
-            update,
-            context,
-            "You’re right — let me answer more directly. Ask me one thing and I’ll keep it concise."
-        )
-        return
-
     # ------------------------------------------------------------
-    # Greetings / simple reactions
+    # Greetings
     # ------------------------------------------------------------
     if is_greeting(content_lower):
         await telegram_reply_logged(
@@ -3368,27 +3541,25 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         )
         return
 
-    if is_nonrequest_reaction(content_lower):
-        await telegram_reply_logged(
-            update,
-            context,
-            build_nonrequest_reaction_reply(content_lower)
-        )
-        return
-
-    if is_brief_acknowledgment(content_lower):
-        if dm_in_low_promo_mode(user_key):
-            return
-        await telegram_reply_logged(
-            update,
-            context,
-            build_brief_acknowledgment_reply(content_lower)
-        )
-        return
-
     # ------------------------------------------------------------
     # Direct FAQ answers
     # ------------------------------------------------------------
+    if is_are_you_lucas_question(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            "No — I’m Lucas’s assistant."
+        )
+        return
+
+    if is_are_you_a_bot_question(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            "Yep — I’m an assistant bot for Lucas. I can answer questions or send one specific link if you want."
+        )
+        return
+
     if is_what_are_you_question(content_lower):
         await telegram_reply_logged(
             update,
@@ -3415,9 +3586,9 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
 
     # ------------------------------------------------------------
     # Photo request
-    # IMPORTANT: return immediately after photo path
     # ------------------------------------------------------------
     if is_photo_request(content_lower):
+        clear_dm_pending_action(user_key)
         image_path = pick_shared_image_path()
         if image_path:
             await telegram_send_photo_logged(
@@ -3435,6 +3606,75 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         return
 
     # ------------------------------------------------------------
+    # Pending conversational state
+    # ------------------------------------------------------------
+    if pending:
+        ptype = pending.get("type")
+        pdata = pending.get("data") or {}
+
+        if ptype == "single_link_choice":
+            choice = classify_single_link_choice(content_lower)
+
+            if choice in {"chaturbate", "instagram", "x", "discord"}:
+                clear_dm_pending_action(user_key)
+                remember_dm_link_context(user_key, [choice])
+                await telegram_reply_logged(
+                    update,
+                    context,
+                    build_single_link_message(choice)
+                )
+                return
+
+            if choice in {"onlyfans_free", "onlyfans_paid"}:
+                clear_dm_pending_action(user_key)
+                remember_dm_link_context(user_key, [choice])
+                await telegram_reply_logged(
+                    update,
+                    context,
+                    build_single_link_message(choice)
+                )
+                return
+
+            if choice == "onlyfans":
+                set_dm_pending_action(user_key, "onlyfans_variant_choice", {})
+                await telegram_reply_logged(
+                    update,
+                    context,
+                    build_onlyfans_variant_clarifier()
+                )
+                return
+
+            if is_brief_acknowledgment(content_lower):
+                keys = list(pdata.get("keys") or last_link_keys or default_single_link_keys())
+                await telegram_reply_logged(
+                    update,
+                    context,
+                    build_single_link_clarifier(keys)
+                )
+                return
+
+        if ptype == "onlyfans_variant_choice":
+            variant = onlyfans_variant_from_text(content_lower)
+
+            if variant in {"onlyfans_free", "onlyfans_paid"}:
+                clear_dm_pending_action(user_key)
+                remember_dm_link_context(user_key, [variant])
+                await telegram_reply_logged(
+                    update,
+                    context,
+                    build_single_link_message(variant)
+                )
+                return
+
+            if is_brief_acknowledgment(content_lower) or "onlyfans" in content_lower:
+                await telegram_reply_logged(
+                    update,
+                    context,
+                    build_onlyfans_variant_clarifier()
+                )
+                return
+
+    # ------------------------------------------------------------
     # Platform-info questions
     # ------------------------------------------------------------
     if requested_key and is_platform_info_question(content_lower):
@@ -3448,45 +3688,86 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
             return
 
     # ------------------------------------------------------------
-    # "One link" handling
+    # One-link requests
     # ------------------------------------------------------------
     if is_one_link_request(content_lower) or is_single_link_followup(content_lower):
-        if requested_key:
-            reply = build_single_link_message(requested_key)
+        if requested_key in {"chaturbate", "instagram", "x", "discord"}:
+            clear_dm_pending_action(user_key)
             remember_dm_link_context(user_key, [requested_key])
-            await telegram_reply_logged(update, context, reply)
-            return
-
-        if last_link_keys:
             await telegram_reply_logged(
                 update,
                 context,
-                build_single_link_clarifier(last_link_keys)
+                build_single_link_message(requested_key)
             )
             return
 
+        if requested_key == "onlyfans":
+            set_dm_pending_action(user_key, "onlyfans_variant_choice", {})
+            await telegram_reply_logged(
+                update,
+                context,
+                build_onlyfans_variant_clarifier()
+            )
+            return
+
+        if of_variant in {"onlyfans_free", "onlyfans_paid"}:
+            clear_dm_pending_action(user_key)
+            remember_dm_link_context(user_key, [of_variant])
+            await telegram_reply_logged(
+                update,
+                context,
+                build_single_link_message(of_variant)
+            )
+            return
+
+        choice_keys = list(last_link_keys or default_single_link_keys())
+        set_dm_pending_action(user_key, "single_link_choice", {"keys": choice_keys})
         await telegram_reply_logged(
             update,
             context,
-            build_generic_single_link_clarifier()
+            build_single_link_clarifier(choice_keys)
         )
         return
 
     # ------------------------------------------------------------
-    # If user directly asks to see a specific platform, send that one
+    # Direct platform access request
     # Example: "I would like to see his chaturbate"
     # ------------------------------------------------------------
     if requested_key and is_direct_platform_access_request(content_lower):
-        reply = build_single_link_message(requested_key)
-        remember_dm_link_context(user_key, [requested_key])
-        await telegram_reply_logged(update, context, reply)
-        return
+        if requested_key in {"chaturbate", "instagram", "x", "discord"}:
+            clear_dm_pending_action(user_key)
+            remember_dm_link_context(user_key, [requested_key])
+            await telegram_reply_logged(
+                update,
+                context,
+                build_single_link_message(requested_key)
+            )
+            return
+
+        if requested_key == "onlyfans":
+            if of_variant in {"onlyfans_free", "onlyfans_paid"}:
+                clear_dm_pending_action(user_key)
+                remember_dm_link_context(user_key, [of_variant])
+                await telegram_reply_logged(
+                    update,
+                    context,
+                    build_single_link_message(of_variant)
+                )
+                return
+
+            set_dm_pending_action(user_key, "onlyfans_variant_choice", {})
+            await telegram_reply_logged(
+                update,
+                context,
+                build_onlyfans_variant_clarifier()
+            )
+            return
 
     # ------------------------------------------------------------
     # Follow-up explainer after links
-    # Example: "what is all of that?" / "give me more info"
     # ------------------------------------------------------------
     if last_link_keys and is_link_explainer_followup(content_lower):
+        clear_dm_pending_action(user_key)
         await telegram_reply_logged(
             update,
             context,
@@ -3495,7 +3776,7 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         return
 
     # ------------------------------------------------------------
-    # Explicit link ask for a specific platform
+    # Explicit single-platform link ask
     # ------------------------------------------------------------
     explicit_link = (
         is_explicit_link_ask(content_lower)
@@ -3503,23 +3784,77 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         or is_contact_intent(content_lower)
     )
 
-    if explicit_link and requested_key:
-        reply = build_single_link_message(requested_key)
+    if explicit_link and requested_key in {"chaturbate", "instagram", "x", "discord"}:
+        clear_dm_pending_action(user_key)
         remember_dm_link_context(user_key, [requested_key])
-        await telegram_reply_logged(update, context, reply)
+        await telegram_reply_logged(
+            update,
+            context,
+            build_single_link_message(requested_key)
+        )
+        return
+
+    if explicit_link and requested_key == "onlyfans":
+        if of_variant in {"onlyfans_free", "onlyfans_paid"}:
+            clear_dm_pending_action(user_key)
+            remember_dm_link_context(user_key, [of_variant])
+            await telegram_reply_logged(
+                update,
+                context,
+                build_single_link_message(of_variant)
+            )
+            return
+
+        set_dm_pending_action(user_key, "onlyfans_variant_choice", {})
+        await telegram_reply_logged(
+            update,
+            context,
+            build_onlyfans_variant_clarifier()
+        )
+        return
+
+    # ------------------------------------------------------------
+    # Non-request reactions / banter / acknowledgments
+    # ------------------------------------------------------------
+    if is_banter_reaction(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            build_banter_reaction_reply(content_lower)
+        )
+        return
+
+    if is_nonrequest_reaction(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            build_nonrequest_reaction_reply(content_lower)
+        )
+        return
+
+    if is_brief_acknowledgment(content_lower):
+        if dm_in_low_promo_mode(user_key):
+            return
+        await telegram_reply_logged(
+            update,
+            context,
+            build_brief_acknowledgment_reply(content_lower)
+        )
         return
 
     # ------------------------------------------------------------
     # General link router
+    # Only use this if it is NOT a narrow one-link path
     # ------------------------------------------------------------
     link_reply = dm_link_router(content_lower)
     if link_reply:
+        clear_dm_pending_action(user_key)
         remember_dm_link_context(user_key, infer_link_keys_from_reply(link_reply))
         await telegram_reply_logged(update, context, link_reply)
         return
 
     # ------------------------------------------------------------
-    # Low-promo mode safe fallback
+    # Low-promo safe fallback
     # ------------------------------------------------------------
     if dm_in_low_promo_mode(user_key):
         await telegram_reply_logged(
