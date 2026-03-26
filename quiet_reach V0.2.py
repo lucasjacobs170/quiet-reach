@@ -1,76 +1,6 @@
 # 🤫 QUIET REACH v1.2
 import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, re
 from tkinter import ttk, scrolledtext, messagebox
-import tkinter.font as tkfont
-from datetime import datetime, date, timedelta
-import requests
-from datetime import time, timezone
-from zoneinfo import ZoneInfo
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
-
-BOT_TOKEN=''
-TELEGRAM_BOT_TOKEN=''
-OWNER_ID=434809771124719616
-SERVER_INVITE='https://discord.gg/yAvVewhD3c'
-# Official Lucas links (DM-only)
-CHATABURATE_URL = "https://chaturbate.com/b/lucas_jacobs/"
-ONLYFANS_FREE_URL = "https://onlyfans.com/lucas_jacobs_free"
-ONLYFANS_PAID_URL = "https://onlyfans.com/lucasjacobs170"
-X_URL = "https://x.com/lucasjacobs170"
-INSTAGRAM_URL = "https://www.instagram.com/lucas_jacobs17/?hl=en"
-# One-line blurbs to add context in DMs when giving a link
-LINK_BLURBS = {
-    "discord": "His community hub — updates, drops, and a direct way to keep up with Lucas.",
-    "chaturbate": "His live cam page — where you can catch him live and interact in real time.",
-    "onlyfans_free": "Free follow page — lighter previews and updates.",
-    "onlyfans_paid": "Paid page — the full premium content and the hottest drops.",
-    "x": "Fast updates + teasers when he posts something new.",
-    "instagram": "Pics + casual updates — the most “daily life” vibe.",
-}
-DB_PATH='quiet_reach.db'
-CONFIG_PATH='quiet_reach_config.json'
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434") 
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
-KB_PATH = "lucas_kb.txt"
-# Keyword / engagement mode
-KEYWORD_MODE_ENABLED = True
-
-PROMO_TZ = ZoneInfo("America/Los_Angeles")  # PT (handles DST)
-PROMO_DEFAULT_WINDOW_START = 18  # 6pm PT
-PROMO_DEFAULT_WINDOW_END   = 22  # 10pm PT
-
-# Public engagement pacing
-PUBLIC_TOUCH_COOLDOWN_SECONDS = 60 * 30   # 30 minutes per user
-NUDGE_AFTER_TOUCHES = 2                   # after N touches, start nudging opt-in
-
-def load_kb() -> str:
-    try:
-        with open(KB_PATH, "r", encoding="utf-8") as f:
-            return f.read().strip()
-    except FileNotFoundError:
-        return ""
-
-IMAGES_FILE = "images.txt"  # shared pool for DMs + promos
-
-def load_shared_images() -> list[str]:
-    try:
-        if not os.path.exists(IMAGES_FILE):
-            return []
-        with open(IMAGES_FILE, "r", encoding="utf-8") as f:
-            return [ln.strip() for ln in f.readlines() if ln.strip() and not ln.strip().startswith("#")]
-    except Exception as e:
-        log(f"⚠️ Failed reading {IMAGES_FILE}: {e}")
-        return []
-
-LUCAS_KB = load_kb()
-def rebuild_invite_texts():
-    """Rebuild any strings that embed SERVER_INVITE."""
-    global ABOUT_LUCAS, YES_RESPONSES
-
-    ABOUT_LUCAS = f"""
-import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, re
-from tkinter import ttk, scrolledtext, messagebox
 from datetime import datetime, date
 import google.generativeai as genai
 
@@ -3774,7 +3704,7 @@ async def handle_dm_reply(message):
         log(f"❌ Couldn't notify owner: {exc}")
 
     await message.channel.send(CLARIFY_REPLY)
-
+    
 # ============================================================
 # 📱 TELEGRAM RUNTIME
 # ============================================================
