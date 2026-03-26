@@ -2567,56 +2567,391 @@ async def send_outreach_dm(user, sid):
         log(f"❌ Error DMing {user}: {e}")
 
 # ============================================================
-# 📱 TELEGRAM RUNTIME (basic skeleton)
+# 📱 TELEGRAM RUNTIME
 # ============================================================
 
-async def telegram_start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def tg_user_key(user_id) -> str:
+    return f"telegram:{user_id}"
+
+def tg_chat_key(chat_id) -> str:
+    return f"telegram:{chat_id}"
+
+def telegram_display_name(user) -> str:
+    if not user:
+        return ""
+    uname = getattr(user, "username", None)
+    if uname:
+        return f"@{uname}"
+    first = getattr(user, "first_name", "") or ""
+    last = getattr(user, "last_name", "") or ""
+    full = f"{first} {last}".strip()
+    return full or str(getattr(user, "id", ""))
+
+def telegram_private_link(context: ContextTypes.DEFAULT_TYPE, payload: str = "") -> str:
+    """
+    Builds a private Telegram bot link using the runtime bot username.
+    Example:
+      https://t.me/MyBot
+      https://t.me/MyBot?start=links
+    """
     try:
-        user = update.effective_user
+        username = (getattr(context.bot, "username", "") or "").strip().lstrip("@")
+    except Exception:
+        username = ""
+
+    if not username:
+        return ""
+
+    if payload:
+        return f"https://t.me/{username}?start={payload}"
+    return f"https://t.me/{username}"
+
+def telegram_is_private_chat(update: Update) -> bool:
+    chat = update.effective_chat
+    return bool(chat and chat.type == "private")
+
+def telegram_is_group_chat(update: Update) -> bool:
+    chat = update.effective_chat
+    return bool(chat and chat.type in ("group", "supergroup"))
+
+def telegram_is_reply_to_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    try:
+        msg = update.message
+        if not msg or not msg.reply_to_message or not msg.reply_to_message.from_user:
+            return False
+        return msg.reply_to_message.from_user.id == context.bot.id
+    except Exception:
+        return False
+
+def telegram_mentions_bot(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    try:
+        text = (update.message.text or "").lower()
+        username = (getattr(context.bot, "username", "") or "").lower().lstrip("@")
+        if not username:
+            return False
+        return f"@{username}" in text
+    except Exception:
+        return False
+
+def telegram_is_addressed(update: Update, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    """
+    Only reply in groups when addressed directly.
+    """
+    text = (update.message.text or "").lower().strip()
+    if not text:
+        return False
+
+    if telegram_is_reply_to_bot(update, context):
+        return True
+
+    if telegram_mentions_bot(update, context):
+        return True
+
+    if "quiet reach" in text or "quietreach" in text:
+        return True
+
+    return False
+
+def telegram_log_inbound(update: Update):
+    try:
+        if not update.message:
+            return
+
         chat = update.effective_chat
+        user = update.effective_user
+        text = (update.message.text or "")[:2000]
 
-        if telegram_ui_ref:
-            telegram_ui_ref.append_log(
-                f"📱 Telegram /start from {getattr(user, 'username', None) or user.id} "
-                f"in chat {getattr(chat, 'id', 'unknown')}"
+        convo_log(
+            guild_id="telegram",
+            channel_id=str(getattr(chat, "id", "")),
+            user_id=tg_user_key(getattr(user, "id", "")),
+            username=telegram_display_name(user),
+            is_dm=int(telegram_is_private_chat(update)),
+            direction="in",
+            message=text,
+        )
+    except Exception as e:
+        log(f"⚠️ telegram_log_inbound failed: {e}")
+
+async def telegram_reply_logged(update: Update, context: ContextTypes.DEFAULT_TYPE, text: str):
+    try:
+        if not update.message:
+            return
+
+        chat = update.effective_chat
+        bot = getattr(context, "bot", None)
+        bot_name = (
+            f"@{bot.username}" if bot and getattr(bot, "username", None)
+            else "telegram_bot"
+        )
+        bot_id = f"telegram:bot:{getattr(bot, 'id', '')}" if bot else "telegram:bot"
+
+        convo_log(
+            guild_id="telegram",
+            channel_id=str(getattr(chat, "id", "")),
+            user_id=bot_id,
+            username=bot_name,
+            is_dm=int(telegram_is_private_chat(update)),
+            direction="out",
+            message=(text or "")[:2000],
+        )
+    except Exception as e:
+        log(f"⚠️ telegram outbound log failed: {e}")
+
+    await update.message.reply_text(text)
+
+async def handle_telegram_private_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Telegram private chat behavior:
+    mirrors Discord DM behavior where it makes sense,
+    but avoids Discord-specific outreach/invite flows.
+    """
+    if not update.message:
+        return
+
+    telegram_log_inbound(update)
+
+    user = update.effective_user
+    user_key = tg_user_key(user.id)
+    username = telegram_display_name(user)
+
+    content = (update.message.text or "").strip()
+    content_lower = content.lower().strip()
+
+    # /start payload handling
+    if content_lower == "/start":
+        await telegram_reply_logged(
+            update,
+            context,
+            "Hey — I’m Quiet Reach. You can ask about Lucas, his platforms, or ask for official links.",
+        )
+        return
+
+    # Full lore on request
+    if content_lower in ["full story", "full lore", "the full story", "tell me the full story"]:
+        set_dm_topic(user_key, "lore")
+        parts = chunk_text(QUIET_REACH_CANON_LORE_FULL, 1700)
+        if not parts:
+            parts = ["I tried to pull the full story, but it came up empty."]
+        for part in parts:
+            await telegram_reply_logged(update, context, part)
+        return
+
+    # Bot identity / lore
+    if any(p in content_lower for p in [
+        "how did you come about", "how were you made", "how were you created",
+        "how did you get made", "are you a bot", "you are a bot", "you're a bot",
+        "are you human", "what made you", "who built you",
+        "who are you", "what are you", "who made you", "how old are you",
+        "your backstory", "backstory",
+        "your story", "tell me your story", "tell me about you",
+        "who is quiet reach", "what is quiet reach",
+        "what's your deal", "whats your deal",
+        "your vibe", "what's your vibe", "whats your vibe",
+    ]):
+        lore = random.choice(BOT_BACKSTORY_LINES)
+        set_dm_topic(user_key, "lore")
+        msg = f"{lore}\n\nIf you want the full legend, just say: `full story`."
+        await telegram_reply_logged(update, context, msg)
+        return
+
+    # Opt-out
+    if content_lower in ["stop", "remove", "opt out", "optout"]:
+        upsert_user(user_key, username, "neutral", opt_out=1)
+        await telegram_reply_logged(update, context, random.choice(OPT_OUT_RESPONSES))
+        log(f"🛑 Telegram user opted out: {username}")
+        return
+
+    # Lore follow-up mode
+    topic = get_dm_topic(user_key)
+    if topic == "lore":
+        if any(p in content_lower for p in [
+            "more about you", "more detail", "more details", "tell me more",
+            "about you", "who are you really"
+        ]):
+            extra = random.choice(BOT_LORE_EXPANSIONS)
+            await telegram_reply_logged(update, context, extra)
+            return
+
+    # Platform vibe questions
+    if is_platform_info_question(content):
+        key = platform_key_from_text(content_lower)
+        if key and key in PLATFORM_INFO:
+            msg = (
+                PLATFORM_INFO[key]
+                + "\n\nIf you want the official link(s) too, just say `send the link`."
+            ).strip()
+            await telegram_reply_logged(update, context, msg)
+            return
+
+    # Link routing
+    link_reply = dm_link_router(content_lower)
+    if link_reply:
+        await telegram_reply_logged(update, context, link_reply)
+        return
+
+    # AI answer for Lucas/info questions
+    if looks_like_question(content) or ("lucas" in content_lower):
+        reply = await generate_ai_reply(content)
+        if not reply:
+            reply = "I don’t have that detail yet. If you want, ask me something specific about Lucas or one of his platforms."
+        await telegram_reply_logged(update, context, reply)
+        return
+
+    # General fallback
+    reply = await generate_ai_reply(content)
+    if not reply:
+        reply = "Got you — ask me about Lucas, one of his platforms, or say `links`."
+    await telegram_reply_logged(update, context, reply)
+
+async def handle_telegram_group_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Telegram group behavior:
+    - reply only when addressed
+    - keep links out of public chat
+    - steer link requests into private Telegram chat
+    """
+    if not update.message:
+        return
+
+    telegram_log_inbound(update)
+
+    user = update.effective_user
+    chat = update.effective_chat
+
+    user_key = tg_user_key(user.id)
+    chat_key = tg_chat_key(chat.id)
+
+    text = (update.message.text or "").strip()
+    raw = text.lower().strip()
+
+    # Ignore window after hostility
+    if ignoring_user(chat_key, user_key):
+        return
+
+    # Hostility handling
+    if is_hostile(raw):
+        clear_dm_offer(chat_key, user_key)
+        _followups.pop((chat_key, user_key), None)
+
+        await telegram_reply_logged(
+            update,
+            context,
+            "Got it — I’ll back off. If you need anything later, message me privately.",
+        )
+        set_ignore_user(chat_key, user_key)
+        return
+
+    # Public link gate
+    if (
+        is_contact_intent(raw)
+        or is_links_request(raw)
+        or is_explicit_link_ask(raw)
+    ):
+        private_link = telegram_private_link(context, "links")
+        if private_link:
+            msg = (
+                "I keep links out of the chat so it doesn’t turn into spam. "
+                f"Open a private chat with me here: {private_link}"
+            )
+        else:
+            msg = (
+                "I keep links out of the chat so it doesn’t turn into spam. "
+                "Open a private chat with me and message me there."
             )
 
-        if update.message:
-            await update.message.reply_text(
-                "Hey — I’m Quiet Reach. Telegram support is live now, and I’m still being wired up."
+        await telegram_reply_logged(update, context, msg)
+        return
+
+    # Follow-up window
+    if can_followup(chat_key, user_key):
+        consume_followup(chat_key, user_key)
+
+        touches = get_touches(user_key)
+        if touches <= 0:
+            touches = 1
+
+        reply_text = await build_public_response(text, touches)
+        reply_text = _strip_links_and_discord_words(reply_text)
+        reply_text = _shorten(reply_text, AI_MAX_CHARS_PUBLIC)
+
+        await telegram_reply_logged(update, context, reply_text)
+        return
+
+    # Only reply if addressed
+    if not telegram_is_addressed(update, context):
+        return
+
+    if not can_public_touch(user_key):
+        return
+
+    touches = record_touch(user_key, telegram_display_name(user))
+    reply_text = await build_public_response(text, touches)
+    reply_text = _strip_links_and_discord_words(reply_text)
+    reply_text = _shorten(reply_text, AI_MAX_CHARS_PUBLIC)
+
+    await telegram_reply_logged(update, context, reply_text)
+
+    start_followup(chat_key, user_key)
+
+async def telegram_start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Handles /start in private chat and supports deep-link payloads like ?start=links
+    """
+    try:
+        if not update.message:
+            return
+
+        telegram_log_inbound(update)
+
+        payload = " ".join(getattr(context, "args", []) or []).strip().lower()
+
+        if payload in ["link", "links", "contact"]:
+            msg = build_official_links_all_message()
+            await telegram_reply_logged(update, context, msg)
+            return
+
+        if telegram_is_private_chat(update):
+            await telegram_reply_logged(
+                update,
+                context,
+                "Hey — I’m Quiet Reach. You can ask about Lucas, his platforms, or ask for official links.",
             )
+            return
+
+        await telegram_reply_logged(
+            update,
+            context,
+            "Hey — message me privately if you want help or official links.",
+        )
     except Exception as e:
         if telegram_ui_ref:
             telegram_ui_ref.append_log(f"❌ Telegram /start handler error: {e}")
-
+        else:
+            log(f"❌ Telegram /start handler error: {e}")
 
 async def telegram_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         if not update.message:
             return
 
-        user = update.effective_user
-        chat = update.effective_chat
-        text = (update.message.text or "").strip()
+        if telegram_is_private_chat(update):
+            await handle_telegram_private_text(update, context)
+            return
 
-        if telegram_ui_ref:
-            telegram_ui_ref.append_log(
-                f"📱 Telegram message from {getattr(user, 'username', None) or user.id} "
-                f"in chat {getattr(chat, 'id', 'unknown')}: {text[:120]}"
-            )
+        if telegram_is_group_chat(update):
+            await handle_telegram_group_text(update, context)
+            return
 
-        await update.message.reply_text(
-            "Got your message. Telegram behavior is being connected next."
-        )
     except Exception as e:
         if telegram_ui_ref:
             telegram_ui_ref.append_log(f"❌ Telegram text handler error: {e}")
-
+        else:
+            log(f"❌ Telegram text handler error: {e}")
 
 async def telegram_on_startup(app):
     if telegram_ui_ref:
         telegram_ui_ref.append_log("📱 Telegram bot connected.")
-
 
 async def telegram_on_shutdown(app):
     if telegram_ui_ref:
