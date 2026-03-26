@@ -1725,7 +1725,7 @@ def link_url_for_key(key: str) -> str:
         "onlyfans_paid": ONLYFANS_PAID_URL,
         "x": X_URL,
         "instagram": INSTAGRAM_URL,
-        "discord": DISCORD_INVITE_URL,
+        "discord": SERVER_INVITE,
     }
     return url_map.get(key, "")
 
