@@ -1435,6 +1435,145 @@ def build_link_breakdown_message(keys: list[str]) -> str:
     )
     return "\n".join(lines)
 
+def pick_shared_image_path() -> str | None:
+    imgs = load_shared_images()
+    if not imgs:
+        return None
+    return random.choice(imgs)
+
+def is_what_are_you_question(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    phrases = [
+        "what are you",
+        "who are you",
+        "what is this",
+        "what do you do",
+        "what areyou",
+        "who areyou",
+    ]
+    return any(p in t for p in phrases)
+
+def is_why_should_i_care_question(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    phrases = [
+        "why should i care",
+        "why would i care",
+        "why should i be interested",
+        "why does that matter",
+        "why does it matter",
+    ]
+    return any(p in t for p in phrases)
+
+def is_photo_request(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    phrases = [
+        "pictures",
+        "picture",
+        "pics",
+        "pic",
+        "photos",
+        "photo",
+        "images",
+        "image",
+        "what does he look like",
+        "do you have any pictures",
+        "do you have any photos",
+        "can you send a picture",
+        "can you send a photo",
+    ]
+    return any(p in t for p in phrases)
+
+def is_bot_correction_prompt(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    phrases = [
+        "that's not what i asked",
+        "thats not what i asked",
+        "i didn't ask",
+        "i didnt ask",
+        "you didn't answer",
+        "you didnt answer",
+        "i asked who is lucas",
+        "you sent them all again",
+        "i only want one link",
+    ]
+    return any(p in t for p in phrases)
+
+def is_single_link_followup(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    phrases = [
+        "one link",
+        "just one",
+        "only one",
+        "only want one",
+        "i only want one",
+        "just send one",
+        "send one of them",
+        "can you send one",
+        "i only want one link",
+    ]
+    return any(p in t for p in phrases)
+
+def build_dm_identity_reply() -> str:
+    return (
+        "I’m Quiet Reach — Lucas’s assistant. "
+        "I can explain what he does, break down his platforms, or send official links if you want."
+    )
+
+def build_dm_lucas_summary_reply(include_why_care: bool = False) -> str:
+    msg = (
+        "Lucas is a content creator. He has live interactive content on Chaturbate, "
+        "premium content on OnlyFans, and updates on X, Instagram, and Discord."
+    )
+    if include_why_care:
+        msg += (
+            " If you want live interaction, premium content, or casual updates/community, "
+            "I can point you to the best fit — no pressure."
+        )
+    return msg
+
+def build_dm_why_care_reply() -> str:
+    return (
+        "Depends what you want — live interaction, premium content, or casual updates/community. "
+        "If any of that sounds relevant, I can point you to the best place; if not, no pressure."
+    )
+
+def build_photo_guidance_reply() -> str:
+    return (
+        "If you want visuals, Instagram is the best place to start for casual photos, "
+        "and the free OnlyFans page is better for preview-style content. "
+        "If you want, I can send just one of those."
+    )
+
+def build_single_link_clarifier(keys: list[str]) -> str:
+    display = []
+    ordered = [
+        ("instagram", "Instagram"),
+        ("chaturbate", "Chaturbate"),
+        ("onlyfans_free", "OnlyFans free"),
+        ("onlyfans_paid", "OnlyFans paid"),
+        ("x", "X"),
+        ("discord", "Discord"),
+    ]
+
+    for key, label in ordered:
+        if key in (keys or []):
+            display.append(label)
+
+    if not display:
+        display = ["Instagram", "Chaturbate", "OnlyFans free", "OnlyFans paid", "X", "Discord"]
+
+    return "Got it — just one. Which one do you want: " + ", ".join(display) + "?"
+
 
 def build_other_options_hint(except_keys: list[str] | None = None) -> str:
     except_keys = set(except_keys or [])
@@ -1697,10 +1836,67 @@ async def handle_dm_reply(message):
             await send_logged(message.channel, guild_id="", content=extra, is_dm=1)
             return
 
+    # Direct FAQ / correction handling
+    if is_bot_correction_prompt(content):
+        if ("who is lucas" in content_lower) or is_who_is_lucas_question(content):
+            msg = "You’re right — let me answer that directly. " + build_dm_lucas_summary_reply(
+                include_why_care=is_why_should_i_care_question(content)
+            )
+            await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
+            return
+
+        if is_what_are_you_question(content):
+            msg = "You’re right — let me answer that directly. " + build_dm_identity_reply()
+            await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
+            return
+
+    if is_what_are_you_question(content):
+        await send_logged(message.channel, guild_id="", content=build_dm_identity_reply(), is_dm=1)
+        return
+
+    if is_who_is_lucas_question(content):
+        msg = build_dm_lucas_summary_reply(
+            include_why_care=is_why_should_i_care_question(content)
+        )
+        await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
+        return
+
+    if is_why_should_i_care_question(content):
+        await send_logged(message.channel, guild_id="", content=build_dm_why_care_reply(), is_dm=1)
+        return
+
+    if is_photo_request(content):
+        image_path = pick_shared_image_path()
+        if image_path:
+            try:
+                with open(image_path, "rb") as f:
+                    file = discord.File(f, filename=os.path.basename(image_path))
+                    await send_logged(
+                        message.channel,
+                        guild_id="",
+                        content="Here you go — if you want more visuals after this, Instagram or the free OnlyFans page are the best places to start.",
+                        file=file,
+                        is_dm=1
+                    )
+                return
+            except FileNotFoundError:
+                pass
+            except Exception:
+                pass
+
+        await send_logged(message.channel, guild_id="", content=build_photo_guidance_reply(), is_dm=1)
+        return
+
     # 🔗 DM link routing (smart: specific vs full list)
 
-    # If the last thing I sent was links, explain them instead of re-promoing
+    # If the last thing I sent was links, handle follow-ups cleanly
     last_link_keys = get_dm_link_context(user_id)
+
+    if last_link_keys and is_single_link_followup(content):
+        msg = build_single_link_clarifier(last_link_keys)
+        await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
+        return
+
     if last_link_keys and is_link_explainer_followup(content):
         msg = build_link_breakdown_message(last_link_keys)
         await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
@@ -2816,6 +3012,41 @@ async def telegram_reply_logged(update: Update, context: ContextTypes.DEFAULT_TY
 
     await update.message.reply_text(text)
 
+async def telegram_send_photo_logged(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    image_path: str,
+    caption: str = ""
+):
+    try:
+        if not update.message:
+            return
+
+        chat = update.effective_chat
+        bot = getattr(context, "bot", None)
+        bot_name = (
+            f"@{bot.username}" if bot and getattr(bot, "username", None)
+            else "telegram_bot"
+        )
+        bot_id = f"telegram:bot:{getattr(bot, 'id', '')}" if bot else "telegram:bot"
+
+        log_msg = ((caption or "").strip() + f"\n[file:{os.path.basename(image_path)}]").strip()
+
+        convo_log(
+            guild_id="telegram",
+            channel_id=str(getattr(chat, "id", "")),
+            user_id=bot_id,
+            username=bot_name,
+            is_dm=int(telegram_is_private_chat(update)),
+            direction="out",
+            message=log_msg[:2000],
+        )
+    except Exception as e:
+        log(f"⚠️ telegram photo log failed: {e}")
+
+    with open(image_path, "rb") as f:
+        await update.message.reply_photo(photo=f, caption=(caption or None))
+
 async def handle_telegram_private_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Telegram private chat behavior:
@@ -2880,8 +3111,62 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
             await telegram_reply_logged(update, context, extra)
             return
 
-    # If the last thing I sent was links, explain them instead of re-promoing
+    # Direct FAQ / correction handling
+    if is_bot_correction_prompt(content):
+        if ("who is lucas" in content_lower) or is_who_is_lucas_question(content):
+            msg = "You’re right — let me answer that directly. " + build_dm_lucas_summary_reply(
+                include_why_care=is_why_should_i_care_question(content)
+            )
+            await telegram_reply_logged(update, context, msg)
+            return
+
+        if is_what_are_you_question(content):
+            msg = "You’re right — let me answer that directly. " + build_dm_identity_reply()
+            await telegram_reply_logged(update, context, msg)
+            return
+
+    if is_what_are_you_question(content):
+        await telegram_reply_logged(update, context, build_dm_identity_reply())
+        return
+
+    if is_who_is_lucas_question(content):
+        msg = build_dm_lucas_summary_reply(
+            include_why_care=is_why_should_i_care_question(content)
+        )
+        await telegram_reply_logged(update, context, msg)
+        return
+
+    if is_why_should_i_care_question(content):
+        await telegram_reply_logged(update, context, build_dm_why_care_reply())
+        return
+
+    if is_photo_request(content):
+        image_path = pick_shared_image_path()
+        if image_path:
+            try:
+                await telegram_send_photo_logged(
+                    update,
+                    context,
+                    image_path,
+                    "Here you go — if you want more visuals after this, Instagram or the free OnlyFans page are the best places to start."
+                )
+                return
+            except FileNotFoundError:
+                pass
+            except Exception:
+                pass
+
+        await telegram_reply_logged(update, context, build_photo_guidance_reply())
+        return
+
+    # If the last thing I sent was links, handle follow-ups cleanly
     last_link_keys = get_dm_link_context(user_key)
+
+    if last_link_keys and is_single_link_followup(content):
+        msg = build_single_link_clarifier(last_link_keys)
+        await telegram_reply_logged(update, context, msg)
+        return
+
     if last_link_keys and is_link_explainer_followup(content):
         msg = build_link_breakdown_message(last_link_keys)
         await telegram_reply_logged(update, context, msg)
