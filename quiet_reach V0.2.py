@@ -1643,7 +1643,10 @@ def is_resume_message(text: str) -> bool:
 
 def is_stop_request(text: str) -> bool:
     t = (text or "").strip().lower()
-    phrases = [
+    if not t:
+        return False
+
+    phrase_matches = [
         "stop messaging me",
         "stop replying",
         "stop talking",
@@ -1652,10 +1655,12 @@ def is_stop_request(text: str) -> bool:
         "go away",
         "fuck off",
         "please fuck off",
-        "stop",
-        "quit",
     ]
-    return any(p in t for p in phrases)
+    if any(p in t for p in phrase_matches):
+        return True
+
+    # exact standalone stop words only
+    return re.search(r"\b(stop|quit)\b", t) is not None
 
 
 def set_dm_low_promo(user_key, seconds: int = DM_LOW_PROMO_WINDOW_SECONDS):
@@ -1684,7 +1689,7 @@ def is_pushback_feedback(text: str) -> bool:
 
 
 def is_one_link_request(text: str) -> bool:
-    t = (text or "").strip().lower()
+    t = normalize_loose_text(text)
     phrases = [
         "one link",
         "just one link",
@@ -1696,6 +1701,11 @@ def is_one_link_request(text: str) -> bool:
         "i just wanted one",
         "i only want one",
         "i only wanted one",
+        "1 link",
+        "send 1 link",
+        "give me 1 link",
+        "i want 1 link",
+        "one random link",
     ]
     return any(p in t for p in phrases)
 
@@ -1879,7 +1889,7 @@ def build_onlyfans_variant_clarifier() -> str:
 
 
 def onlyfans_variant_from_text(text: str) -> str | None:
-    t = (text or "").strip().lower()
+    t = normalize_loose_text(text)
     if not t:
         return None
 
@@ -1889,6 +1899,8 @@ def onlyfans_variant_from_text(text: str) -> str | None:
         "free page",
         "the free one",
         "the free page",
+        "free onlyfans",
+        "his free onlyfans",
     ]
     paid_phrases = [
         "paid",
@@ -1899,7 +1911,27 @@ def onlyfans_variant_from_text(text: str) -> str | None:
         "the paid one",
         "the paid page",
         "the premium one",
+        "paid onlyfans",
+        "his paid onlyfans",
+        "main onlyfans",
+        "main page",
+        "main of",
+        "main one",
+        "full onlyfans",
+        "main paid page",
     ]
+
+    if any(p in t for p in free_phrases):
+        return "onlyfans_free"
+
+    if any(p in t for p in paid_phrases):
+        return "onlyfans_paid"
+
+    # extra safety: "main" + onlyfans/page => paid
+    if "main" in t and ("onlyfans" in t or "page" in t):
+        return "onlyfans_paid"
+
+    return None
 
     if any(p in t for p in free_phrases):
         return "onlyfans_free"
@@ -2111,6 +2143,114 @@ def build_onlyfans_both_message() -> str:
         lines.append(f"  {LINK_BLURBS['onlyfans_paid']}")
 
     return "\n".join(lines).strip()
+
+
+def is_confused_clarification(text: str) -> bool:
+    t = normalize_loose_text(text)
+    phrases = [
+        "what",
+        "what do you mean",
+        "wait what",
+        "huh",
+        "that made no sense",
+        "that doesnt make sense",
+        "that doesn't make sense",
+        "wait",
+    ]
+    return t in {"what", "wait", "huh"} or any(p in t for p in phrases)
+
+
+def is_gibberish_text(text: str) -> bool:
+    t = normalize_loose_text(text)
+    if not t:
+        return False
+
+    alpha = re.sub(r"[^a-z]", "", t)
+    if len(alpha) < 6:
+        return False
+
+    # if it has multiple normal words, don't call it gibberish
+    if " " in t:
+        words = [w for w in t.split() if w]
+        if len(words) >= 2:
+            return False
+
+    vowels = sum(ch in "aeiou" for ch in alpha)
+    ratio = vowels / max(1, len(alpha))
+
+    return vowels == 0 or ratio < 0.20
+
+
+def build_unknown_text_reply(low_promo: bool = False) -> str:
+    if low_promo:
+        return (
+            "Sorry — I didn’t quite catch that. "
+            "Try asking for one platform or one specific link."
+        )
+
+    return (
+        "Sorry — I didn’t quite catch that. "
+        "You can ask about Lucas, ask for a picture, or ask for one specific link like Instagram, X, Chaturbate, or OnlyFans."
+    )
+
+
+def build_clarification_reply(last_link_keys: list[str], pending: dict | None) -> str:
+    ptype = (pending or {}).get("type")
+
+    if ptype == "onlyfans_variant_choice":
+        return "Sorry — let me be clearer. Do you want the free OnlyFans page, the paid page, or both?"
+
+    if ptype == "single_link_choice":
+        keys = list(((pending or {}).get("data") or {}).get("keys") or default_single_link_keys())
+        return "Sorry — let me be clearer. " + build_single_link_clarifier(keys)
+
+    if any(k in (last_link_keys or []) for k in ["onlyfans_free", "onlyfans_paid"]):
+        return "Sorry — let me be clearer. Do you want the free OnlyFans page, the paid page, or both?"
+
+    return (
+        "Sorry — let me be clearer. "
+        "You can ask about Lucas, ask for a picture, or ask for one specific link."
+    )
+
+
+def is_platform_confirmation_question(text: str) -> bool:
+    raw = (text or "").strip().lower()
+    if not raw or "?" not in raw:
+        return False
+
+    if is_explicit_link_ask(raw) or is_links_request(raw) or is_contact_intent(raw):
+        return False
+
+    keys = extract_requested_link_keys(raw)
+    return bool(keys)
+
+
+def describe_link_key_short(key: str) -> str:
+    mapping = {
+        "chaturbate": "a Chaturbate page for live interactive shows",
+        "onlyfans_free": "a free OnlyFans page for lighter previews",
+        "onlyfans_paid": "a paid OnlyFans page for the full premium content",
+        "instagram": "an Instagram for casual photos and updates",
+        "x": "an X page for quick updates and teasers",
+        "discord": "a Discord for community updates and chat",
+    }
+    return mapping.get(key, key)
+
+
+def build_platform_confirmation_reply(keys: list[str]) -> str:
+    keys = expand_requested_link_keys(keys)
+    if not keys:
+        return "Yep — he has a few different platforms. If you want, I can send one specific link."
+
+    parts = [describe_link_key_short(k) for k in keys]
+    if len(parts) == 1:
+        body = parts[0]
+    elif len(parts) == 2:
+        body = f"{parts[0]} and {parts[1]}"
+    else:
+        body = ", ".join(parts[:-1]) + f", and {parts[-1]}"
+
+    return f"Yep — he has {body}. If you want, I can send one or more of those links."
 
 
 def build_other_options_hint(except_keys: list[str] | None = None) -> str:
@@ -2708,14 +2848,26 @@ def is_hostile(text: str) -> bool:
         return False
 
     hostile_phrases = [
-        "fuck you", "go fuck yourself", "go to hell",
-        "get the hell out", "shut up", "leave me alone",
-        "dumb bot", "stupid bot", "trash bot",
+        "fuck you",
+        "go fuck yourself",
+        "go to hell",
+        "get the hell out",
+        "shut up",
+        "leave me alone",
+        "dumb bot",
+        "stupid bot",
+        "trash bot",
+        "you are annoying",
+        "you're annoying",
+        "youre annoying",
+        "shut the fuck up",
+        "retarded",
+        "useless",
     ]
     if any(p in t for p in hostile_phrases):
         return True
 
-    if ("bot" in t) and any(w in t for w in ["dumb", "stupid", "idiot"]):
+    if ("bot" in t) and any(w in t for w in ["dumb", "stupid", "idiot", "retarded", "useless"]):
         return True
 
     return False
@@ -3795,6 +3947,18 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
                 return
 
     # ------------------------------------------------------------
+    # Platform confirmation questions
+    # Example: "he has instagram and a free onlyfans?"
+    # ------------------------------------------------------------
+    if is_platform_confirmation_question(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            build_platform_confirmation_reply(requested_keys)
+        )
+        return
+    
+    # ------------------------------------------------------------
     # Free/paid page follow-ups from context
     # Example: "send his free page now"
     # ------------------------------------------------------------
@@ -3822,6 +3986,17 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
             )
             return
 
+    # ------------------------------------------------------------
+    # Random link requests
+    # ------------------------------------------------------------
+    if is_random_choice_request(content_lower):
+        pool = default_single_link_keys()
+        chosen = random.choice(expand_requested_link_keys(pool))
+        clear_dm_pending_action(user_key)
+        remember_dm_link_context(user_key, [chosen])
+        await telegram_reply_logged(update, context, build_single_link_message(chosen))
+        return
+    
     # ------------------------------------------------------------
     # One-link requests
     # ------------------------------------------------------------
@@ -3955,10 +4130,41 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         return
 
     # ------------------------------------------------------------
+    # Clarification requests
+    # ------------------------------------------------------------
+    if is_confused_clarification(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            build_clarification_reply(last_link_keys, pending)
+        )
+        return
+
+    # ------------------------------------------------------------
+    # Unknown / gibberish input
+    # ------------------------------------------------------------
+    if is_gibberish_text(content_lower):
+        await telegram_reply_logged(
+            update,
+            context,
+            build_unknown_text_reply(low_promo=dm_in_low_promo_mode(user_key))
+        )
+        return
+
+    # ------------------------------------------------------------
     # Final AI fallback
     # ------------------------------------------------------------
     reply = await generate_ai_reply(content)
     reply = sanitize_ai_reply(reply)
+
+    if not reply or len(reply.strip()) < 8:
+        await telegram_reply_logged(
+            update,
+            context,
+            build_unknown_text_reply(low_promo=dm_in_low_promo_mode(user_key))
+        )
+        return
+
     await telegram_reply_logged(update, context, reply)
 
 async def handle_telegram_group_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
