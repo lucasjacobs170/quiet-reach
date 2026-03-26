@@ -1357,6 +1357,84 @@ def build_official_links_all_message() -> str:
     lines.append("If you want, tell me which vibe you want (live / premium / socials) and I’ll narrow it down.")
     return "\n".join(lines)
 
+LINK_BREAKDOWN_TEXT = {
+    "chaturbate": "Chaturbate: the live interactive side — where you can catch him live and engage in real time.",
+    "onlyfans_free": "OnlyFans (free): lighter previews and updates.",
+    "onlyfans_paid": "OnlyFans (paid): the full premium content.",
+    "x": "X: quick updates and teasers when something new drops.",
+    "instagram": "Instagram: casual photos and more day-to-day style updates.",
+    "discord": "Discord: the community hub for updates, drops, and chatting.",
+}
+
+def infer_link_keys_from_reply(reply_text: str) -> list[str]:
+    t = reply_text or ""
+    keys = []
+
+    def add(k: str):
+        if k not in keys:
+            keys.append(k)
+
+    if CHATABURATE_URL and CHATABURATE_URL in t:
+        add("chaturbate")
+    if ONLYFANS_FREE_URL and ONLYFANS_FREE_URL in t:
+        add("onlyfans_free")
+    if ONLYFANS_PAID_URL and ONLYFANS_PAID_URL in t:
+        add("onlyfans_paid")
+    if X_URL and X_URL in t:
+        add("x")
+    if INSTAGRAM_URL and INSTAGRAM_URL in t:
+        add("instagram")
+    if SERVER_INVITE and SERVER_INVITE in t:
+        add("discord")
+
+    return keys
+
+def is_link_explainer_followup(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+
+    phrases = [
+        "what is all of that",
+        "what's all of that",
+        "whats all of that",
+        "what is all that",
+        "what is all of this",
+        "what are those",
+        "what do those mean",
+        "what do these mean",
+        "what does that all mean",
+        "break that down",
+        "break it down",
+        "explain that",
+        "explain those",
+        "give me more info",
+        "please give me more info",
+        "more info",
+        "tell me more",
+    ]
+    return any(p in t for p in phrases)
+
+def build_link_breakdown_message(keys: list[str]) -> str:
+    keys = keys or []
+    if not keys:
+        return (
+            "Totally — I can break it down. "
+            "Do you want more on `live`, `premium`, `socials`, or `Discord`?"
+        )
+
+    lines = ["Totally — quick breakdown:"]
+    for k in keys:
+        desc = LINK_BREAKDOWN_TEXT.get(k)
+        if desc:
+            lines.append(f"- {desc}")
+
+    lines.append("")
+    lines.append(
+        "If you want, I can narrow it down to `live`, `premium`, `socials`, or `Discord`."
+    )
+    return "\n".join(lines)
+
 
 def build_other_options_hint(except_keys: list[str] | None = None) -> str:
     except_keys = set(except_keys or [])
@@ -1620,6 +1698,13 @@ async def handle_dm_reply(message):
             return
 
     # 🔗 DM link routing (smart: specific vs full list)
+
+    # If the last thing I sent was links, explain them instead of re-promoing
+    last_link_keys = get_dm_link_context(user_id)
+    if last_link_keys and is_link_explainer_followup(content):
+        msg = build_link_breakdown_message(last_link_keys)
+        await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
+        return
     
     # Platform vibe questions (don’t just re-drop links)
     if is_platform_info_question(content):
@@ -1631,6 +1716,7 @@ async def handle_dm_reply(message):
 
     link_reply = dm_link_router(content_lower)
     if link_reply:
+        remember_dm_link_context(user_id, infer_link_keys_from_reply(link_reply))
         await send_logged(message.channel, guild_id="", content=link_reply, is_dm=1)
         return
     
@@ -2039,7 +2125,15 @@ def set_dm_topic(user_id: int, topic: str):
     _dm_topic[user_id] = {"topic": topic, "expires": datetime.now() + timedelta(seconds=DM_TOPIC_WINDOW_SECONDS)}
 
 def get_dm_topic(user_id: int) -> str | None:
-    DM_LINK_CONTEXT_WINDOW_SECONDS = 300
+    row = _dm_topic.get(user_id)
+    if not row:
+        return None
+    if datetime.now() > row["expires"]:
+        _dm_topic.pop(user_id, None)
+        return None
+    return row.get("topic")
+
+DM_LINK_CONTEXT_WINDOW_SECONDS = 300
 _dm_last_links = {}  # user_key -> {"keys": list[str], "expires": datetime}
 
 def remember_dm_link_context(user_key, keys: list[str]):
@@ -2067,13 +2161,6 @@ def get_dm_link_context(user_key) -> list[str]:
         return []
 
     return list(row.get("keys") or [])
-    row = _dm_topic.get(user_id)
-    if not row:
-        return None
-    if datetime.now() > row["expires"]:
-        _dm_topic.pop(user_id, None)
-        return None
-    return row.get("topic")
     
 
 
@@ -2747,15 +2834,6 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
     content = (update.message.text or "").strip()
     content_lower = content.lower().strip()
 
-    # /start payload handling
-    if content_lower == "/start":
-        await telegram_reply_logged(
-            update,
-            context,
-            "Hey — I’m Quiet Reach. You can ask about Lucas, his platforms, or ask for official links.",
-        )
-        return
-
     # Full lore on request
     if content_lower in ["full story", "full lore", "the full story", "tell me the full story"]:
         set_dm_topic(user_key, "lore")
@@ -2802,6 +2880,13 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
             await telegram_reply_logged(update, context, extra)
             return
 
+    # If the last thing I sent was links, explain them instead of re-promoing
+    last_link_keys = get_dm_link_context(user_key)
+    if last_link_keys and is_link_explainer_followup(content):
+        msg = build_link_breakdown_message(last_link_keys)
+        await telegram_reply_logged(update, context, msg)
+        return
+
     # Platform vibe questions
     if is_platform_info_question(content):
         key = platform_key_from_text(content_lower)
@@ -2816,6 +2901,7 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
     # Link routing
     link_reply = dm_link_router(content_lower)
     if link_reply:
+        remember_dm_link_context(user_key, infer_link_keys_from_reply(link_reply))
         await telegram_reply_logged(update, context, link_reply)
         return
 
@@ -2937,6 +3023,10 @@ async def telegram_start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
         if payload in ["link", "links", "contact"]:
             msg = build_official_links_all_message()
+            remember_dm_link_context(
+                tg_user_key(update.effective_user.id),
+                infer_link_keys_from_reply(msg)
+            )
             await telegram_reply_logged(update, context, msg)
             return
 
@@ -2944,7 +3034,7 @@ async def telegram_start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
             await telegram_reply_logged(
                 update,
                 context,
-                "Hey — I’m Quiet Reach. You can ask about Lucas, his platforms, or ask for official links.",
+                "Hey — I’m Quiet Reach, Lucas’s assistant. I can explain what he does, break down his platforms, or send official links if you want.",
             )
             return
 
