@@ -1,232 +1,78 @@
-import os
+# Multi-platform Bot Code
+
 import discord
+from discord.ext import commands
+import telebot
+import logging
 import sqlite3
-from datetime import datetime
-import google.generativeai as genai
 
-DB_PATH = "quiet_reach.db"
+# Set up logging
+logging.basicConfig(level=logging.INFO, filename='bot.log', format='%(asctime)s %(levelname)s:%(message)s')
 
-# Read secrets from environment variables (so you DON'T put keys in GitHub)
-DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-OWNER_ID = int(os.environ.get("OWNER_ID", "0"))
+# Database setup
+conn = sqlite3.connect('qa_log.db')
+c = conn.cursor()
+c.execute('''CREATE TABLE IF NOT EXISTS incidents (id INTEGER PRIMARY KEY, platform TEXT, message TEXT, hostility_detected BOOLEAN)''')
+conn.commit()
 
-SERVER_INVITE = os.environ.get("SERVER_INVITE", "https://discord.gg/yAvVewhD3c")
+HOSTILITY_KEYWORDS = ["offensive_keyword1", "offensive_keyword2"]
 
-# Only links you allow the bot to share (prevents made-up links)
-LINKS = {
-    "discord": SERVER_INVITE,
-}
+# Function to check for hostility
+def is_hostile(message):
+    for keyword in HOSTILITY_KEYWORDS:
+        if keyword in message:
+            return True
+    return False
 
-CREATOR_PROFILE = """
-You are the assistant for Lucas Jacobs.
-Your job is to answer questions about Lucas and his content.
+# Discord bot setup
+discord_bot = commands.Bot(command_prefix='!')
 
-Rules:
-- Be respectful, friendly, and concise.
-- Do NOT invent links. Only use links provided in Allowed links.
-- If you don't know something, say so and offer the Discord link.
-"""
+discord_channel_id = 'your_discord_channel_id'  # Replace with actual channel ID
 
-def setup_database():
-    try:
-        with sqlite3.connect(DB_PATH) as c:
-            k = c.cursor()
+def notify_owner(message):
+    # Notify the owner in Discord
+    discord_bot.get_channel(discord_channel_id).send(f'Owner notification: {message}')
 
-            # Logs every DM message for history
-            k.execute("""
-            CREATE TABLE IF NOT EXISTS dm_messages(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                discord_id TEXT,
-                role TEXT,
-                content TEXT,
-                timestamp TEXT
-            )
-            """)
-
-            # Your “repository of responses”
-            k.execute("""
-            CREATE TABLE IF NOT EXISTS qa_repository(
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                question TEXT,
-                answer TEXT,
-                created_at TEXT,
-                approved INTEGER DEFAULT 0,
-                used_count INTEGER DEFAULT 0,
-                last_used TEXT
-            )
-            """)
-    except sqlite3.Error as e:
-        print(f"❌ Database setup failed: {e}")
-        raise
-
-def log_dm_message(discord_id: int, role: str, content: str):
-    with sqlite3.connect(DB_PATH) as c:
-        k = c.cursor()
-        k.execute(
-            "INSERT INTO dm_messages(discord_id, role, content, timestamp) VALUES(?,?,?,?)",
-            (str(discord_id), role, content, datetime.now().isoformat(timespec="seconds"))
-        )
-
-def find_approved_answer(user_question: str):
-    q = user_question.lower().strip()
-    if len(q) < 6:
-        return None
-
-    with sqlite3.connect(DB_PATH) as c:
-        k = c.cursor()
-        k.execute("""
-            SELECT id, question, answer
-            FROM qa_repository
-            WHERE approved = 1 AND lower(question) LIKE ?
-            ORDER BY used_count DESC
-            LIMIT 1
-        """, (f"%{q[:20]}%",))
-        return k.fetchone()  # (id, question, answer) or None
-
-def save_qa_candidate(question: str, answer: str):
-    with sqlite3.connect(DB_PATH) as c:
-        k = c.cursor()
-        k.execute("""
-            INSERT INTO qa_repository(question, answer, created_at, approved)
-            VALUES(?,?,?,0)
-        """, (question, answer, datetime.now().isoformat(timespec="seconds")))
-        return k.lastrowid
-
-def mark_used(qa_id: int):
-    with sqlite3.connect(DB_PATH) as c:
-        k = c.cursor()
-        k.execute("""
-            UPDATE qa_repository
-            SET used_count = used_count + 1,
-                last_used = ?
-            WHERE id = ?
-        """, (datetime.now().isoformat(timespec="seconds"), qa_id))
-
-def list_pending(limit=10):
-    with sqlite3.connect(DB_PATH) as c:
-        k = c.cursor()
-        k.execute("""
-            SELECT id, question
-            FROM qa_repository
-            WHERE approved = 0
-            ORDER BY id DESC
-            LIMIT ?
-        """, (limit,))
-        return k.fetchall()
-
-def approve_qa(qa_id: int):
-    with sqlite3.connect(DB_PATH) as c:
-        k = c.cursor()
-        k.execute("UPDATE qa_repository SET approved = 1 WHERE id = ?", (qa_id,))
-
-# Gemini setup
-def init_gemini():
-    genai.configure(api_key=GEMINI_API_KEY)
-    return genai.GenerativeModel("gemini-pro")
-
-async def generate_answer(model, question: str) -> str:
-    allowed_links_text = "\n".join([f"- {k}: {v}" for k, v in LINKS.items()])
-
-    prompt = f"""
-{CREATOR_PROFILE}
-
-Allowed links (ONLY these):
-{allowed_links_text}
-
-User question:
-"{question}"
-
-Write a helpful reply. If you mention a link, only use the Allowed links exactly.
-Keep it short.
-"""
-    result = model.generate_content(prompt)
-    return (result.text or "").strip()
-
-intents = discord.Intents.default()
-intents.message_content = True
-client = discord.Client(intents=intents)
-
-@client.event
+@discord_bot.event
 async def on_ready():
-    print(f"✅ Logged in as {client.user}")
+    logging.info(f'Discord bot logged in as {discord_bot.user}')
+    print(f'{discord_bot.user} has connected to Discord!')
 
-@client.event
-async def on_message(message: discord.Message):
-    if message.author == client.user:
+@discord_bot.event
+async def on_message(message):
+    if message.author == discord_bot.user:
         return
 
-    # Only respond to DMs (safe + simple)
-    if not isinstance(message.channel, discord.DMChannel):
+    if is_hostile(message.content):
+        logging.warning(f'Hostility detected in Discord message: {message.content}')
+        c.execute("INSERT INTO incidents (platform, message, hostility_detected) VALUES (?, ?, ?)", ('Discord', message.content, True))
+        conn.commit()
+        await notify_owner(message.content)
+        await message.channel.send('Your message has been flagged. Please adhere to community guidelines.')
         return
 
-    user_id = message.author.id
-    text = message.content.strip()
-    log_dm_message(user_id, "user", text)
+    # Handle QA processing here (ensure you define how to process Q&A)
+    # Example response
+    await message.channel.send('This is a response to your question.')
 
-    # Owner commands
-    if user_id == OWNER_ID:
-        lower = text.lower().strip()
+# Telegram bot setup
+telegram_bot = telebot.TeleBot('your_telegram_bot_token')
 
-        if lower == "!pending":
-            rows = list_pending(limit=10)
-            if not rows:
-                await message.channel.send("No pending Q/A items.")
-                return
-            msg = "**Pending Q/A (unapproved):**\n" + "\n".join([f"- ID {r[0]}: {r[1][:80]}" for r in rows])
-            await message.channel.send(msg)
-            return
-
-        if lower.startswith("!approve "):
-            try:
-                qa_id = int(lower.split()[1])
-                approve_qa(qa_id)
-                await message.channel.send(f"Approved Q/A ID {qa_id}.")
-            except (ValueError, IndexError):
-                await message.channel.send("Usage: !approve 123")
-            return
-
-        await message.channel.send("Owner commands: `!pending` , `!approve <id>`")
+@telegram_bot.message_handler(func=lambda message: True)
+def handle_telegram_message(message):
+    if is_hostile(message.text):
+        logging.warning(f'Hostility detected in Telegram message: {message.text}')
+        c.execute("INSERT INTO incidents (platform, message, hostility_detected) VALUES (?, ?, ?)", ('Telegram', message.text, True))
+        conn.commit()
+        notify_owner(message.text)
+        telegram_bot.reply_to(message, 'Your message has been flagged. Please adhere to community guidelines.')
         return
 
-    # Reuse approved answers first
-    existing = find_approved_answer(text)
-    if existing:
-        qa_id, _, answer = existing
-        mark_used(qa_id)
-        await message.channel.send(answer)
-        log_dm_message(user_id, "bot", answer)
-        return
+    # Handle QA processing here
+    # Example response
+    telegram_bot.reply_to(message, 'This is a response to your question.')
 
-    # Otherwise generate + save as pending
-    try:
-        model = init_gemini()
-        answer = await generate_answer(model, text)
-    except Exception:
-        answer = "Sorry—I'm having trouble answering right now. Try again in a bit."
-        await message.channel.send(answer)
-        log_dm_message(user_id, "bot", answer)
-        return
-
-    qa_id = save_qa_candidate(text, answer)
-
-    await message.channel.send(answer)
-    log_dm_message(user_id, "bot", answer)
-
-    # Notify owner
-    try:
-        owner = await client.fetch_user(OWNER_ID)
-        await owner.send(f"🧠 New Q/A saved as pending (ID {qa_id}). Use `!pending` to review.")
-    except Exception:
-        pass
-
-if __name__ == "__main__":
-    if not DISCORD_BOT_TOKEN:
-        raise RuntimeError("Missing DISCORD_BOT_TOKEN env var.")
-    if not GEMINI_API_KEY:
-        raise RuntimeError("Missing GEMINI_API_KEY env var.")
-    if OWNER_ID == 0:
-        raise RuntimeError("Missing OWNER_ID env var.")
-
-    setup_database()
-    client.run(DISCORD_BOT_TOKEN)
+# Start both bots
+if __name__ == '__main__':
+    discord_bot.run('your_discord_bot_token')
+    telegram_bot.polling()
