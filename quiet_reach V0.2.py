@@ -1473,6 +1473,12 @@ def is_what_are_you_question(text: str) -> bool:
         "what do you do",
         "what areyou",
         "who areyou",
+        "what is your story",
+        "what's your story",
+        "whats your story",
+        "your story",
+        "tell me your story",
+        "backstory",
     ]
     return any(p in t for p in phrases)
 
@@ -1669,6 +1675,10 @@ def set_dm_low_promo(user_key, seconds: int = DM_LOW_PROMO_WINDOW_SECONDS):
     _dm_low_promo_until[user_key] = datetime.now(timezone.utc) + timedelta(seconds=seconds)
 
 
+def clear_dm_low_promo(user_key):
+    _dm_low_promo_until.pop(user_key, None)
+
+
 def dm_in_low_promo_mode(user_key) -> bool:
     return _state_active(_dm_low_promo_until, user_key)
 
@@ -1777,6 +1787,12 @@ def build_single_link_message(key: str) -> str:
 
 def is_nonrequest_reaction(text: str) -> bool:
     t = (text or "").strip().lower()
+    # Don't treat as a reaction if it's a question or contains link-request intent
+    if "?" in t:
+        return False
+    link_intent_words = ["see it", "see them", "see his", "send", "show", "get", "can i", "let me"]
+    if any(w in t for w in link_intent_words):
+        return False
     phrases = [
         "he sounds pretty diversified",
         "sounds pretty diversified",
@@ -2028,6 +2044,27 @@ def is_too_much_feedback(text: str) -> bool:
 
 def default_single_link_keys() -> list[str]:
     return ["chaturbate", "onlyfans_free", "onlyfans_paid", "instagram", "x", "discord"]
+
+
+def is_implicit_see_request(text: str) -> bool:
+    """True when the user is asking to see/get something without naming a specific platform."""
+    t = normalize_loose_text(text)
+    phrases = [
+        "can i see it",
+        "can i see them",
+        "let me see it",
+        "let me see them",
+        "show me",
+        "yes please",
+        "yes send",
+        "send it",
+        "send them",
+        "go ahead",
+        "sure send",
+        "yeah send",
+        "yep send",
+    ]
+    return any(p in t for p in phrases)
 
 def normalize_loose_text(text: str) -> str:
     t = (text or "").lower().strip()
@@ -3768,6 +3805,7 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         if is_resume_message(content_lower):
             clear_dm_opt_out(user_key)
             clear_dm_pending_action(user_key)
+            clear_dm_low_promo(user_key)
             await telegram_reply_logged(update, context, "Welcome back — how can I help?")
         return
 
@@ -3942,6 +3980,12 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
                 clear_dm_pending_action(user_key)
                 remember_dm_link_context(user_key, [variant])
                 await telegram_reply_logged(update, context, build_single_link_message(variant))
+                return
+
+            if is_implicit_see_request(content_lower):
+                clear_dm_pending_action(user_key)
+                remember_dm_link_context(user_key, ["onlyfans_free", "onlyfans_paid"])
+                await telegram_reply_logged(update, context, build_onlyfans_both_message())
                 return
 
             if is_brief_acknowledgment(content_lower) or "onlyfans" in content_lower:
