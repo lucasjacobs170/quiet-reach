@@ -372,101 +372,103 @@ def telegram_login_dialog(root):
     root.wait_window(win)
     
 def setup_database():
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
+    try:
+        with sqlite3.connect(DB_PATH) as c:
+            k = c.cursor()
 
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS users('
-        'discord_id TEXT PRIMARY KEY,'
-        'username TEXT,'
-        'list_type TEXT DEFAULT "neutral",'
-        'last_contacted TEXT,'
-        'opt_out INTEGER DEFAULT 0)'
-    )
+            k.execute(
+                'CREATE TABLE IF NOT EXISTS users('
+                'discord_id TEXT PRIMARY KEY,'
+                'username TEXT,'
+                'list_type TEXT DEFAULT "neutral",'
+                'last_contacted TEXT,'
+                'opt_out INTEGER DEFAULT 0)'
+            )
 
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS server_caps('
-        'server_id TEXT,'
-        'date TEXT,'
-        'dm_count INTEGER DEFAULT 0,'
-        'PRIMARY KEY(server_id,date))'
-    )
+            k.execute(
+                'CREATE TABLE IF NOT EXISTS server_caps('
+                'server_id TEXT,'
+                'date TEXT,'
+                'dm_count INTEGER DEFAULT 0,'
+                'PRIMARY KEY(server_id,date))'
+            )
 
-    k.execute('CREATE TABLE IF NOT EXISTS keywords(word TEXT PRIMARY KEY, list_name TEXT)')
+            k.execute('CREATE TABLE IF NOT EXISTS keywords(word TEXT PRIMARY KEY, list_name TEXT)')
 
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS dm_optins('
-        'discord_id TEXT PRIMARY KEY,'
-        'username TEXT,'
-        'opted_in INTEGER DEFAULT 0,'
-        'opted_in_at TEXT)'
-    )
+            k.execute(
+                'CREATE TABLE IF NOT EXISTS dm_optins('
+                'discord_id TEXT PRIMARY KEY,'
+                'username TEXT,'
+                'opted_in INTEGER DEFAULT 0,'
+                'opted_in_at TEXT)'
+            )
 
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS public_touches('
-        'discord_id TEXT PRIMARY KEY,'
-        'username TEXT,'
-        'touches INTEGER DEFAULT 0,'
-        'last_touch TEXT)'
-    )
+            k.execute(
+                'CREATE TABLE IF NOT EXISTS public_touches('
+                'discord_id TEXT PRIMARY KEY,'
+                'username TEXT,'
+                'touches INTEGER DEFAULT 0,'
+                'last_touch TEXT)'
+            )
 
-    k.execute("SELECT COUNT(*) FROM keywords")
-    if k.fetchone()[0] == 0:
-        for w, l in [
-            ('thirsty','trigger'),('live','trigger'),('of','trigger'),('cam','trigger'),
-            ('preview','trigger'),('link','trigger'),
-            ('yes','yes'),('yep','yes'),('sure','yes'),('yeah','yes'),('ok','yes'),
-            ('interested','yes'),('tell me more','yes'),('lmk','yes'),('facts','yes'),
-            ('no','no'),('nah','no'),('pass','no'),('no thanks','no'),('not interested','no'),
-            ('stop','no'),('leave me alone','no'),('nope','no')
-        ]:
-            k.execute("INSERT INTO keywords VALUES(?,?)", (w, l))
+            k.execute("SELECT COUNT(*) FROM keywords")
+            if k.fetchone()[0] == 0:
+                for w, l in [
+                    ('thirsty','trigger'),('live','trigger'),('of','trigger'),('cam','trigger'),
+                    ('preview','trigger'),('link','trigger'),
+                    ('yes','yes'),('yep','yes'),('sure','yes'),('yeah','yes'),('ok','yes'),
+                    ('interested','yes'),('tell me more','yes'),('lmk','yes'),('facts','yes'),
+                    ('no','no'),('nah','no'),('pass','no'),('no thanks','no'),('not interested','no'),
+                    ('stop','no'),('leave me alone','no'),('nope','no')
+                ]:
+                    k.execute("INSERT INTO keywords VALUES(?,?)", (w, l))
 
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS ambiguous('
-        'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-        'discord_id TEXT,'
-        'username TEXT,'
-        'message TEXT,'
-        'timestamp TEXT)'
-    )
+            k.execute(
+                'CREATE TABLE IF NOT EXISTS ambiguous('
+                'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                'discord_id TEXT,'
+                'username TEXT,'
+                'message TEXT,'
+                'timestamp TEXT)'
+            )
 
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS promo_channels('
-        'guild_id TEXT PRIMARY KEY,'
-        'channel_id TEXT,'
-        'enabled INTEGER DEFAULT 0,'
-        'window_start_pt INTEGER DEFAULT 18,'
-        'window_end_pt INTEGER DEFAULT 22,'
-        'next_post_at_utc TEXT,'
-        'last_post_at_utc TEXT)'
-    )
+            k.execute(
+                'CREATE TABLE IF NOT EXISTS promo_channels('
+                'guild_id TEXT PRIMARY KEY,'
+                'channel_id TEXT,'
+                'enabled INTEGER DEFAULT 0,'
+                'window_start_pt INTEGER DEFAULT 18,'
+                'window_end_pt INTEGER DEFAULT 22,'
+                'next_post_at_utc TEXT,'
+                'last_post_at_utc TEXT)'
+            )
 
-    k.execute(
-        'CREATE TABLE IF NOT EXISTS promo_history('
-        'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-        'guild_id TEXT,'
-        'channel_id TEXT,'
-        'posted_at_utc TEXT,'
-        'image_path TEXT,'
-        'caption TEXT)'
-    )
-    
-    k.execute(
-        "CREATE TABLE IF NOT EXISTS conversation_log ("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
-        "ts_utc TEXT,"
-        "guild_id TEXT,"
-        "channel_id TEXT,"
-        "user_id TEXT,"
-        "username TEXT,"
-        "is_dm INTEGER,"
-        "direction TEXT,"
-        "message TEXT"
-        ")"
-    )
-    c.commit()
-    c.close()
+            k.execute(
+                'CREATE TABLE IF NOT EXISTS promo_history('
+                'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                'guild_id TEXT,'
+                'channel_id TEXT,'
+                'posted_at_utc TEXT,'
+                'image_path TEXT,'
+                'caption TEXT)'
+            )
+
+            k.execute(
+                "CREATE TABLE IF NOT EXISTS conversation_log ("
+                "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                "ts_utc TEXT,"
+                "guild_id TEXT,"
+                "channel_id TEXT,"
+                "user_id TEXT,"
+                "username TEXT,"
+                "is_dm INTEGER,"
+                "direction TEXT,"
+                "message TEXT"
+                ")"
+            )
+    except sqlite3.Error as e:
+        print(f"❌ Database setup failed: {e}")
+        raise
     print("✅ Database ready!")
 
 # ============================================================
