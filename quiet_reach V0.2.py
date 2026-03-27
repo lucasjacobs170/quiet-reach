@@ -1479,6 +1479,11 @@ def is_what_are_you_question(text: str) -> bool:
         "your story",
         "tell me your story",
         "backstory",
+        "what is your purpose",
+        "what's your purpose",
+        "whats your purpose",
+        "your purpose",
+        "tell me your purpose",
     ]
     return any(p in t for p in phrases)
 
@@ -1515,6 +1520,26 @@ def is_photo_request(text: str) -> bool:
         "can you send a photo",
     ]
     return any(p in t for p in phrases)
+
+
+def is_photo_followup_request(text: str) -> bool:
+    """True when user asks for another photo after one was recently sent."""
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    phrases = [
+        "send another",
+        "another one",
+        "one more",
+        "another image",
+        "another photo",
+        "another picture",
+        "more pictures",
+        "more photos",
+        "another",
+    ]
+    return any(p in t for p in phrases)
+
 
 def is_bot_correction_prompt(text: str) -> bool:
     t = (text or "").strip().lower()
@@ -1610,6 +1635,20 @@ DM_LOW_PROMO_WINDOW_SECONDS = 60 * 15
 
 _dm_opted_out = {}        # user_key -> expires datetime
 _dm_low_promo_until = {}  # user_key -> expires datetime
+
+DM_LAST_PHOTO_WINDOW_SECONDS = 300  # 5 minutes
+_last_photo_sent = {}  # user_key -> datetime
+
+
+def record_photo_sent(user_key):
+    _last_photo_sent[user_key] = datetime.now(timezone.utc)
+
+
+def recently_sent_photo(user_key) -> bool:
+    ts = _last_photo_sent.get(user_key)
+    if not ts:
+        return False
+    return (datetime.now(timezone.utc) - ts).total_seconds() < DM_LAST_PHOTO_WINDOW_SECONDS
 
 
 def _state_active(bucket: dict, key) -> bool:
@@ -1870,6 +1909,24 @@ def sanitize_ai_reply(text: str) -> str:
     ]
     tl = t.lower()
     if any(frag in tl for frag in bad_fragments):
+        return "I can help with questions about Lucas, his platforms, or one specific link if you want."
+
+    # Guard against hallucinated platform features not in the knowledge base.
+    # If the AI invents content types (e.g. "outdoor content", "fitness content")
+    # that aren't part of Lucas's actual offerings, return a safe fallback.
+    hallucinated_feature_patterns = [
+        "outdoor content",
+        "fitness content",
+        "travel content",
+        "lifestyle content",
+        "cooking content",
+        "gaming content",
+        "music content",
+        "workout content",
+        "nature content",
+        "adventure content",
+    ]
+    if any(p in tl for p in hallucinated_feature_patterns):
         return "I can help with questions about Lucas, his platforms, or one specific link if you want."
 
     return t
@@ -2205,7 +2262,7 @@ def is_gibberish_text(text: str) -> bool:
         return False
 
     alpha = re.sub(r"[^a-z]", "", t)
-    if len(alpha) < 6:
+    if not alpha:
         return False
 
     # if it has multiple normal words, don't call it gibberish
@@ -2216,6 +2273,11 @@ def is_gibberish_text(text: str) -> bool:
 
     vowels = sum(ch in "aeiou" for ch in alpha)
     ratio = vowels / max(1, len(alpha))
+
+    # Short strings (< 6 alpha chars): apply stricter threshold so
+    # inputs like "fdsg" or "ydsfs" are caught before reaching the AI.
+    if len(alpha) < 6:
+        return vowels == 0 or ratio < 0.25
 
     return vowels == 0 or ratio < 0.20
 
@@ -3906,10 +3968,26 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
     # ------------------------------------------------------------
     # Photo request
     # ------------------------------------------------------------
+    if recently_sent_photo(user_key) and is_photo_followup_request(content_lower):
+        clear_dm_pending_action(user_key)
+        image_path = pick_shared_image_path()
+        if image_path:
+            record_photo_sent(user_key)
+            await telegram_send_photo_logged(
+                update,
+                context,
+                image_path,
+                "Here's another one."
+            )
+        else:
+            await telegram_reply_logged(update, context, build_photo_guidance_reply())
+        return
+
     if is_photo_request(content_lower):
         clear_dm_pending_action(user_key)
         image_path = pick_shared_image_path()
         if image_path:
+            record_photo_sent(user_key)
             await telegram_send_photo_logged(
                 update,
                 context,
@@ -4166,8 +4244,10 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
 
     # ------------------------------------------------------------
     # Low-promo safe fallback
+    # Only suppress non-question inputs (acks, banter, yes/no).
+    # Let genuine questions pass through to the AI fallback below.
     # ------------------------------------------------------------
-    if dm_in_low_promo_mode(user_key):
+    if dm_in_low_promo_mode(user_key) and not looks_like_question(content_lower):
         await telegram_reply_logged(
             update,
             context,
