@@ -1,4 +1,6 @@
+google-generativeai
+ollama
+python-telegram-bot>=21,<22
 discord.py
 requests
 tzdata
-python-telegram-bot>=21,<22
