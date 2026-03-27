@@ -235,13 +235,156 @@ async def send_outreach_dm(user, sid):
     except Exception as e:
         log(f"❌ Error DMing {user}: {e}")
         return
-        # --- 🤖 AI CLASSIFICATION FIRST ---
-        ai_result = await classify_reply_with_ai(message.content)
 
-        if ai_result == 'yes':
+
+async def handle_owner_command(message):
+    """Handle commands and direct chat from the owner via DM."""
+    content = message.content.lower().strip()
+    parts = content.split()
+
+    # Classification commands
+    if len(parts) == 2 and parts[0] in ['warm', 'cold', 'ignore']:
+        action = parts[0]
+        target_id = parts[1]
+        if action == 'warm':
+            upsert_user(target_id, 'Unknown', 'warm')
+            await message.channel.send(
+                f"✅ User {target_id} moved to WARM list!"
+            )
+            log(f"🔥 Owner moved {target_id} to warm list")
+        elif action == 'cold':
+            upsert_user(target_id, 'Unknown', 'cold')
+            await message.channel.send(
+                f"✅ User {target_id} moved to COLD list!"
+            )
+            log(f"❄️ Owner moved {target_id} to cold list")
+        elif action == 'ignore':
+            await message.channel.send(
+                f"✅ User {target_id} left in neutral — no action taken."
+            )
+            log(f"😐 Owner ignored {target_id}")
+
+    # Stats command
+    elif content == '!stats':
+        warm, cold, neutral, total_dms, pending = get_stats()
+        await message.channel.send(
+            f"📊 **Quiet Reach Stats**\n"
+            f"🔥 Warm: {warm}\n"
+            f"❄️ Cold: {cold}\n"
+            f"😐 Neutral: {neutral}\n"
+            f"📨 Total DMs: {total_dms}\n"
+            f"⚠️ Pending Review: {pending}"
+        )
+
+    # Help command
+    elif content == '!help':
+        await message.channel.send(
+            "🤫 **Quiet Reach Commands**\n\n"
+            "`warm [user_id]` → Move user to warm list\n"
+            "`cold [user_id]` → Move user to cold list\n"
+            "`ignore [user_id]` → Leave user in neutral\n"
+            "`!stats` → View current stats\n"
+            "`!help` → Show this menu"
+        )
+
+    # AI chat for anything else the owner types
+    else:
+        log(f"💬 Owner sent a chat message — passing to Gemini...")
+        try:
+            async with message.channel.typing():
+                prompt = f"""
+You are the AI assistant for "Quiet Reach" — a Discord outreach bot
+that helps a content creator named Lucas Jacobs grow his OnlyFans and
+Chaturbate audience. You are helpful, friendly, casual, and a little
+fun. You assist Lucas with managing his bot, reviewing leads, and
+brainstorming outreach strategies.
+
+Lucas just sent you this message via Discord DM:
+"{message.content}"
+
+Reply naturally and helpfully as his assistant. Keep it conversational
+and concise.
+                """
+                loop = asyncio.get_event_loop()
+                response = await loop.run_in_executor(
+                    None,
+                    lambda: gemini_model.generate_content(prompt)
+                )
+                reply = response.text.strip()
+                if len(reply) <= 2000:
+                    await message.channel.send(reply)
+                else:
+                    for i in range(0, len(reply), 1900):
+                        await message.channel.send(reply[i:i + 1900])
+                log(f"🤖 Gemini responded to owner chat")
+        except Exception as e:
+            log(f"❌ Gemini chat error: {e}")
+            await message.channel.send(f"❌ AI error: {e}")
+
+
+async def handle_dm_reply(message):
+    """Handle replies from users who received our outreach DM."""
+    user_id = message.author.id
+    username = str(message.author)
+    content = message.content.lower().strip()
+    # Check if THIS is the owner sending commands
+    if user_id == OWNER_ID:
+        parts = content.split()
+        if len(parts) == 2 and parts[0] in ['warm', 'cold', 'ignore']:
+            await handle_owner_command(message)
+            return
+        # If not a command format, still process as normal reply
+        # This lets owner test yes/no responses too
+
+    # Smart owner check — only route to commands if it looks like one
+    if user_id == OWNER_ID:
+        parts = content.split()
+        if len(parts) == 2 and parts[0] in ['warm', 'cold', 'ignore']:
+            await handle_owner_command(message)
+            return
+        elif content in ['!stats', '!help']:
+            await handle_owner_command(message)
+            return
+        # Otherwise fall through to normal yes/no handling
+
+    yes_words = get_keywords('yes')
+    no_words = get_keywords('no')
+
+    # Opt-out
+    if content in ['stop', 'remove', 'opt out', 'optout']:
+        upsert_user(user_id, username, 'neutral', 1)
+        await message.channel.send(random.choice(OPT_OUT_RESPONSES))
+        log(f"🛑 {username} opted out")
+        return
+
+    # --- 🤖 AI CLASSIFICATION FIRST ---
+    ai_result = await classify_reply_with_ai(message.content)
+
+    if ai_result == 'yes':
+        upsert_user(user_id, username, 'warm')
+        await message.channel.send(random.choice(YES_RESPONSES))
+        log(f"🔥 {username} added to WARM list (AI classified)")
+        try:
+            owner = await client.fetch_user(OWNER_ID)
+            await owner.send(
+                f"🔥 New warm lead! {username} (ID: {user_id}) said yes!"
+            )
+        except Exception as e:
+            log(f"❌ Couldn't notify owner: {e}")
+        return
+
+    elif ai_result == 'no':
+        upsert_user(user_id, username, 'cold')
+        await message.channel.send(random.choice(NO_RESPONSES))
+        log(f"❄️ {username} added to COLD list (AI classified)")
+        return
+
+    else:
+        # AI was ambiguous or failed — fall back to keyword matching
+        if any(word in content for word in yes_words):
             upsert_user(user_id, username, 'warm')
             await message.channel.send(random.choice(YES_RESPONSES))
-            log(f"🔥 {username} added to WARM list (AI classified)")
+            log(f"🔥 {username} added to WARM list (keyword match)")
             try:
                 owner = await client.fetch_user(OWNER_ID)
                 await owner.send(
@@ -251,227 +394,28 @@ async def send_outreach_dm(user, sid):
                 log(f"❌ Couldn't notify owner: {e}")
             return
 
-        elif ai_result == 'no':
+        if any(word in content for word in no_words):
             upsert_user(user_id, username, 'cold')
             await message.channel.send(random.choice(NO_RESPONSES))
-            log(f"❄️ {username} added to COLD list (AI classified)")
+            log(f"❄️ {username} added to COLD list (keyword match)")
             return
 
-        else:
-            # AI was ambiguous or failed — fall back to keyword matching
-            if any(word in content for word in yes_words):
-                upsert_user(user_id, username, 'warm')
-                await message.channel.send(random.choice(YES_RESPONSES))
-                log(f"🔥 {username} added to WARM list (keyword match)")
-                try:
-                    owner = await client.fetch_user(OWNER_ID)
-                    await owner.send(
-                        f"🔥 New warm lead! {username} (ID: {user_id}) said yes!"
-                    )
-                except Exception as e:
-                    log(f"❌ Couldn't notify owner: {e}")
-                return
+        # Truly ambiguous — notify owner
+        add_ambiguous(user_id, username, message.content)
+        log(f"😐 Ambiguous reply from {username} — forwarding to owner")
+        try:
+            owner = await client.fetch_user(OWNER_ID)
+            await owner.send(
+                f"⚠️ Ambiguous reply from **{username}** (ID: `{user_id}`):\n"
+                f"💬 \"{message.content}\"\n\n"
+                f"Reply with:\n"
+                f"`warm {user_id}` → move to warm list\n"
+                f"`cold {user_id}` → move to cold list\n"
+                f"`ignore {user_id}` → leave in neutral"
+            )
+        except Exception as e:
+            log(f"❌ Couldn't notify owner: {e}")
 
-            if any(word in content for word in no_words):
-                upsert_user(user_id, username, 'cold')
-                await message.channel.send(random.choice(NO_RESPONSES))
-                log(f"❄️ {username} added to COLD list (keyword match)")
-                return
-
-            # Ambiguous
-            add_ambiguous(user_id, username, message.content)
-            log(f"😐 Ambiguous reply from {username} — forwarding to owner")
-            try:
-                owner = await client.fetch_user(OWNER_ID)
-                await owner.send(
-                    f"⚠️ Ambiguous reply from **{username}** (ID: `{user_id}`):\n"
-                    f"💬 \"{message.content}\"\n\n"
-                    f"Reply with:\n"
-                    f"`warm {user_id}` → move to warm list\n"
-                    f"`cold {user_id}` → move to cold list\n"
-                    f"`ignore {user_id}` → leave in neutral"
-                )
-            except Exception as e:
-                log(f"❌ Couldn't notify owner: {e}")
-
-    async def handle_owner_command(message):
-        async def handle_dm_reply(message):
-            """Handle replies from users who received our outreach DM."""
-            user_id = message.author.id
-            username = str(message.author)
-            content = message.content.lower().strip()
-            # Check if THIS is the owner sending commands
-            if user_id == OWNER_ID:
-                parts = content.split()
-                if len(parts) == 2 and parts[0] in ['warm', 'cold', 'ignore']:
-                    await handle_owner_command(message)
-                    return
-                # If not a command format, still process as normal reply
-                # This lets owner test yes/no responses too
-
-            # Smart owner check — only route to commands if it looks like one
-            if user_id == OWNER_ID:
-                parts = content.split()
-                if len(parts) == 2 and parts[0] in ['warm', 'cold', 'ignore']:
-                    await handle_owner_command(message)
-                    return
-                elif content in ['!stats', '!help']:
-                    await handle_owner_command(message)
-                    return
-                # Otherwise fall through to normal yes/no handling
-
-            yes_words = get_keywords('yes')
-            no_words = get_keywords('no')
-
-            # Opt-out
-            if content in ['stop', 'remove', 'opt out', 'optout']:
-                upsert_user(user_id, username, 'neutral', opt_out=1)
-                await message.channel.send(random.choice(OPT_OUT_RESPONSES))
-                log(f"🛑 {username} opted out")
-                return
-
-            # --- 🤖 AI CLASSIFICATION FIRST ---
-            ai_result = await classify_reply_with_ai(message.content)
-
-            if ai_result == 'yes':
-                upsert_user(user_id, username, 'warm')
-                await message.channel.send(random.choice(YES_RESPONSES))
-                log(f"🔥 {username} added to WARM list (AI classified)")
-                try:
-                    owner = await client.fetch_user(OWNER_ID)
-                    await owner.send(
-                        f"🔥 New warm lead! {username} (ID: {user_id}) said yes!"
-                    )
-                except Exception as e:
-                    log(f"❌ Couldn't notify owner: {e}")
-                return
-
-            elif ai_result == 'no':
-                upsert_user(user_id, username, 'cold')
-                await message.channel.send(random.choice(NO_RESPONSES))
-                log(f"❄️ {username} added to COLD list (AI classified)")
-                return
-
-            else:
-                # AI was ambiguous or failed — fall back to keyword matching
-                if any(word in content for word in yes_words):
-                    upsert_user(user_id, username, 'warm')
-                    await message.channel.send(random.choice(YES_RESPONSES))
-                    log(f"🔥 {username} added to WARM list (keyword match)")
-                    try:
-                        owner = await client.fetch_user(OWNER_ID)
-                        await owner.send(
-                            f"🔥 New warm lead! {username} (ID: {user_id}) said yes!"
-                        )
-                    except Exception as e:
-                        log(f"❌ Couldn't notify owner: {e}")
-                    return
-
-                if any(word in content for word in no_words):
-                    upsert_user(user_id, username, 'cold')
-                    await message.channel.send(random.choice(NO_RESPONSES))
-                    log(f"❄️ {username} added to COLD list (keyword match)")
-                    return
-
-                # Truly ambiguous — notify owner
-                add_ambiguous(user_id, username, message.content)
-                log(f"😐 Ambiguous reply from {username} — forwarding to owner")
-                try:
-                    owner = await client.fetch_user(OWNER_ID)
-                    await owner.send(
-                        f"⚠️ Ambiguous reply from **{username}** (ID: `{user_id}`):\n"
-                        f"💬 \"{message.content}\"\n\n"
-                        f"Reply with:\n"
-                        f"`warm {user_id}` → move to warm list\n"
-                        f"`cold {user_id}` → move to cold list\n"
-                        f"`ignore {user_id}` → leave in neutral"
-                    )
-                except Exception as e:
-                    log(f"❌ Couldn't notify owner: {e}")
-
-        async def handle_owner_command(message):
-            """Handle commands and direct chat from the owner via DM."""
-            content = message.content.lower().strip()
-            parts = content.split()
-
-            # Classification commands
-            if len(parts) == 2 and parts[0] in ['warm', 'cold', 'ignore']:
-                action = parts[0]
-                target_id = parts[1]
-                if action == 'warm':
-                    upsert_user(target_id, 'Unknown', 'warm')
-                    await message.channel.send(
-                        f"✅ User {target_id} moved to WARM list!"
-                    )
-                    log(f"🔥 Owner moved {target_id} to warm list")
-                elif action == 'cold':
-                    upsert_user(target_id, 'Unknown', 'cold')
-                    await message.channel.send(
-                        f"✅ User {target_id} moved to COLD list!"
-                    )
-                    log(f"❄️ Owner moved {target_id} to cold list")
-                elif action == 'ignore':
-                    await message.channel.send(
-                        f"✅ User {target_id} left in neutral — no action taken."
-                    )
-                    log(f"😐 Owner ignored {target_id}")
-
-            # Stats command
-            elif content == '!stats':
-                warm, cold, neutral, total_dms, pending = get_stats()
-                await message.channel.send(
-                    f"📊 **Quiet Reach Stats**\n"
-                    f"🔥 Warm: {warm}\n"
-                    f"❄️ Cold: {cold}\n"
-                    f"😐 Neutral: {neutral}\n"
-                    f"📨 Total DMs: {total_dms}\n"
-                    f"⚠️ Pending Review: {pending}"
-                )
-
-            # Help command
-            elif content == '!help':
-                await message.channel.send(
-                    "🤫 **Quiet Reach Commands**\n\n"
-                    "`warm [user_id]` → Move user to warm list\n"
-                    "`cold [user_id]` → Move user to cold list\n"
-                    "`ignore [user_id]` → Leave user in neutral\n"
-                    "`!stats` → View current stats\n"
-                    "`!help` → Show this menu"
-                )
-
-            # AI chat for anything else the owner types
-            else:
-                log(f"💬 Owner sent a chat message — passing to Gemini...")
-                try:
-                    async with message.channel.typing():
-                        prompt = f"""
-        You are the AI assistant for "Quiet Reach" — a Discord outreach bot
-        that helps a content creator named Lucas Jacobs grow his OnlyFans and
-        Chaturbate audience. You are helpful, friendly, casual, and a little
-        fun. You assist Lucas with managing his bot, reviewing leads, and
-        brainstorming outreach strategies.
-
-        Lucas just sent you this message via Discord DM:
-        "{message.content}"
-
-        Reply naturally and helpfully as his assistant. Keep it conversational
-        and concise.
-                        """
-                        loop = asyncio.get_event_loop()
-                        response = await loop.run_in_executor(
-                            None,
-                            lambda: gemini_model.generate_content(prompt)
-                        )
-                        reply = response.text.strip()
-                        if len(reply) <= 2000:
-                            await message.channel.send(reply)
-                        else:
-                            for i in range(0, len(reply), 1900):
-                                await message.channel.send(reply[i:i + 1900])
-                        log(f"🤖 Gemini responded to owner chat")
-                except Exception as e:
-                    log(f"❌ Gemini chat error: {e}")
-                    await message.channel.send(f"❌ AI error: {e}")
 
 
 # ============================================================
@@ -496,148 +440,6 @@ class QuietReachUI:
         global ui_log
         ui_log = self.append_log
 
-    def build_ui(self):
-
-            # HEADER
-            header_frame = tk.Frame(self.root, bg='#1a1a2e')
-            header_frame.pack(fill='x', padx=20, pady=(15, 5))
-
-            tk.Label(
-                header_frame, text="🤫 Quiet Reach",
-                font=('Helvetica', 24, 'bold'),
-                bg='#1a1a2e', fg='white'
-            ).pack(side='left')
-
-            self.status_label = tk.Label(
-                header_frame, text="⚫ Offline",
-                font=('Helvetica', 12),
-                bg='#1a1a2e', fg='#aaaaaa'
-            )
-            self.status_label.pack(side='right', padx=10)
-
-            # DIVIDER
-            tk.Frame(self.root, bg='#4a90d9', height=2).pack(
-                fill='x', padx=20, pady=5
-            )
-
-            # MAIN AREA
-            main_frame = tk.Frame(self.root, bg='#1a1a2e')
-            main_frame.pack(fill='both', expand=True, padx=20, pady=10)
-
-            # ---- LEFT SIDE: SCROLLABLE BUTTON PANEL ----
-            # Wrap buttons in a canvas so they scroll if window is small
-            btn_canvas = tk.Canvas(main_frame, bg='#1a1a2e',
-                                   width=220, highlightthickness=0)
-            btn_scrollbar = ttk.Scrollbar(main_frame, orient='vertical',
-                                          command=btn_canvas.yview)
-            btn_scroll_frame = tk.Frame(btn_canvas, bg='#1a1a2e')
-
-            btn_scroll_frame.bind(
-                '<Configure>',
-                lambda e: btn_canvas.configure(
-                    scrollregion=btn_canvas.bbox('all')
-                )
-            )
-            btn_canvas.create_window((0, 0), window=btn_scroll_frame, anchor='nw')
-            btn_canvas.configure(yscrollcommand=btn_scrollbar.set)
-            btn_canvas.pack(side='left', fill='y', padx=(0, 5))
-            btn_scrollbar.pack(side='left', fill='y', padx=(0, 10))
-
-            # Button factory helper
-            def make_button(parent, text, command, color='#4a90d9', fg='white'):
-                btn = tk.Button(
-                    parent, text=text, command=command,
-                    bg=color, fg=fg,
-                    font=('Helvetica', 10, 'bold'),
-                    relief='flat', cursor='hand2',
-                    padx=10, pady=8, width=20,
-                    activebackground='#357abd',
-                    activeforeground='white'
-                )
-                btn.pack(pady=3, padx=5)
-                btn.bind('<Enter>', lambda e, b=btn: b.config(bg='#357abd'))
-                btn.bind('<Leave>', lambda e, b=btn, c=color: b.config(bg=c))
-                return btn
-
-            def section_label(text, color='#4a90d9'):
-                tk.Label(
-                    btn_scroll_frame, text=text,
-                    font=('Helvetica', 10, 'bold'),
-                    bg='#1a1a2e', fg=color
-                ).pack(pady=(10, 3))
-                tk.Frame(
-                    btn_scroll_frame, bg=color, height=1
-                ).pack(fill='x', padx=5, pady=(0, 5))
-
-            # BOT CONTROLS
-            section_label("⚙️ Bot Controls")
-            self.start_btn = make_button(
-                btn_scroll_frame, "▶  Start Bot", self.start_bot, '#27ae60'
-            )
-            self.stop_btn = make_button(
-                btn_scroll_frame, "⏹  Stop Bot", self.stop_bot, '#e74c3c'
-            )
-            self.stop_btn.config(state='disabled')
-
-            # LISTS
-            section_label("📋 View Lists")
-            make_button(btn_scroll_frame, "🔥  Warm List",
-                        lambda: self.view_list('warm'))
-            make_button(btn_scroll_frame, "❄️  Cold List",
-                        lambda: self.view_list('cold'))
-            make_button(btn_scroll_frame, "😐  Neutral List",
-                        lambda: self.view_list('neutral'))
-
-            # TOOLS
-            section_label("🛠️ Tools")
-            make_button(btn_scroll_frame, "🔍  Review Ambiguous",
-                        self.review_ambiguous)
-            make_button(btn_scroll_frame, "✏️  Edit Keywords",
-                        self.edit_keywords)
-            make_button(btn_scroll_frame, "📊  Stats",
-                        self.show_stats)
-
-            # RESET TOOLS
-            section_label("🔄 Reset Tools", '#e74c3c')
-            make_button(btn_scroll_frame, "🔄  Reset Warm",
-                        self.reset_warm, '#c0392b')
-            make_button(btn_scroll_frame, "🔄  Reset Cold",
-                        self.reset_cold, '#c0392b')
-            make_button(btn_scroll_frame, "🔄  Reset Neutral",
-                        self.reset_neutral, '#c0392b')
-            make_button(btn_scroll_frame, "🔄  Reset Ambiguous",
-                        self.reset_ambiguous, '#c0392b')
-            make_button(btn_scroll_frame, "🔄  Reset Server Caps",
-                        self.reset_caps, '#c0392b')
-            make_button(btn_scroll_frame, "💀  WIPE ALL DATA",
-                        self.reset_all, '#7b241c')
-
-            # ---- RIGHT SIDE: LOG AREA ----
-            log_frame = tk.Frame(main_frame, bg='#1a1a2e')
-            log_frame.pack(side='right', fill='both', expand=True)
-
-            tk.Label(
-                log_frame, text="📡 Live Log",
-                font=('Helvetica', 11, 'bold'),
-                bg='#1a1a2e', fg='#4a90d9'
-            ).pack(anchor='w', pady=(0, 5))
-
-            self.log_area = scrolledtext.ScrolledText(
-                log_frame,
-                bg='#0d0d1a', fg='#00ff88',
-                font=('Courier', 10),
-                relief='flat', state='disabled',
-                wrap='word', padx=10, pady=10
-            )
-            self.log_area.pack(fill='both', expand=True)
-
-            # FOOTER
-            tk.Label(
-                self.root,
-                text="Running on discord.py  |  Made with 💙  |  Quiet Reach v1.2",
-                font=('Helvetica', 8),
-                bg='#1a1a2e', fg='#555577'
-            ).pack(pady=(5, 10))
     def build_ui(self):
 
         # HEADER
