@@ -1542,6 +1542,11 @@ def is_photo_request(text: str) -> bool:
         "images",
         "image",
         "what does he look like",
+        "see what he looks like",
+        "show me what he looks like",
+        "what he looks like",
+        "his appearance",
+        "how he looks",
         "do you have any pictures",
         "do you have any photos",
         "can you send a picture",
@@ -1569,7 +1574,38 @@ def is_photo_followup_request(text: str) -> bool:
     return any(p in t for p in phrases)
 
 
-def is_bot_correction_prompt(text: str) -> bool:
+def is_what_else_question(text: str) -> bool:
+    """True when user asks broadly what else / what other offerings are available."""
+    t = normalize_loose_text(text)
+    if not t:
+        return False
+    phrases = [
+        "what else",
+        "what other",
+        "whats available",
+        "what s available",
+        "what does he have",
+        "what can i get",
+        "what else does",
+        "what platforms",
+        "what all does he have",
+        "any other",
+    ]
+    return any(p in t for p in phrases)
+
+
+def build_offerings_summary() -> str:
+    return (
+        "Lucas offers:\n\n"
+        "🎥 Live game shows (Chaturbate)\n"
+        "🔥 Premium content (OnlyFans - free & paid)\n"
+        "📱 Social updates (X, Instagram)\n"
+        "💬 Community (Discord)\n\n"
+        "Want details on any of these?"
+    )
+
+
+
     t = (text or "").strip().lower()
     if not t:
         return False
@@ -2158,6 +2194,10 @@ def is_implicit_see_request(text: str) -> bool:
         "sure send",
         "yeah send",
         "yep send",
+        "what is it",
+        "what s it",
+        "whats the link",
+        "what s the link",
     ]
     return any(p in t for p in phrases)
 
@@ -3002,6 +3042,14 @@ def is_hostile(text: str) -> bool:
         "shut the fuck up",
         "retarded",
         "useless",
+        "eat shit",
+        "piss off",
+        "fuck off",
+        "get lost",
+        "drop dead",
+        "go die",
+        "screw you",
+        "kiss my ass",
     ]
     if any(p in t for p in hostile_phrases):
         return True
@@ -3186,7 +3234,31 @@ def get_dm_link_context(user_key) -> list[str]:
         return []
 
     return list(row.get("keys") or [])
-    
+
+
+# ============================================================
+# 🗺️ DM platform context (tracks last platform discussed, 5 min)
+# ============================================================
+
+_dm_last_platform_discussed = {}  # user_key -> {"platform": str, "expires": datetime}
+
+
+def set_platform_context(user_key, platform: str):
+    _dm_last_platform_discussed[user_key] = {
+        "platform": platform,
+        "expires": datetime.now(timezone.utc) + timedelta(seconds=300),
+    }
+
+
+def get_platform_context(user_key) -> str | None:
+    row = _dm_last_platform_discussed.get(user_key)
+    if not row:
+        return None
+    if datetime.now(timezone.utc) >= row["expires"]:
+        _dm_last_platform_discussed.pop(user_key, None)
+        return None
+    return row.get("platform")
+
 
 
 BOT_LORE_EXPANSIONS = [
@@ -3925,7 +3997,11 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
     if is_hostile(content_lower):
         clear_dm_pending_action(user_key)
         set_dm_low_promo(user_key)
-        await telegram_reply_logged(update, context, "Got it — I’ll leave it there.")
+        await telegram_reply_logged(
+            update,
+            context,
+            "Got it. I'll keep it simple — ask me about Lucas, a platform, a picture, or one specific link."
+        )
         return
 
     # ------------------------------------------------------------
@@ -4071,6 +4147,15 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         return
 
     # ------------------------------------------------------------
+    # Broad "what else" question — clears narrow pending states
+    # ------------------------------------------------------------
+    if is_what_else_question(content_lower):
+        clear_dm_pending_action(user_key)
+        await telegram_reply_logged(update, context, build_offerings_summary())
+        set_dm_pending_action(user_key, "offerings_choice", {})
+        return
+
+    # ------------------------------------------------------------
     # Pending conversational state
     # ------------------------------------------------------------
     if pending:
@@ -4153,6 +4238,24 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
                 return
 
     # ------------------------------------------------------------
+    # Platform context follow-up ("what is it?", "show me", "send it")
+    # After bot described a platform, user asks to see the link
+    # ------------------------------------------------------------
+    last_platform = get_platform_context(user_key)
+    if last_platform and (
+        is_implicit_see_request(content_lower)
+        or is_explicit_link_ask(content_lower)
+    ):
+        link_keys = [last_platform] if last_platform not in ("onlyfans",) else ["onlyfans_free", "onlyfans_paid"]
+        clear_dm_pending_action(user_key)
+        remember_dm_link_context(user_key, link_keys)
+        if len(link_keys) >= 2:
+            await telegram_reply_logged(update, context, build_requested_links_message(link_keys))
+        else:
+            await telegram_reply_logged(update, context, build_single_link_message(link_keys[0]))
+        return
+
+    # ------------------------------------------------------------
     # Platform confirmation questions
     # Example: "he has instagram and a free onlyfans?"
     # ------------------------------------------------------------
@@ -4188,6 +4291,8 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
     if requested_key and is_platform_info_question(content_lower):
         info = PLATFORM_INFO.get(requested_key)
         if info:
+            set_platform_context(user_key, requested_key)
+            set_dm_pending_action(user_key, "platform_context", {"keys": [requested_key]})
             await telegram_reply_logged(
                 update,
                 context,
