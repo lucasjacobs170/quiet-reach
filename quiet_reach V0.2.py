@@ -2173,6 +2173,27 @@ def is_too_much_feedback(text: str) -> bool:
     return any(p in t for p in phrases)
 
 
+def is_bot_correction_prompt(text: str) -> bool:
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+    phrases = [
+        "that's not what i asked",
+        "thats not what i asked",
+        "i didn't ask",
+        "i didnt ask",
+        "you didn't answer",
+        "you didnt answer",
+        "i asked who is lucas",
+        "you sent them all again",
+        "i only want one link",
+        "that wasn't the question",
+        "that wasnt the question",
+        "wrong answer",
+    ]
+    return any(p in t for p in phrases)
+
+
 def default_single_link_keys() -> list[str]:
     return ["chaturbate", "onlyfans_free", "onlyfans_paid", "instagram", "x", "discord"]
 
