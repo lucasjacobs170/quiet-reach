@@ -1,5 +1,5 @@
 # 🤫 QUIET REACH v1.2
-import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, re
+import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, re, json
 from tkinter import ttk, scrolledtext, messagebox
 import tkinter.font as tkfont
 from datetime import datetime, date, timedelta
