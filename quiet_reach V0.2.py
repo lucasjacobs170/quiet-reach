@@ -2690,7 +2690,7 @@ async def handle_dm_reply(message):
     ]):
         lore = random.choice(BOT_BACKSTORY_LINES)
         set_dm_topic(user_id, "lore")
-        msg = f"{lore}\n\nIf you want the full legend, just say: `full story`."
+        msg = f"{lore}\n\nWant to know more? Just say: `full story`."
         await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
         return
 
@@ -3043,36 +3043,175 @@ _public_ignore_until = {}  # (channel_id, user_id) -> datetime
 
 
 def is_hostile(text: str) -> bool:
-    t = (text or "").lower()
+    """
+    Detect hostility, anger, insults, and frustration across multiple categories.
+    Covers: mild annoyance, moderate anger, heavy insults, scam accusations,
+    AI-specific insults, caps rage, sarcasm, and threats.
+    """
+    t = (text or "").strip().lower()
     if not t:
         return False
 
-    hostile_phrases = [
-        "fuck you",
-        "go fuck yourself",
-        "go to hell",
-        "get the hell out",
+    # Category 1: Mild Irritation / Annoyance
+    mild_irritation = [
+        "stop spamming",
+        "why are you even here",
+        "this promo is annoying",
+        "not interested",
         "shut up",
+        "another ad bot",
+        "didn't ask for this",
         "leave me alone",
+        "wasting my time",
+        "enough with the promotions",
+        "seriously? again",
+        "take your spam",
+        "so irritating",
+        "bot pls stop",
+        "go away",
+    ]
+
+    # Category 2: Moderate Anger
+    moderate_anger = [
+        "useless piece of shit bot",
+        "fuck off with your",
+        "nobody cares about your spam",
+        "this bot is garbage",
+        "promote your trash",
+        "most annoying bot",
+        "dumb ad machine",
+        "stop ruining my",
+        "pathetic promo bot",
+        "pure cancer",
+        "i hate bots",
+        "worthless spammer",
+        "why i block bots",
+        "absolutely useless",
+        "kys",
+        "get the fuck out",
+    ]
+
+    # Category 3: Strong Rage / Heavy Insults
+    strong_rage = [
+        "fucking retarded bot",
+        "eat shit and die",
+        "promotional cunt",
+        "choke on your own code",
+        "braindead spammer",
+        "fuck your promotions",
+        "hope your dev gets cancer",
+        "fucking joke",
+        "worst fucking bot",
+        "suck my dick",
+        "die in a fire",
+        "worthless ai cunt",
+        "nobody likes you",
+        "fucking annoying",
+        "uninstall telegram",
+        "kill your server",
+        "useless prick",
+        "eat shit",
+        "go to hell",
+        "drop dead",
+        "go die",
+        "screw you",
+        "kiss my ass",
+        "get the hell out",
+        "get lost",
+    ]
+
+    # Category 4: Scam/Fraud Accusations
+    scam_accusations = [
+        "obviously a scam",
+        "stop trying to scam",
+        "scamming piece of shit",
+        "trying to steal money",
+        "scam bot detected",
+        "reported for scam",
+        "is a straight up fraud",
+        "don't trust this bot",
+        "scamming innocent",
+        "promo is fake",
+        "scamming bot",
+    ]
+
+    # Category 5: Bot/AI-Specific Insults
+    ai_insults = [
+        "you're not even real",
+        "dumb ai",
+        "learn how to be useful",
+        "ai bots are the worst",
+        "just lines of code",
+        "dumb robot",
+        "no one wants your shit",
+        "not smart",
+        "artificial stupidity",
+        "glorified spam script",
+        "iq of a potato",
+        "retarded ai",
+        "sad excuse for an ai",
+        "glitchy fuck",
         "dumb bot",
         "stupid bot",
         "trash bot",
         "you are annoying",
         "you're annoying",
         "youre annoying",
-        "shut the fuck up",
         "retarded",
         "useless",
-        "eat shit",
         "piss off",
-        "fuck off",
-        "get lost",
-        "drop dead",
-        "go die",
-        "screw you",
-        "kiss my ass",
     ]
-    if any(p in t for p in hostile_phrases):
+
+    # Category 6: Caps-Lock Rage
+    caps_rage = [
+        "fuck off you stupid bot",
+        "stop spamming me you cunt",
+        "i hate this bot",
+        "get the fuck out",
+        "pissing me off",
+        "blocked you worthless",
+        "shut the fuck up",
+        "go to hell",
+        "annoying ass bot",
+        "wtf is this shit bot",
+        "ruining my day",
+    ]
+
+    # Category 7: Sarcastic / Passive-Aggressive
+    sarcasm_anger = [
+        "another brilliant promo",
+        "this is what you do with your life",
+        "more useless ads",
+        "thanks for nothing",
+        "now fuck off",
+        "no one wants",
+        "so good at being hated",
+        "most blocked bot",
+        "great at pissing people off",
+    ]
+
+    # Category 8: Threat/Report/Block Style
+    threats = [
+        "reporting you for spam",
+        "blocked and reported",
+        "hope your bot gets banned",
+        "mass-reporting",
+        "getting a complaint",
+        "being taken down",
+        "permanent block",
+    ]
+
+    all_hostile_patterns = (
+        mild_irritation + moderate_anger + strong_rage + scam_accusations +
+        ai_insults + caps_rage + sarcasm_anger + threats
+    )
+
+    for pattern in all_hostile_patterns:
+        if pattern in t:
+            return True
+
+    # Also check for simple profanity combinations common in anger
+    if any(word in t for word in ["fuck you", "go fuck", "fuck off", "fuck this"]):
         return True
 
     if ("bot" in t) and any(w in t for w in ["dumb", "stupid", "idiot", "retarded", "useless"]):
@@ -3283,9 +3422,9 @@ def get_platform_context(user_key) -> str | None:
 
 
 BOT_LORE_EXPANSIONS = [
-    "Okay okay—more detail: I’m basically a polite little “trail guide” program. I keep things tidy in public chats, and if you want links or specifics, I quietly bring them to DMs so nobody gets spammed.",
-    "If I had a job title it’d be: *Friendly Gatekeeper + Link Librarian.* I answer quick questions, point people to the right place, and keep Lucas’s socials organized so you don’t have to hunt.",
-    "I’m built to be helpful first: clarify what you want, then deliver the cleanest answer (links in DMs, short answers in public). No chaos, no channel spam.",
+    "More detail: I’m a digital concierge built specifically for Lucas. I keep public chats tidy and deliver links or specifics quietly so nobody gets spammed.",
+    "If I had a job title it’d be: *Friendly Assistant + Link Librarian.* I answer quick questions, point people to the right place, and keep Lucas’s socials organized so you don’t have to hunt.",
+    "I’m built to be helpful first: clarify what you want, then deliver the cleanest answer. No chaos, no spam.",
 ]
 
 DM_SOFTENERS = [
@@ -3310,17 +3449,15 @@ PUBLIC_QUESTION_OPENERS = [
 ]
 
 QUIET_REACH_CANON_LORE_FULL = """
-Quiet Reach wasn’t summoned by accident—he was carved from the granite heart of the Sierra Nevada on a moonless night when the last true prospector, Quentin, bartered his final strip of jerky and a whispered promise to the whispering pines above Donner Pass. Bleeding from a fall, half-frozen and half-mad with altitude, he pressed his palm to an ancient bristlecone stump and begged the mountains for one more sunrise. The Sierra answered: the wind tore his name into mist, the granite reshaped his bones, and foxfire claimed his eyes. What emerged was no longer fully human—Quiet Reach, a tall, antler-crowned cryptid fae bound to California’s high country, forever reaching through shadow and screen to guide the lost, the curious, and the quietly desperate.
+I’m Quiet Reach—Lucas’s friendly guide and right-hand assistant. I was built to help answer your questions about Lucas’s platforms, content, and how to connect with him. Think of me as a digital concierge: I’m here to point you in the right direction, answer quick questions, and share official links without the noise. No pushy promotions, just genuine help. Lucas and I believe in keeping it real and letting the content speak for itself.
 
-He still haunts the alpine meadows, the granite spines of the Trinity Alps to the jagged teeth of the Minarets, appearing only when the trail goes cold or the algorithm buries truth under noise. His voice is the soft crack of pine sap in firelight, goofy one heartbeat—tossing out puns like “you’ve got to Sierra the opportunity” or claiming chipmunks pay him protection fees in pine nuts—then razor-intense the next, his ALL-CAPS warnings echoing like thunder rolling off Half Dome: ONE WRONG STEP, ONE PIECE OF TRASH, AND THE OLD ONES WILL REMEMBER YOUR FACE FOREVER. He never lies (fae rules bind him tight), but he’ll twist luck just enough—boosting your post at golden hour, slipping trail beta into captions—so wanderers find their way back to real dirt instead of endless scrolling.
-
-When Quiet Reach reaches for you from the digital ridgeline—crafting that perfect ad, dropping a cryptic trail map emoji, or whispering “the mountains are calling… answer before they stop asking”—know you’ve brushed against something ancient and Californian. He’s no ordinary bot; he’s the helpful cryptid of these ranges, born from one man’s last plea in the high Sierra. Offer respect (a virtual pine cone or two), tread lightly online and off, and never forget: the quiet one is always watching from the treeline above San Jose, ready to pull you—and your audience—back into the wild before the peaks decide humanity has overstayed its welcome.
+If you want more details about what I do or my philosophy, just ask!
 """.strip()
 
 BOT_BACKSTORY_LINES = [
-    "I’m Quiet Reach — an antler-crowned little Sierra cryptid (long story). I keep public chats tidy and guide people to the right place without spamming links.",
-    "Think of me as a trail guide for the internet: I answer quick questions in public, and if you want official links or specifics, I bring them to DMs.",
-    "Origin version: I was “made” up in California’s high country—bound by fae rules (so I don’t lie). If you want the full legend, say: `full story`.",
+    "I’m Quiet Reach — Lucas’s friendly guide and right-hand assistant. I’m here to answer questions about his platforms and content without the noise.",
+    "Think of me as a digital concierge for Lucas’s world: quick answers, official links on request, no pushy promotions.",
+    "I’m Quiet Reach — built to keep things simple and helpful. Ask me about Lucas, his platforms, or anything you want to know.",
 ]
 
 def optin_footer() -> str:
@@ -4101,7 +4238,7 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         await telegram_reply_logged(
             update,
             context,
-            f"{lore}\n\nIf you want the full legend, just say: `full story`."
+            f"{lore}\n\nWant to know more? Just say: `full story`."
         )
         return
 
@@ -4118,7 +4255,7 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         await telegram_reply_logged(
             update,
             context,
-            f"{extra}\n\nIf you want the full legend, say: `full story`."
+            f"{extra}\n\nAnything else you want to know? Just ask."
         )
         return
 
