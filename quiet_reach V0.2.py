@@ -1462,6 +1462,34 @@ def pick_shared_image_path() -> str | None:
         return None
     return random.choice(imgs)
 
+
+# Per-user image cycling so the same image isn't shown twice in a row.
+# Tracks which images have been shown; resets when all have been cycled.
+_user_image_history: dict = {}  # user_key -> {"shown": list[str], "cycle_count": int}
+
+
+def get_next_image(user_key: str) -> str | None:
+    """Return the next unseen image path for *user_key*, cycling when exhausted."""
+    all_images = load_shared_images()
+    if not all_images:
+        return None
+
+    if user_key not in _user_image_history:
+        _user_image_history[user_key] = {"shown": [], "cycle_count": 0}
+
+    history = _user_image_history[user_key]
+    unseen = [img for img in all_images if img not in history["shown"]]
+
+    if not unseen:
+        # All images have been shown — start a fresh cycle
+        history["shown"] = []
+        history["cycle_count"] += 1
+        unseen = list(all_images)
+
+    chosen = random.choice(unseen)
+    history["shown"].append(chosen)
+    return chosen
+
 def is_what_are_you_question(text: str) -> bool:
     t = (text or "").strip().lower()
     if not t:
@@ -1875,16 +1903,26 @@ def is_brief_acknowledgment(text: str) -> bool:
         "all right",
         "thanks",
         "thank you",
+        "will do",
+        "sounds good",
+        "sounds great",
+        "perfect",
+        "great",
+        "nice one",
+        "cool thanks",
+        "got it thanks",
     }
 
 
 def build_brief_acknowledgment_reply(text: str) -> str:
     t = (text or "").strip().lower()
 
-    if t in {"thanks", "thank you"}:
+    if t in {"thanks", "thank you", "cool thanks", "got it thanks"}:
         return "Anytime."
     if t in {"sure"}:
         return "Alright."
+    if t in {"will do", "sounds good", "sounds great", "perfect", "great", "nice one"}:
+        return "Sounds good. Feel free to reach out anytime."
     return "Got it."
 
 
@@ -3949,8 +3987,42 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         )
         return
 
+    # ------------------------------------------------------------
+    # Full lore command
+    # ------------------------------------------------------------
+    if content_lower in {"full story", "full lore", "the full story", "tell me the full story"}:
+        set_dm_topic(user_key, "lore")
+        await telegram_reply_logged(update, context, QUIET_REACH_CANON_LORE_FULL[:1800])
+        return
+
+    # ------------------------------------------------------------
+    # Lore / identity questions — respond with backstory + full-story offer
+    # ------------------------------------------------------------
     if is_what_are_you_question(content_lower):
-        await telegram_reply_logged(update, context, build_dm_identity_reply())
+        lore = random.choice(BOT_BACKSTORY_LINES)
+        set_dm_topic(user_key, "lore")
+        await telegram_reply_logged(
+            update,
+            context,
+            f"{lore}\n\nIf you want the full legend, just say: `full story`."
+        )
+        return
+
+    # ------------------------------------------------------------
+    # Lore follow-up — when user digs deeper after a lore response
+    # ------------------------------------------------------------
+    topic = get_dm_topic(user_key)
+    if topic == "lore" and any(p in content_lower for p in [
+        "is there more", "more than that", "tell me more",
+        "more about you", "more detail", "more details",
+        "about you", "who are you really",
+    ]):
+        extra = random.choice(BOT_LORE_EXPANSIONS)
+        await telegram_reply_logged(
+            update,
+            context,
+            f"{extra}\n\nIf you want the full legend, say: `full story`."
+        )
         return
 
     if is_who_is_lucas_question(content_lower):
@@ -3970,7 +4042,7 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
     # ------------------------------------------------------------
     if recently_sent_photo(user_key) and is_photo_followup_request(content_lower):
         clear_dm_pending_action(user_key)
-        image_path = pick_shared_image_path()
+        image_path = get_next_image(user_key)
         if image_path:
             record_photo_sent(user_key)
             await telegram_send_photo_logged(
@@ -3985,7 +4057,7 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
 
     if is_photo_request(content_lower):
         clear_dm_pending_action(user_key)
-        image_path = pick_shared_image_path()
+        image_path = get_next_image(user_key)
         if image_path:
             record_photo_sent(user_key)
             await telegram_send_photo_logged(
@@ -4070,11 +4142,24 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
                 await telegram_reply_logged(update, context, build_onlyfans_variant_clarifier())
                 return
 
+        if ptype == "platform_context":
+            # User confirmed a platform exists; now they want the link ("can i see it?")
+            pkeys = list(pdata.get("keys") or [])
+            if is_implicit_see_request(content_lower) or is_explicit_link_ask(content_lower):
+                expanded = expand_requested_link_keys(pkeys) if pkeys else default_single_link_keys()
+                clear_dm_pending_action(user_key)
+                remember_dm_link_context(user_key, expanded)
+                await telegram_reply_logged(update, context, build_requested_links_message(expanded))
+                return
+
     # ------------------------------------------------------------
     # Platform confirmation questions
     # Example: "he has instagram and a free onlyfans?"
     # ------------------------------------------------------------
     if is_platform_confirmation_question(content_lower):
+        # Store which platform(s) were just confirmed so follow-up "can i see it?" works
+        if requested_keys:
+            set_dm_pending_action(user_key, "platform_context", {"keys": requested_keys})
         await telegram_reply_logged(
             update,
             context,
