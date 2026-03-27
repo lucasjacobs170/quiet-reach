@@ -8,6 +8,8 @@ from datetime import time, timezone
 from zoneinfo import ZoneInfo
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+import hostility_handler
+from hostility_handler import HostilityLevel, handle_message as hh_handle_message
 
 BOT_TOKEN=''
 TELEGRAM_BOT_TOKEN=''
@@ -153,6 +155,20 @@ GENERAL BEHAVIOR (automatic)
 DEV UI (Tkinter)
 - Tools → Dev Commands
   Includes “Post Promo Now (all enabled)”, stats, toggles for keyword mode + logging.
+
+HOSTILITY MANAGEMENT (OWNER-only)
+- !unblock <user_key_or_id>
+  Unblock a user (accepts bare Discord user ID or full key like "discord:123").
+
+- !listblocked / !blocked
+  List all currently blocked users.
+
+TELEGRAM ADMIN (OWNER-only, in bot private chat)
+- /unblock <user_key_or_id>
+  Unblock a Telegram user.
+
+- /listblocked
+  List all currently blocked users.
 
 Notes:
 - Some actions are OWNER-only by OWNER_ID.
@@ -470,6 +486,9 @@ def setup_database():
         print(f"❌ Database setup failed: {e}")
         raise
     print("✅ Database ready!")
+    # Set up hostility handler tables in the same DB
+    hostility_handler.DB_PATH = DB_PATH
+    hostility_handler.setup_hostility_db(DB_PATH)
 
 # ============================================================
 # 📣 PROMO SCHEDULING HELPERS (PT window, stored as UTC)
@@ -3544,18 +3563,30 @@ async def on_message(message):
     if ignoring_user(message.channel.id, message.author.id):
         return
 
-    # Hostility handling (one calm response, then ignore window)
-    if is_hostile(raw):
+    # Hostility handling — tiered via hostility_handler
+    _discord_user_key = f"discord:{message.author.id}"
+    if hostility_handler.is_blocked(_discord_user_key, db_path=DB_PATH):
+        return  # silently ignore blocked users
+
+    _hh_result = hh_handle_message(
+        raw,
+        user_key=_discord_user_key,
+        username=str(message.author),
+        platform="discord",
+        db_path=DB_PATH,
+    )
+    if _hh_result.level != HostilityLevel.NONE:
         # end any follow-up / DM offer state so we don't keep engaging
         clear_dm_offer(message.channel.id, message.author.id)
         _followups.pop((message.channel.id, message.author.id), None)
 
         await server_reply(
             message,
-            "Got it — I’ll back off. If you need anything later (info about Lucas or links in DM), just ask.",
+            _hh_result.response,
             mention_author=False,
         )
         set_ignore_user(message.channel.id, message.author.id)
+        log(f"🚨 Hostility [{_hh_result.level.value}] from {message.author} — responded and ignored.")
         return
 
     # 🔒 Never share links publicly (Discord + socials). DM-only.
@@ -3587,6 +3618,43 @@ async def on_message(message):
         if len(text) > 1900:
             text = text[:1900] + "\n…(truncated)"
         await server_reply(message, f"```{text}```", mention_author=False)
+        return
+
+    # ==========================
+    # 🚫 BLOCKED USER MANAGEMENT (owner-only)
+    # ==========================
+    if raw.startswith("!unblock "):
+        if message.author.id != OWNER_ID:
+            return
+        target = (message.content or "").strip().split(maxsplit=1)
+        if len(target) < 2:
+            await server_reply(message, "Usage: `!unblock <user_key_or_id>`", mention_author=False)
+            return
+        uid = target[1].strip()
+        # Accept bare numeric IDs or prefixed keys
+        if uid.isdigit():
+            uid = f"discord:{uid}"
+        removed = hostility_handler.unblock_user(uid, db_path=DB_PATH)
+        if removed:
+            await server_reply(message, f"✅ Unblocked: `{uid}`", mention_author=False)
+        else:
+            await server_reply(message, f"⚠️ `{uid}` was not in the blocked list.", mention_author=False)
+        return
+
+    if raw in ["!listblocked", "!blocked"]:
+        if message.author.id != OWNER_ID:
+            return
+        rows = hostility_handler.list_blocked(db_path=DB_PATH)
+        if not rows:
+            await server_reply(message, "✅ No blocked users.", mention_author=False)
+            return
+        lines = ["**Blocked users:**"]
+        for r in rows:
+            lines.append(f"- `{r['user_key']}` ({r['username']}) — {r['reason']} @ {r['blocked_at'][:19]}")
+        text = "\n".join(lines)
+        if len(text) > 1900:
+            text = text[:1900] + "\n…(truncated)"
+        await server_reply(message, text, mention_author=False)
         return
 
     # If someone replies "yes" to a bot message in an NSFW channel, treat it as DM consent
@@ -4150,16 +4218,23 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         return
 
     # ------------------------------------------------------------
-    # Direct hostility (short boundary, no CTA)
+    # Direct hostility (short boundary, no CTA) — tiered via hostility_handler
     # ------------------------------------------------------------
-    if is_hostile(content_lower):
+    if hostility_handler.is_blocked(user_key, db_path=DB_PATH):
+        return  # silently ignore blocked users
+
+    _tg_hh_result = hh_handle_message(
+        content_lower,
+        user_key=user_key,
+        username=telegram_display_name(user),
+        platform="telegram",
+        db_path=DB_PATH,
+    )
+    if _tg_hh_result.level != HostilityLevel.NONE:
         clear_dm_pending_action(user_key)
         set_dm_low_promo(user_key)
-        await telegram_reply_logged(
-            update,
-            context,
-            "Got it. I'll keep it simple — ask me about Lucas, a platform, a picture, or one specific link."
-        )
+        await telegram_reply_logged(update, context, _tg_hh_result.response)
+        log(f"🚨 Telegram hostility [{_tg_hh_result.level.value}] from {telegram_display_name(user)}")
         return
 
     # ------------------------------------------------------------
@@ -4666,17 +4741,24 @@ async def handle_telegram_group_text(update: Update, context: ContextTypes.DEFAU
     if ignoring_user(chat_key, user_key):
         return
 
-    # Hostility handling
-    if is_hostile(raw):
+    # Hostility handling — tiered via hostility_handler
+    if hostility_handler.is_blocked(user_key, db_path=DB_PATH):
+        return  # silently ignore blocked users
+
+    _tg_grp_hh_result = hh_handle_message(
+        raw,
+        user_key=user_key,
+        username=telegram_display_name(user),
+        platform="telegram_group",
+        db_path=DB_PATH,
+    )
+    if _tg_grp_hh_result.level != HostilityLevel.NONE:
         clear_dm_offer(chat_key, user_key)
         _followups.pop((chat_key, user_key), None)
 
-        await telegram_reply_logged(
-            update,
-            context,
-            "Got it — I’ll back off. If you need anything later, message me privately.",
-        )
+        await telegram_reply_logged(update, context, _tg_grp_hh_result.response)
         set_ignore_user(chat_key, user_key)
+        log(f"🚨 Telegram group hostility [{_tg_grp_hh_result.level.value}] from {telegram_display_name(user)}")
         return
 
     # Public link gate
@@ -4770,6 +4852,57 @@ async def telegram_start_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE)
             telegram_ui_ref.append_log(f"❌ Telegram /start handler error: {e}")
         else:
             log(f"❌ Telegram /start handler error: {e}")
+
+async def telegram_unblock_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Owner-only: /unblock <user_key_or_id>"""
+    try:
+        if not update.message:
+            return
+        user = update.effective_user
+        # Allow only the owner Telegram ID stored in config (fall back to env)
+        owner_tg_id = os.getenv("TELEGRAM_OWNER_ID", "")
+        if owner_tg_id and str(getattr(user, "id", "")) != owner_tg_id:
+            await update.message.reply_text("🚫 Not authorised.")
+            return
+        args = getattr(context, "args", []) or []
+        if not args:
+            await update.message.reply_text("Usage: /unblock <user_key_or_id>")
+            return
+        uid = args[0].strip()
+        if uid.isdigit():
+            uid = f"telegram:{uid}"
+        removed = hostility_handler.unblock_user(uid, db_path=DB_PATH)
+        if removed:
+            await update.message.reply_text(f"✅ Unblocked: {uid}")
+        else:
+            await update.message.reply_text(f"⚠️ {uid} was not in the blocked list.")
+    except Exception as e:
+        log(f"❌ Telegram /unblock error: {e}")
+
+
+async def telegram_listblocked_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Owner-only: /listblocked"""
+    try:
+        if not update.message:
+            return
+        user = update.effective_user
+        owner_tg_id = os.getenv("TELEGRAM_OWNER_ID", "")
+        if owner_tg_id and str(getattr(user, "id", "")) != owner_tg_id:
+            await update.message.reply_text("🚫 Not authorised.")
+            return
+        rows = hostility_handler.list_blocked(db_path=DB_PATH)
+        if not rows:
+            await update.message.reply_text("✅ No blocked users.")
+            return
+        lines = ["Blocked users:"]
+        for r in rows:
+            lines.append(f"- {r['user_key']} ({r['username']}) | {r['reason']} @ {r['blocked_at'][:19]}")
+        text = "\n".join(lines)
+        if len(text) > 4000:
+            text = text[:4000] + "\n...(truncated)"
+        await update.message.reply_text(text)
+    except Exception as e:
+        log(f"❌ Telegram /listblocked error: {e}")
 
 async def telegram_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -5629,6 +5762,8 @@ class QuietReachUI:
                     telegram_app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
                     telegram_app.add_handler(CommandHandler("start", telegram_start_cmd))
+                    telegram_app.add_handler(CommandHandler("unblock", telegram_unblock_cmd))
+                    telegram_app.add_handler(CommandHandler("listblocked", telegram_listblocked_cmd))
                     telegram_app.add_handler(
                         MessageHandler(filters.TEXT & ~filters.COMMAND, telegram_text_handler)
                     )
