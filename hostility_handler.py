@@ -28,6 +28,12 @@ from typing import Optional
 
 import requests
 
+try:
+    from insult_detector import detect as _insult_detect, reset_user_score as _reset_score
+    _INSULT_DETECTOR_AVAILABLE = True
+except ImportError:
+    _INSULT_DETECTOR_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # Configuration (inherit from environment or use the same defaults as the bot)
 # ---------------------------------------------------------------------------
@@ -186,18 +192,26 @@ def setup_hostility_db(db_path: str = DB_PATH) -> None:
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS hostile_incidents (
-                id           INTEGER PRIMARY KEY AUTOINCREMENT,
-                ts_utc       TEXT NOT NULL,
-                platform     TEXT NOT NULL,
-                user_key     TEXT NOT NULL,
-                username     TEXT NOT NULL,
-                message      TEXT NOT NULL,
-                level        TEXT NOT NULL,
-                via_ollama   INTEGER NOT NULL DEFAULT 0,
-                response_sent TEXT NOT NULL DEFAULT ''
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts_utc        TEXT NOT NULL,
+                platform      TEXT NOT NULL,
+                user_key      TEXT NOT NULL,
+                username      TEXT NOT NULL,
+                message       TEXT NOT NULL,
+                level         TEXT NOT NULL,
+                via_ollama    INTEGER NOT NULL DEFAULT 0,
+                response_sent TEXT NOT NULL DEFAULT '',
+                hostility_score INTEGER NOT NULL DEFAULT 0
             )
             """
         )
+        # Add hostility_score column to existing tables that were created without it
+        try:
+            conn.execute(
+                "ALTER TABLE hostile_incidents ADD COLUMN hostility_score INTEGER NOT NULL DEFAULT 0"
+            )
+        except sqlite3.OperationalError:
+            pass  # Column already exists
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS blocked_users (
@@ -219,6 +233,7 @@ def log_incident(
     message: str,
     result: HostilityResult,
     db_path: str = DB_PATH,
+    hostility_score: int = 0,
 ) -> None:
     """Append one hostile incident to SQLite."""
     try:
@@ -226,8 +241,8 @@ def log_incident(
         with sqlite3.connect(db_path, timeout=30) as conn:
             conn.execute(
                 "INSERT INTO hostile_incidents "
-                "(ts_utc, platform, user_key, username, message, level, via_ollama, response_sent) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "(ts_utc, platform, user_key, username, message, level, via_ollama, response_sent, hostility_score) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     ts,
                     platform,
@@ -237,6 +252,7 @@ def log_incident(
                     result.level.value,
                     int(result.via_ollama),
                     result.response[:2000],
+                    hostility_score,
                 ),
             )
             conn.commit()
@@ -443,17 +459,45 @@ def handle_message(
 ) -> HostilityResult:
     """
     Full pipeline:
-      1. Classify the message.
-      2. Log to DB if hostile.
-      3. Block the user on severe/threat.
-      4. Return the result (caller sends result.response if non-empty).
+      1. Run insult detector (fast, pattern-based) — block immediately if threshold reached.
+      2. Classify the message via Ollama / keyword fallback.
+      3. Log to DB if hostile.
+      4. Block the user on severe/threat.
+      5. Return the result (caller sends result.response if non-empty).
     """
+    hostility_score = 0
+
+    # --- Step 1: insult detector (runs before Ollama) -----------------------
+    if _INSULT_DETECTOR_AVAILABLE and user_key:
+        insult_result = _insult_detect(text, user_key=user_key)
+        hostility_score = insult_result.cumulative_score
+
+        if insult_result.should_block:
+            # Severe threshold reached — block immediately without calling Ollama
+            result = HostilityResult(
+                level=HostilityLevel.SEVERE,
+                confidence=1.0,
+                matched_pattern=insult_result.matched_phrase,
+                via_ollama=False,
+                response=random.choice(SEVERE_RESPONSES),
+            )
+            log_incident(platform, user_key, username, text, result,
+                         db_path=db_path, hostility_score=hostility_score)
+            block_user(user_key, username, platform,
+                       reason="insult score threshold exceeded", db_path=db_path)
+            _reset_score(user_key)
+            return result
+
+    # --- Step 2: standard Ollama / keyword classification -------------------
     result = analyze(text)
 
     if result.level != HostilityLevel.NONE:
-        log_incident(platform, user_key, username, text, result, db_path=db_path)
+        log_incident(platform, user_key, username, text, result,
+                     db_path=db_path, hostility_score=hostility_score)
 
     if result.level in (HostilityLevel.SEVERE, HostilityLevel.THREAT):
         block_user(user_key, username, platform, reason=result.level.value, db_path=db_path)
+        if _INSULT_DETECTOR_AVAILABLE and user_key:
+            _reset_score(user_key)
 
     return result
