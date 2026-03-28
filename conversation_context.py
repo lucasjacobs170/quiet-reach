@@ -51,12 +51,20 @@ class ConversationState:
         Number of consecutive requests that did not receive a substantive reply.
     escalation_flagged : bool
         Set to True once the social-engineering detector flags this user.
+    current_topic : str
+        The most recent conversation topic (e.g. ``"links"``, ``"lore"``,
+        ``"lucas_info"``, ``"general"``).
+    exchange_count : int
+        Total number of completed request/response pairs in this session.
+        Used by the personality system to gauge engagement level.
     """
     history: list[RequestRecord] = field(default_factory=list)
     link_request_count: int = 0
     link_last_sent: Optional[float] = None
     unanswered_requests: int = 0
     escalation_flagged: bool = False
+    current_topic: str = "general"
+    exchange_count: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -108,11 +116,27 @@ class ConversationContextManager:
         intent: str,
         message: str,
         response: str,
+        topic: str = "",
     ) -> None:
         """
         Append a completed request/response pair to the user's history.
 
         Also updates convenience counters on :class:`ConversationState`.
+
+        Parameters
+        ----------
+        user_key : str
+            Opaque per-user identifier.
+        intent : str
+            Extended intent label from the router.
+        message : str
+            Raw user message.
+        response : str
+            Bot response that was sent.
+        topic : str
+            Optional conversation topic to record (e.g. ``"links"``,
+            ``"lore"``, ``"lucas_info"``).  When non-empty, updates
+            :attr:`ConversationState.current_topic`.
         """
         state = self.get_or_create(user_key)
         rec = RequestRecord(
@@ -132,8 +156,13 @@ class ConversationContextManager:
         # an empty response (bot stayed silent) increments it.
         if response:
             state.unanswered_requests = 0
+            state.exchange_count += 1
         else:
             state.unanswered_requests += 1
+
+        # Update topic when explicitly provided
+        if topic:
+            state.current_topic = topic
 
     # ------------------------------------------------------------------
     # Convenience queries
@@ -174,6 +203,18 @@ class ConversationContextManager:
     def is_escalation_flagged(self, user_key: str) -> bool:
         """Return True if this user has been flagged for escalating behaviour."""
         return self.get_or_create(user_key).escalation_flagged
+
+    def set_topic(self, user_key: str, topic: str) -> None:
+        """Update the current conversation topic for *user_key*."""
+        self.get_or_create(user_key).current_topic = topic
+
+    def get_topic(self, user_key: str) -> str:
+        """Return the current conversation topic for *user_key*."""
+        return self.get_or_create(user_key).current_topic
+
+    def get_exchange_count(self, user_key: str) -> int:
+        """Return the total number of completed exchanges for *user_key*."""
+        return self.get_or_create(user_key).exchange_count
 
 
 # ---------------------------------------------------------------------------
