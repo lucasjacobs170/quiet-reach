@@ -1,0 +1,4 @@
+.env
+quiet_reach.db
+__pycache__/
+*.pyc
