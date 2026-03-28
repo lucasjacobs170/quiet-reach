@@ -39,5 +39,17 @@
     "That's not something I'm willing to engage with. I'm stepping back.",
     "That kind of language isn't something I'll respond to. Feel free to reach out when you're ready for a fresh start.",
     "Not going there. Come back when you want to have a real conversation."
+  ],
+
+  "acknowledge_frustration": [
+    "I hear you. Let me help clarify.",
+    "Fair point. Let me explain better.",
+    "You're right to be confused. Let me clear that up."
+  ],
+
+  "offer_help": [
+    "What can I help you with?",
+    "Happy to help! What do you need?",
+    "Let me know what you need and I'll help"
   ]
 }
