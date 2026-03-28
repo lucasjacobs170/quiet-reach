@@ -1,5 +1,5 @@
 # 🤫 QUIET REACH v1.2
-import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, re, json
+import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, re, json, signal, sys
 from tkinter import ttk, scrolledtext, messagebox
 import tkinter.font as tkfont
 from datetime import datetime, date, timedelta
@@ -5092,6 +5092,23 @@ class QuietReachUI:
         global ui_log
         ui_log = self.append_log
 
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def on_closing(self):
+        """
+        Handle clean shutdown when the window is closed or a termination signal is received.
+        Stops any running bots before destroying the window.
+        """
+        print("🛑 Shutting down Quiet Reach...")
+
+        if self.bot_running:
+            self.stop_bot()
+
+        if self.telegram_running:
+            self.stop_telegram_bot()
+
+        self.root.destroy()
+
     def build_ui(self):
         t = self.THEME
 
@@ -6447,4 +6464,12 @@ if __name__ == "__main__":
 
     root = tk.Tk()
     app = QuietReachUI(root)
+
+    def _signal_handler(signum, frame):
+        print(f"\n🛑 Received signal {signum}. Shutting down cleanly...")
+        app.on_closing()
+
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
+
     root.mainloop()
