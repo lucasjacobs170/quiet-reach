@@ -124,6 +124,19 @@ GENTLE_BOUNDARY_RESPONSES: list[str] = [
     "I get the eye roll, but I really am trying to help here.",
 ]
 
+# Soft first-warning responses issued before a hard boundary.
+# Used when a mildly repetitive or escalating pattern is detected but the
+# hostility score has not yet crossed the block threshold.
+FIRST_BOUNDARY_RESPONSES: list[str] = [
+    "Hey, I'm picking up that you might be frustrated — let me know what you "
+    "actually need and I'll do my best to help. 😊",
+    "I notice we've been going around in circles. Tell me what would actually "
+    "be useful and I'll get right to it.",
+    "Seems like something isn't landing for you — let me try a different approach. "
+    "What's the most important thing you need?",
+    "I want to help, genuinely. What's the one thing I can do for you right now?",
+]
+
 _KEYWORD_LIBRARY: dict[HostilityLevel, list[str]] = {
     HostilityLevel.MILD: [
         "stop spamming",
@@ -524,14 +537,23 @@ def handle_message(
     username: str,
     platform: str,
     db_path: str = DB_PATH,
+    context_manager=None,
 ) -> HostilityResult:
     """
     Full pipeline:
       1. Run insult detector (fast, pattern-based) — block immediately if threshold reached.
-      2. Classify the message via Ollama / keyword fallback.
-      3. Log to DB if hostile.
-      4. Block the user on severe/threat.
-      5. Return the result (caller sends result.response if non-empty).
+      2. Check social-engineering / escalation patterns (graduated first warning).
+      3. Classify the message via Ollama / keyword fallback.
+      4. Log to DB if hostile.
+      5. Block the user on severe/threat.
+      6. Return the result (caller sends result.response if non-empty).
+
+    Parameters
+    ----------
+    context_manager : ConversationContextManager | None
+        Optional conversation-context manager.  When provided, escalation
+        patterns are checked and a :data:`FIRST_BOUNDARY_RESPONSES` message
+        is issued before a hard block.
     """
     import time as _time
     _msg_start = _time.monotonic()
@@ -623,6 +645,37 @@ def handle_message(
                 recommended_response=_recommended_response_type,
             )
             return result
+
+    # --- Step 1b: social-engineering / escalation check ---------------------
+    # Issued before the keyword classifier so that the graduated first warning
+    # fires early, giving the user a chance to course-correct.
+    if context_manager is not None and user_key:
+        try:
+            from social_engineering_detector import SocialEngineeringDetector as _SEDetector
+            _se = _SEDetector()
+            # Capture the flag state BEFORE running the detector, because the
+            # detector calls flag_escalation() internally.  The warning should
+            # fire once — the first time the pattern is found.
+            _already_flagged = context_manager.is_escalation_flagged(user_key)
+            # Determine the current intent for the SE detector
+            _current_intent = _intent_category if _INTENT_CLASSIFIER_AVAILABLE else "neutral"
+            _se_result = _se.analyze(
+                user_key=user_key,
+                current_intent=_current_intent,
+                ctx_mgr=context_manager,
+            )
+            if _se_result.is_suspicious and not _already_flagged:
+                # Issue a soft first-boundary warning (not a block)
+                _first_warning = HostilityResult(
+                    level=HostilityLevel.MILD,
+                    confidence=0.8,
+                    matched_pattern="social_engineering",
+                    via_ollama=False,
+                    response=random.choice(FIRST_BOUNDARY_RESPONSES),
+                )
+                return _first_warning
+        except Exception:
+            pass
 
     # --- Step 2: keyword / pattern classification ----------------------------
     # If the insult detector ran and found NO patterns, default to NONE without

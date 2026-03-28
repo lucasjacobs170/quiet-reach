@@ -1,0 +1,23 @@
+{
+  "startup_messages": [
+    "🌲 Quiet Reach is live — let's get wild!",
+    "🏕️ Setting up camp — ready to share the vibes",
+    "⛰️ I'm awake and ready to help you find Lucas",
+    "🔥 System online — let's go",
+    "🎪 Showtime! I'm here to help",
+    "🌊 Catching a wave — bot is live and ready",
+    "✨ Quiet Reach online — ask me anything",
+    "⚡ Ready to roll — what do you need?"
+  ],
+  "mood_indicators": {
+    "upbeat": "🔥 Feeling energized",
+    "chill": "🌿 In a groove",
+    "mysterious": "✨ The vibes are right",
+    "playful": "🎪 Ready for fun"
+  },
+  "shutdown_messages": [
+    "🌲 Quiet Reach signing off — catch you on the flip side",
+    "⛰️ Going offline — see you next time",
+    "🌊 Logging out — stay wild"
+  ]
+}

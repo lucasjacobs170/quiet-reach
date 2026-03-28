@@ -2,19 +2,25 @@
   "greetings": [
     "Hey! I'm here to help you learn about Lucas 🙌",
     "What's up! Want to know about Lucas?",
-    "Hey there! I can tell you all about Lucas and where to find him"
+    "Hey there! I can tell you all about Lucas and where to find him",
+    "Yo! What can I do for you? 🌲",
+    "Hey — glad you're here! Ask me anything about Lucas"
   ],
 
   "thank_you": [
     "No problem!",
     "Happy to help!",
-    "Anytime! Feel free to ask anything else"
+    "Anytime! Feel free to ask anything else",
+    "Of course! That's what I'm here for 🙌",
+    "You got it!"
   ],
 
   "goodbyes": [
     "See you later! Feel free to reach out anytime",
     "Take care! Come back if you have more questions",
-    "Catch you later!"
+    "Catch you later!",
+    "Later! 🌲 Hope to hear from you again",
+    "Take it easy — come back anytime!"
   ],
 
   "i_dont_know": [
@@ -51,5 +57,22 @@
     "What can I help you with?",
     "Happy to help! What do you need?",
     "Let me know what you need and I'll help"
+  ],
+
+  "link_repeat_acknowledgment": [
+    "I already shared those earlier — here they are again:",
+    "Happy to share again! Here are Lucas's links:",
+    "Sure thing! Here they are once more:",
+    "Already sent these, but no worries — here you go:",
+    "Here are those links again:"
+  ],
+
+  "proactive_offer": [
+    "Hey, I notice you've been looking for something — can I help? 😊",
+    "It looks like you might need something — what can I do for you?",
+    "I'm here! Ask me anything about Lucas or his links.",
+    "Want me to share Lucas's links or tell you more about him? Just say the word!",
+    "Looks like you're curious about something — I'm all ears 🌲"
   ]
 }
+

@@ -22,6 +22,18 @@ from typing import Optional
 
 from intent_classifier import IntentClassifier
 
+try:
+    from conversation_context import ConversationContextManager
+    _CONTEXT_AVAILABLE = True
+except ImportError:
+    _CONTEXT_AVAILABLE = False
+
+try:
+    from social_engineering_detector import SocialEngineeringDetector
+    _SE_DETECTOR_AVAILABLE = True
+except ImportError:
+    _SE_DETECTOR_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # Routing type constants
 # ---------------------------------------------------------------------------
@@ -32,6 +44,16 @@ ROUTE_CREATIVE       = "creative"
 ROUTE_HOSTILE_BLOCK  = "hostile_block"
 ROUTE_BOUNDARY       = "boundary"
 ROUTE_DEFAULT        = "default"
+
+# ---------------------------------------------------------------------------
+# Proactive-engagement thresholds
+# ---------------------------------------------------------------------------
+
+# How many unanswered requests must accumulate before a proactive offer fires
+PROACTIVE_UNANSWERED_THRESHOLD: int = 2
+
+# How many link requests must be seen before a proactive offer fires
+PROACTIVE_LINK_COUNT_THRESHOLD: int = 2
 
 # ---------------------------------------------------------------------------
 # Extended intent categories used by the router
@@ -90,6 +112,7 @@ class IntentRouter:
         knowledge_base_path: str = "",
         safe_responses_path: str = "",
         creative_mode_path: str = "",
+        context_manager: Optional["ConversationContextManager"] = None,
     ) -> None:
         self.classifier = IntentClassifier()
 
@@ -103,13 +126,33 @@ class IntentRouter:
         self.safe_responses: dict = _load_json(sr_path, "safe_responses.json")
         self.creative_mode: dict = _load_json(cm_path, "creative_mode.json")
 
+        # Optional conversation-context manager (injected or sourced from module singleton)
+        if context_manager is not None:
+            self._ctx = context_manager
+        elif _CONTEXT_AVAILABLE:
+            from conversation_context import get_context_manager
+            self._ctx = get_context_manager()
+        else:
+            self._ctx = None
+
+        # Social-engineering detector (stateless helper)
+        self._se_detector = SocialEngineeringDetector() if _SE_DETECTOR_AVAILABLE else None
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
 
-    def route_message(self, user_message: str) -> tuple[str, str]:
+    def route_message(self, user_message: str, user_key: str = "") -> tuple[str, str]:
         """
         Route *user_message* to the appropriate response.
+
+        Parameters
+        ----------
+        user_message : str
+            Raw message from the user.
+        user_key : str
+            Opaque per-user identifier used for conversation-context tracking.
+            Pass an empty string to skip context tracking.
 
         Returns:
             (response_text, routing_type)
@@ -121,42 +164,72 @@ class IntentRouter:
         base_intent, _confidence, _explanation = self.classifier.classify_message(user_message)
         extended_intent = self._extend_intent(user_message, base_intent)
 
+        # Run social-engineering check before routing (does not change intent)
+        if user_key and self._se_detector and self._ctx:
+            self._se_detector.analyze(
+                user_key=user_key,
+                current_intent=extended_intent,
+                ctx_mgr=self._ctx,
+            )
+
         # 1. Hostility routing
         if extended_intent == "clearly_hostile":
-            return self._get_response("firm_boundary"), ROUTE_HOSTILE_BLOCK
+            response = self._get_response("firm_boundary")
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_HOSTILE_BLOCK
 
         if extended_intent in ("mildly_frustrated", "sarcastic_cutting"):
-            return self._get_response("boundary_responses"), ROUTE_BOUNDARY
+            response = self._get_response("boundary_responses")
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_BOUNDARY
 
         # 2. Information routing (verified facts only)
         if extended_intent == "asks_about_lucas":
-            return self._answer_about_lucas(user_message), ROUTE_KNOWLEDGE_BASE
+            response = self._answer_about_lucas(user_message)
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_KNOWLEDGE_BASE
 
         if extended_intent == "asks_for_links":
-            return self._get_links(), ROUTE_KNOWLEDGE_BASE
+            response = self._handle_links_request(user_key)
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_KNOWLEDGE_BASE
 
         if extended_intent == "asks_for_help":
-            return self._get_response("greetings"), ROUTE_SAFE_RESPONSE
+            response = self._get_response("greetings")
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_SAFE_RESPONSE
 
         # 3. Casual routing (safe responses / light creativity)
         if extended_intent == "casual_greeting":
-            return self._get_response("greetings"), ROUTE_SAFE_RESPONSE
+            response = self._get_response("greetings")
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_SAFE_RESPONSE
 
         if extended_intent == "casual_gratitude":
-            return self._get_response("thank_you"), ROUTE_SAFE_RESPONSE
+            response = self._get_response("thank_you")
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_SAFE_RESPONSE
 
         if extended_intent == "casual_goodbye":
-            return self._get_response("goodbyes"), ROUTE_SAFE_RESPONSE
+            response = self._get_response("goodbyes")
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_SAFE_RESPONSE
 
         if extended_intent == "small_talk":
-            return self._handle_small_talk(user_message), ROUTE_CREATIVE
+            response = self._handle_small_talk(user_message, user_key)
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_CREATIVE
 
         # Unknown question (has "?" but no matching topic) → i_dont_know
         if extended_intent == "unknown_question":
-            return self._get_response("i_dont_know"), ROUTE_SAFE_RESPONSE
+            response = self._get_response("i_dont_know")
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_SAFE_RESPONSE
 
         # 4. Default fallback
-        return self._get_response("unclear_question"), ROUTE_DEFAULT
+        response = self._get_response("unclear_question")
+        self._record(user_key, extended_intent, user_message, response)
+        return response, ROUTE_DEFAULT
 
     def get_conversation_log(self, response_text: str, routing_type: str) -> dict:
         """
@@ -272,8 +345,47 @@ class IntentRouter:
 
         return "\n".join(lines)
 
-    def _handle_small_talk(self, user_message: str) -> str:
-        """Handle small talk with light, grounded creativity."""
+    def _handle_links_request(self, user_key: str = "") -> str:
+        """
+        Return platform links, with context-aware messaging on repeated requests.
+
+        On the first request, returns the full link list.
+        On subsequent requests, adds a friendly acknowledgment that links were
+        already shared.
+        """
+        link_count = 0
+        if user_key and self._ctx:
+            link_count = self._ctx.link_request_count(user_key)
+
+        links = self._get_links()
+
+        if link_count >= 1:
+            # Repeat request — acknowledge it warmly before the links
+            repeats = self.safe_responses.get("link_repeat_acknowledgment", [
+                "I already shared those earlier — here they are again:",
+                "Happy to share again! Here are Lucas's links:",
+                "Sure thing! Here they are once more:",
+            ])
+            return random.choice(repeats) + "\n\n" + links
+
+        return links
+
+    def _handle_small_talk(self, user_message: str, user_key: str = "") -> str:
+        """Handle small talk with light, grounded creativity.
+
+        If the user has sent several unanswered requests, proactively offer help
+        instead of a generic small-talk reply.
+        """
+        if user_key and self._ctx:
+            unanswered = self._ctx.unanswered_count(user_key)
+            link_count = self._ctx.link_request_count(user_key)
+            if unanswered >= PROACTIVE_UNANSWERED_THRESHOLD or link_count >= PROACTIVE_LINK_COUNT_THRESHOLD:
+                proactive = self.safe_responses.get("proactive_offer", [
+                    "Hey, I notice you've been looking for something — can I help?",
+                    "It looks like you might need something — what can I do for you?",
+                    "I'm here! Ask me anything about Lucas or his links.",
+                ])
+                return random.choice(proactive)
         responses = [
             "That sounds cool!",
             "I like where your head's at",
@@ -282,6 +394,11 @@ class IntentRouter:
             "Nice one!",
         ]
         return random.choice(responses)
+
+    def _record(self, user_key: str, intent: str, message: str, response: str) -> None:
+        """Record a completed request/response pair in the conversation context."""
+        if user_key and self._ctx:
+            self._ctx.record(user_key=user_key, intent=intent, message=message, response=response)
 
     def _get_response(self, category: str) -> str:
         """Return a random response from the given safe_responses category."""
