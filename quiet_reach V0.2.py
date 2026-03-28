@@ -12,6 +12,7 @@ import hostility_handler
 from hostility_handler import HostilityLevel, handle_message as hh_handle_message
 from intent_router import IntentRouter as _IntentRouter
 from personality_manager import get_personality_manager as _get_pm
+from response_variation_engine import get_variation_engine as _get_rve
 
 _intent_router = _IntentRouter()
 
@@ -3024,7 +3025,7 @@ def is_greeting(text: str) -> bool:
     if not t:
         return False
 
-    if len(raw) > 40:
+    if len(raw) > 60:
         return False
 
     if any(w in raw for w in ["link", "links", "discord", "onlyfans", "chaturbate", "instagram", "x.com", "twitter"]):
@@ -3033,16 +3034,40 @@ def is_greeting(text: str) -> bool:
     greetings = {
         "hi", "hey", "hello", "yo", "sup", "hiya",
         "hey there", "hi there", "hello there",
-        "hii", "heyy", "heyya", "hia"
+        "hii", "heyy", "heyya", "hia",
+        "wassup", "wazzup", "howdy",
+        "what's up", "whats up", "what up", "what s up",
+        "yo yo", "heya", "heylo",
     }
 
     if t in greetings:
         return True
 
-    if t.startswith(("hi ", "hey ", "hello ", "hiya ")):
+    if t.startswith(("hi ", "hey ", "hello ", "hiya ", "howdy ", "yo ")):
         return True
 
     return False
+
+
+def _is_how_are_you_check(text: str) -> bool:
+    """Detect casual welfare-check greetings like 'how are you?' or 'how are you doing?'."""
+    t = normalize_loose_text(text)
+    if not t or len(t) > 60:
+        return False
+    patterns = [
+        "how are you",
+        "how are u",
+        "how you doing",
+        "how you doin",
+        "how have you been",
+        "how r you",
+        "hows it going",
+        "how is it going",
+        "how goes it",
+        "you doing ok",
+        "you doing alright",
+    ]
+    return any(p in t for p in patterns)
 
 
 def is_purpose_question(text: str) -> bool:
@@ -4316,14 +4341,26 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         return
 
     # ------------------------------------------------------------
+    # "How are you" welfare-check greetings
+    # ------------------------------------------------------------
+    if _is_how_are_you_check(content_lower):
+        _how_are_you_replies = [
+            "Doing great, thanks for asking! 🌲 What can I help you with?",
+            "Pretty good — ready to help with anything Lucas-related. What’s on your mind?",
+            "All good over here! What brings you by today?",
+            "Good, thanks! What can I do for you? ⚡",
+            "Solid! Always here and ready. What are you looking for?",
+        ]
+        log(f"🎯 Telegram routing: how_are_you → varied response")
+        await telegram_reply_logged(update, context, random.choice(_how_are_you_replies))
+        return
+
+    # ------------------------------------------------------------
     # Greetings
     # ------------------------------------------------------------
     if is_greeting(content_lower):
-        await telegram_reply_logged(
-            update,
-            context,
-            "Hey — I’m Quiet Reach, Lucas’s assistant. I can answer questions or send one specific link if you want."
-        )
+        log(f"🎯 Telegram routing: greeting → personality manager")
+        await telegram_reply_logged(update, context, _get_pm().get_initial_dm_greeting())
         return
 
     # ------------------------------------------------------------
@@ -4753,6 +4790,13 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
 
     if not reply or len(reply.strip()) < 8:
         reply, _rt = _intent_router.route_message(content)
+        log(f"🎯 Telegram routing: intent_router ({_rt})")
+    else:
+        log(f"🎯 Telegram routing: ai_fallback")
+
+    # Apply personality overlay to keep responses energetic and varied
+    topic = get_dm_topic(user_key) or "general"
+    reply = _get_pm().overlay_personality(reply, topic=topic)
 
     await telegram_reply_logged(update, context, reply)
 
