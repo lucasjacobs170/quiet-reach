@@ -103,6 +103,11 @@ class TranscriptLogger:
         username: str = "",
         score_delta: int = 0,
         incident_count: int = 0,
+        intent_category: str = "neutral",
+        intent_confidence: float = 0.0,
+        intent_explanation: str = "",
+        intent_tone_markers: Optional[list] = None,
+        recommended_response: str = "no_response",
     ) -> None:
         """Build and persist a single transcript entry."""
         try:
@@ -177,6 +182,13 @@ class TranscriptLogger:
                 },
                 "action_taken": action_taken,
                 "db_incident_id": db_incident_id,
+                "intent_classification": {
+                    "category": intent_category,
+                    "confidence": round(intent_confidence, 2),
+                    "explanation": intent_explanation,
+                    "tone_markers": intent_tone_markers or [],
+                    "recommended_response": recommended_response,
+                },
                 "status": "success",
             }
 
