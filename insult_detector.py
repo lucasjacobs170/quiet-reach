@@ -42,6 +42,21 @@ FUZZY_THRESHOLD: float = 0.80
 # Minimum confidence for a match to be reported (below this the match is ignored)
 MIN_CONFIDENCE: float = 0.7
 
+# Words that are commonly misidentified as insults through fuzzy matching.
+# Any word appearing in this set is excluded from the fuzzy-matching fallback
+# so that innocent messages like "hello" cannot match against "hell".
+_FUZZY_WHITELIST: frozenset[str] = frozenset({
+    # "hell" false positives
+    "hello", "shell", "shells", "shellfish", "well", "yell", "bell",
+    "bells", "sell", "fell", "tell", "tells", "cell", "cells",
+    # "damn" false positives
+    "damp", "dame", "name",
+    # "shit" false positives
+    "shift", "shirt",
+    # other common benign words
+    "assassin", "classic", "assessment",
+})
+
 # Question words whose presence before a matched term signals a non-hostile context
 _QUESTION_WORDS: frozenset = frozenset({
     "what", "how", "why", "when", "where", "who", "which", "whose", "whom"
@@ -203,6 +218,11 @@ def _token_matches(input_text: str, pattern_token: str) -> bool:
     Fuzzy matching is kept as a fallback but is restricted to patterns of
     4+ characters to prevent short abbreviations from generating false
     positives on dissimilar words.
+
+    For single-word patterns the fuzzy comparison is done word-by-word against
+    the tokens of *input_text* rather than against the full string.  This
+    prevents "hello" from fuzzy-matching "hell" (the words are compared
+    individually and "hello" appears in the ``_FUZZY_WHITELIST``).
     """
     # Whole-word exact match via word boundaries (uses cache)
     if _wb_pattern(pattern_token).search(input_text):
@@ -210,6 +230,25 @@ def _token_matches(input_text: str, pattern_token: str) -> bool:
     # Fuzzy fallback: only for patterns long enough to be meaningful
     if len(pattern_token) < 4:
         return False
+
+    if " " not in pattern_token:
+        # Single-word pattern: compare each word in the text individually.
+        # This prevents short benign words from matching offensive short
+        # tokens just because their lengths are similar.
+        for word in input_text.split():
+            if word in _FUZZY_WHITELIST:
+                continue
+            max_len = max(len(word), len(pattern_token))
+            if max_len == 0:
+                continue
+            len_ratio = min(len(word), len(pattern_token)) / max_len
+            if len_ratio < 0.5:
+                continue
+            if _similarity(word, pattern_token) >= FUZZY_THRESHOLD:
+                return True
+        return False
+
+    # Multi-word pattern: compare against the full normalised text
     max_len = max(len(input_text), len(pattern_token))
     if max_len == 0:
         return False
