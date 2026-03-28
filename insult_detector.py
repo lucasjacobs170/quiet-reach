@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from typing import Optional
@@ -47,17 +48,19 @@ FUZZY_THRESHOLD: float = 0.80
 class _PatternEntry:
     phrase: str
     severity: str
+    category: str       # category label from the library
     tokens: list[str]   # phrase + all variations (already lowercased)
 
 
 _PATTERNS: list[_PatternEntry] = []
 
-for _cat_data in _LIBRARY["categories"].values():
+for _cat_key, _cat_data in _LIBRARY["categories"].items():
+    _cat_label = _cat_data.get("label", _cat_key)
     for _entry in _cat_data["entries"]:
         _phrase = _entry["phrase"].lower().strip()
         _variations = [v.lower().strip() for v in _entry.get("variations", [])]
         _tokens = list(dict.fromkeys([_phrase] + _variations))  # deduplicate, preserve order
-        _PATTERNS.append(_PatternEntry(phrase=_phrase, severity=_entry["severity"], tokens=_tokens))
+        _PATTERNS.append(_PatternEntry(phrase=_phrase, severity=_entry["severity"], category=_cat_label, tokens=_tokens))
 
 # ---------------------------------------------------------------------------
 # Per-user hostility score store (in-memory; intentionally lightweight)
@@ -71,14 +74,32 @@ _user_scores: dict[str, int] = {}
 # ---------------------------------------------------------------------------
 
 @dataclass
+class MatchDetail:
+    """Details of a single pattern match."""
+    pattern: str
+    category: str
+    severity: str
+    confidence: float
+    position_in_text: int   # character offset of the matched token in normalized text
+    matched_token: str      # the specific token/variation that matched
+
+
+@dataclass
 class InsultDetectionResult:
     detected: bool = False
     severity: str = "none"          # none | mild | moderate | severe
     score_delta: int = 0            # points added for this message
-    matched_phrase: str = ""        # canonical phrase that triggered detection
-    matched_token: str = ""         # specific token / variation that matched
+    matched_phrase: str = ""        # canonical phrase that triggered detection (best match)
+    matched_token: str = ""         # specific token / variation that matched (best match)
     should_block: bool = False      # True if cumulative score >= threshold
     cumulative_score: int = 0       # running total for this user after this message
+    # Rich fields for transcript logging
+    all_matches: list[MatchDetail] = field(default_factory=list)
+    leet_speak_conversions: list[str] = field(default_factory=list)
+    all_caps: bool = False
+    all_caps_ratio: float = 0.0
+    normalized_text: str = ""
+    detection_time_ms: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +146,23 @@ def _is_all_caps(text: str) -> bool:
 # Fuzzy similarity
 # ---------------------------------------------------------------------------
 
+def _caps_ratio(text: str) -> float:
+    """Return the fraction of alphabetic characters that are uppercase."""
+    letters = [c for c in text if c.isalpha()]
+    if not letters:
+        return 0.0
+    return sum(1 for c in letters if c.isupper()) / len(letters)
+
+
+def _find_leet_conversions(original: str) -> list[str]:
+    """Return a list of human-readable notes for leet-speak substitutions found."""
+    conversions: list[str] = []
+    for ch, replacement in _LEET_MAP.items():
+        if ch in original.lower():
+            conversions.append(f"'{ch}' → '{replacement}'")
+    return conversions
+
+
 def _similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, a, b).ratio()
 
@@ -167,29 +205,61 @@ def detect(text: str, user_key: str = "") -> InsultDetectionResult:
     -------
     InsultDetectionResult
     """
+    _start = time.monotonic()
+
     if not text or not text.strip():
         return InsultDetectionResult()
 
     all_caps = _is_all_caps(text.strip())
+    caps_ratio = _caps_ratio(text.strip())
     normalized = normalize_text(text)
+    leet_conversions = _find_leet_conversions(text)
 
     best_severity = "none"
     best_phrase = ""
     best_token = ""
+    all_matches: list[MatchDetail] = []
 
     for entry in _PATTERNS:
         for token in entry.tokens:
             norm_token = normalize_text(token)
             if _token_matches(normalized, norm_token):
-                # Keep the highest-severity match
+                # Compute confidence: exact substring = 1.0, fuzzy = similarity ratio
+                if norm_token in normalized:
+                    confidence = 1.0
+                else:
+                    confidence = _similarity(normalized, norm_token)
+                # Find position of matched token in normalized text (best effort)
+                pos = normalized.find(norm_token)
+                if pos == -1:
+                    pos = 0
+
+                all_matches.append(MatchDetail(
+                    pattern=entry.phrase,
+                    category=entry.category,
+                    severity=entry.severity,
+                    confidence=round(confidence, 4),
+                    position_in_text=pos,
+                    matched_token=token,
+                ))
+
+                # Keep the highest-severity match as the primary result
                 if _severity_rank(entry.severity) > _severity_rank(best_severity):
                     best_severity = entry.severity
                     best_phrase = entry.phrase
                     best_token = token
                 break  # found a match for this entry; no need to check more tokens
 
+    detection_time_ms = (time.monotonic() - _start) * 1000
+
     if best_severity == "none":
-        return InsultDetectionResult()
+        return InsultDetectionResult(
+            all_caps=all_caps,
+            all_caps_ratio=caps_ratio,
+            normalized_text=normalized,
+            leet_speak_conversions=leet_conversions,
+            detection_time_ms=round(detection_time_ms, 3),
+        )
 
     # Compute base score delta
     score_delta = _SEVERITY_WEIGHTS.get(best_severity, 1)
@@ -215,6 +285,12 @@ def detect(text: str, user_key: str = "") -> InsultDetectionResult:
         matched_token=best_token,
         should_block=should_block,
         cumulative_score=cumulative,
+        all_matches=all_matches,
+        leet_speak_conversions=leet_conversions,
+        all_caps=all_caps,
+        all_caps_ratio=caps_ratio,
+        normalized_text=normalized,
+        detection_time_ms=round(detection_time_ms, 3),
     )
 
 
