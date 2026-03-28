@@ -896,6 +896,32 @@ Write the best possible reply now (friendly, concise).
     except Exception as e:
         log(f"❌ Local model reply error: {e}")
         return ""
+
+async def _warmup_ollama():
+    """Background task to pre-warm the Ollama model with a test call."""
+    try:
+        log("🔥 Pre-warming Ollama model...")
+        await generate_ai_reply("Hello, testing Ollama initialization.")
+        log("✅ Ollama ready for production requests")
+    except Exception as e:
+        log(f"⚠️ Ollama warmup warning (bot will still work): {e}")
+
+async def initialize_ollama_and_startup():
+    """
+    Unified initialization: display startup message and pre-warm Ollama model.
+
+    Runs when the bot starts so that:
+    1. A startup confirmation is logged immediately.
+    2. Ollama is pre-warmed in the background before the first user message arrives,
+       eliminating the cold-start delay on first interaction.
+    """
+    try:
+        startup_msg = _get_pm().get_startup_message()
+        log(f"🤫 {startup_msg}")
+        asyncio.create_task(_warmup_ollama())
+    except Exception as e:
+        log(f"⚠️ Initialization warning: {e}")
+
 def log(m):
     print(m)
     if ui_log:ui_log(m)
@@ -1346,6 +1372,8 @@ async def dev_post_promo_now_all() -> tuple[int, int]:
 async def on_ready():
     global promo_task
     log(f"✅ Logged in as {client.user} (ID: {client.user.id})")
+
+    await initialize_ollama_and_startup()
 
     # Start promo loop once
     if promo_task is None or promo_task.done():
@@ -5874,6 +5902,8 @@ class QuietReachUI:
                     await telegram_app.initialize()
                     await telegram_app.start()
                     await telegram_app.updater.start_polling()
+
+                    await initialize_ollama_and_startup()
 
                     if telegram_ui_ref:
                         telegram_ui_ref.append_log("📱 Telegram bot connected.")
