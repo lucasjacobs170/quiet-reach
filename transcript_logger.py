@@ -54,6 +54,27 @@ class TranscriptEntry:
 
 
 # ---------------------------------------------------------------------------
+# Helpers (defined before TranscriptLogger so they are available at class init)
+# ---------------------------------------------------------------------------
+
+def _make_session_id() -> str:
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    return f"session_{ts}"
+
+
+def _routing_explanation(routing_type: str) -> str:
+    """Return a human-readable explanation for a routing_type label."""
+    return {
+        "knowledge_base":  "Response came from verified knowledge base",
+        "safe_response":   "Response came from pre-written safe responses",
+        "creative":        "Response used light creativity grounded in verified facts",
+        "hostile_block":   "Message was blocked due to clear hostility",
+        "boundary":        "Boundary response applied for mild frustration/sarcasm",
+        "default":         "Fallback unclear-question response used",
+    }.get(routing_type, "Routing type unknown")
+
+
+# ---------------------------------------------------------------------------
 # Singleton logger
 # ---------------------------------------------------------------------------
 
@@ -108,8 +129,22 @@ class TranscriptLogger:
         intent_explanation: str = "",
         intent_tone_markers: Optional[list] = None,
         recommended_response: str = "no_response",
+        routing_type: str = "",
+        routing_verified_facts: bool = False,
+        routing_safe_response: bool = False,
+        routing_creative_allowed: bool = False,
+        routing_hallucination_risk: str = "unknown",
     ) -> None:
-        """Build and persist a single transcript entry."""
+        """Build and persist a single transcript entry.
+
+        New optional parameters (guardrail system):
+            routing_type              — One of: 'knowledge_base', 'safe_response',
+                                        'creative', 'hostile_block', 'boundary', 'default'.
+            routing_verified_facts    — True when response came from knowledge_base.json.
+            routing_safe_response     — True when response came from safe_responses.json.
+            routing_creative_allowed  — True when light creativity was permitted.
+            routing_hallucination_risk — 'low' | 'none' | 'prevented' | 'unknown'.
+        """
         try:
             ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
@@ -189,6 +224,16 @@ class TranscriptLogger:
                     "tone_markers": intent_tone_markers or [],
                     "recommended_response": recommended_response,
                 },
+                "response_metadata": {
+                    "routing_type": routing_type,
+                    "source": {
+                        "verified_facts":    routing_verified_facts,
+                        "safe_response":     routing_safe_response,
+                        "creative_allowed":  routing_creative_allowed,
+                        "hallucination_risk": routing_hallucination_risk,
+                    },
+                    "explanation": _routing_explanation(routing_type),
+                },
                 "status": "success",
             }
 
@@ -239,15 +284,6 @@ class TranscriptLogger:
         self._session_id = _make_session_id()
         self._entry_count = 0
         self._init_session_file()
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _make_session_id() -> str:
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    return f"session_{ts}"
 
 
 def _load_entries(transcript_file: str = SESSION_FILE) -> list[dict]:
