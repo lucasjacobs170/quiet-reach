@@ -543,6 +543,7 @@ def handle_message(
             block_user(user_key, username, platform,
                        reason="insult score threshold exceeded", db_path=db_path)
             _reset_score(user_key)
+            _incident_count = get_incident_count(user_key, db_path=db_path)
 
             # Transcript logging
             _log_to_transcript(
@@ -558,6 +559,9 @@ def handle_message(
                 response_template="SEVERE_RESPONSES",
                 via_ollama=False,
                 msg_start=_msg_start,
+                username=username,
+                score_delta=insult_result.score_delta,
+                incident_count=_incident_count,
             )
             return result
 
@@ -611,6 +615,9 @@ def handle_message(
     else:
         _action = "none"
 
+    _score_delta = hostility_score - hostility_score_before
+    _incident_count = get_incident_count(user_key, db_path=db_path) if user_key else 0
+
     # Transcript logging for all messages (including NONE) for full coverage
     _log_to_transcript(
         text=text,
@@ -625,6 +632,9 @@ def handle_message(
         response_template=_response_template,
         via_ollama=result.via_ollama,
         msg_start=_msg_start,
+        username=username,
+        score_delta=_score_delta,
+        incident_count=_incident_count,
     )
 
     return result
@@ -643,6 +653,9 @@ def _log_to_transcript(
     response_template: str,
     via_ollama: bool,
     msg_start: float,
+    username: str = "",
+    score_delta: int = 0,
+    incident_count: int = 0,
 ) -> None:
     """Fire-and-forget call to the transcript logger (never raises)."""
     try:
@@ -661,6 +674,9 @@ def _log_to_transcript(
             response_template=response_template,
             via_ollama=via_ollama,
             total_time_ms=(_time.monotonic() - msg_start) * 1000,
+            username=username,
+            score_delta=score_delta,
+            incident_count=incident_count,
         )
     except Exception:
         pass  # Never let logging errors crash the bot

@@ -100,6 +100,9 @@ class TranscriptLogger:
         response_template: str,
         via_ollama: bool,
         total_time_ms: float,
+        username: str = "",
+        score_delta: int = 0,
+        incident_count: int = 0,
     ) -> None:
         """Build and persist a single transcript entry."""
         try:
@@ -143,6 +146,7 @@ class TranscriptLogger:
                 "timestamp": ts,
                 "session_id": self._session_id,
                 "user_id": user_key,
+                "username": username,
                 "platform": platform,
                 "message": {
                     "raw": text,
@@ -161,8 +165,10 @@ class TranscriptLogger:
                 "hostility": {
                     "score_before": hostility_score_before,
                     "score_after": hostility_score_after,
+                    "score_delta": score_delta,
                     "severity_level": severity_level,
                     "should_block": should_block,
+                    "incident_count": incident_count,
                 },
                 "response": {
                     "chosen": hostility_result.response,
