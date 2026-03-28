@@ -34,6 +34,12 @@ try:
 except ImportError:
     _INSULT_DETECTOR_AVAILABLE = False
 
+try:
+    from intent_classifier import classify as _intent_classify, RESPONSE_TEMPLATES as _INTENT_RESPONSE_TEMPLATES
+    _INTENT_CLASSIFIER_AVAILABLE = True
+except ImportError:
+    _INTENT_CLASSIFIER_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # Configuration (inherit from environment or use the same defaults as the bot)
 # ---------------------------------------------------------------------------
@@ -99,10 +105,24 @@ THREAT_RESPONSES: list[str] = [
     "I won't tolerate threatening language. This conversation is over.",
 ]
 
+# Intent-category response templates (used when intent classifier is active)
+EMPATHETIC_BOUNDARY_RESPONSES: list[str] = [
+    "I know this is frustrating, but I'd appreciate if we could keep it respectful.",
+    "I get that you're annoyed—let me actually try to help you.",
+    "I hear you. Let me try to make this simpler.",
+]
 
-# ---------------------------------------------------------------------------
-# Keyword fallback library (tiered)
-# ---------------------------------------------------------------------------
+STRONG_BOUNDARY_RESPONSES: list[str] = [
+    "That's beyond what I'm willing to engage with. I'm stepping back.",
+    "That kind of language isn't something I'll respond to.",
+    "I'm going quiet now—reach out when you're ready for a fresh start.",
+]
+
+GENTLE_BOUNDARY_RESPONSES: list[str] = [
+    "I hear the sarcasm, and I get it—but let me actually try to help.",
+    "I know that sounds frustrating, but I'm genuinely here to assist.",
+    "I get the eye roll, but I really am trying to help here.",
+]
 
 _KEYWORD_LIBRARY: dict[HostilityLevel, list[str]] = {
     HostilityLevel.MILD: [
@@ -520,6 +540,27 @@ def handle_message(
     hostility_score_before = 0
     insult_result = None
 
+    # --- Intent classification (runs in parallel with pattern detection) -----
+    _intent_category = "neutral"
+    _intent_confidence = 0.0
+    _intent_explanation = ""
+    _intent_tone_markers: list = []
+    _recommended_response_type = "no_response"
+    if _INTENT_CLASSIFIER_AVAILABLE:
+        try:
+            _intent_category, _intent_confidence, _intent_explanation = _intent_classify(text)
+            from intent_classifier import get_classifier as _get_clf
+            _clf = _get_clf()
+            _tone = _clf.analyze_tone_markers(text)
+            _intent_tone_markers = (
+                _tone.get("hostility", [])
+                + _tone.get("frustration", [])
+                + _tone.get("sarcasm", [])
+            )
+            _recommended_response_type = _clf.get_recommended_response(_intent_category)
+        except Exception:
+            pass
+
     # --- Step 1: insult detector (runs before Ollama) -----------------------
     if _INSULT_DETECTOR_AVAILABLE and user_key:
         from insult_detector import get_user_score as _get_score
@@ -575,6 +616,11 @@ def handle_message(
                 username=username,
                 score_delta=insult_result.score_delta,
                 incident_count=_incident_count,
+                intent_category=_intent_category,
+                intent_confidence=_intent_confidence,
+                intent_explanation=_intent_explanation,
+                intent_tone_markers=_intent_tone_markers,
+                recommended_response=_recommended_response_type,
             )
             return result
 
@@ -604,11 +650,28 @@ def handle_message(
             _confidence_scores = [m.confidence for m in insult_result.all_matches]
             _normalized = insult_result.normalized_text
 
-        _response_template = {
-            HostilityLevel.MILD: "MILD_RESPONSES",
-            HostilityLevel.SEVERE: "SEVERE_RESPONSES",
-            HostilityLevel.THREAT: "THREAT_RESPONSES",
-        }.get(result.level, "")
+        # Use intent-aware response template when classifier is available
+        if _INTENT_CLASSIFIER_AVAILABLE and _intent_category != "neutral":
+            _intent_template_map = {
+                "mildly_frustrated": ("EMPATHETIC_BOUNDARY_RESPONSES", EMPATHETIC_BOUNDARY_RESPONSES),
+                "clearly_hostile": ("STRONG_BOUNDARY_RESPONSES", STRONG_BOUNDARY_RESPONSES),
+                "sarcastic_cutting": ("GENTLE_BOUNDARY_RESPONSES", GENTLE_BOUNDARY_RESPONSES),
+            }
+            if _intent_category in _intent_template_map:
+                _response_template, _response_pool = _intent_template_map[_intent_category]
+                result.response = random.choice(_response_pool)
+            else:
+                _response_template = {
+                    HostilityLevel.MILD: "MILD_RESPONSES",
+                    HostilityLevel.SEVERE: "SEVERE_RESPONSES",
+                    HostilityLevel.THREAT: "THREAT_RESPONSES",
+                }.get(result.level, "")
+        else:
+            _response_template = {
+                HostilityLevel.MILD: "MILD_RESPONSES",
+                HostilityLevel.SEVERE: "SEVERE_RESPONSES",
+                HostilityLevel.THREAT: "THREAT_RESPONSES",
+            }.get(result.level, "")
 
         _det_method = "ollama" if result.via_ollama else "keyword"
 
@@ -658,6 +721,11 @@ def handle_message(
         username=username,
         score_delta=_score_delta,
         incident_count=_incident_count,
+        intent_category=_intent_category,
+        intent_confidence=_intent_confidence,
+        intent_explanation=_intent_explanation,
+        intent_tone_markers=_intent_tone_markers,
+        recommended_response=_recommended_response_type,
     )
 
     return result
@@ -679,6 +747,11 @@ def _log_to_transcript(
     username: str = "",
     score_delta: int = 0,
     incident_count: int = 0,
+    intent_category: str = "neutral",
+    intent_confidence: float = 0.0,
+    intent_explanation: str = "",
+    intent_tone_markers: Optional[list] = None,
+    recommended_response: str = "no_response",
 ) -> None:
     """Fire-and-forget call to the transcript logger (never raises)."""
     try:
@@ -700,6 +773,11 @@ def _log_to_transcript(
             username=username,
             score_delta=score_delta,
             incident_count=incident_count,
+            intent_category=intent_category,
+            intent_confidence=intent_confidence,
+            intent_explanation=intent_explanation,
+            intent_tone_markers=intent_tone_markers or [],
+            recommended_response=recommended_response,
         )
     except Exception:
         pass  # Never let logging errors crash the bot
