@@ -325,6 +325,8 @@ def _build_interaction(seq: int, entry: dict) -> dict:
             "reason_for_response": _response_reason(entry),
         },
         "action_taken": entry.get("action_taken", "none"),
+        "intent_classification": entry.get("intent_classification", {}),
+        "response_metadata": entry.get("response_metadata", {}),
         "analysis": analysis,
     }
 

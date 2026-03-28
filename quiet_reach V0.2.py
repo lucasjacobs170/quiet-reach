@@ -10,6 +10,9 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 import hostility_handler
 from hostility_handler import HostilityLevel, handle_message as hh_handle_message
+from intent_router import IntentRouter as _IntentRouter
+
+_intent_router = _IntentRouter()
 
 BOT_TOKEN=''
 TELEGRAM_BOT_TOKEN=''
@@ -2817,7 +2820,7 @@ async def handle_dm_reply(message):
     if looks_like_question(content) or ("lucas" in content_lower):
         reply = await generate_ai_reply(content)
         if not reply:
-            reply = "I don’t have that detail yet. If you want, ask me a more specific question about Lucas."
+            reply, _rt = _intent_router.route_message(content)
         reply = maybe_add_dm_cta(user_id, reply)
         await send_logged(message.channel, guild_id="", content=reply, is_dm=1)
         return
@@ -2847,10 +2850,10 @@ async def handle_dm_reply(message):
         log(f"❄️ {username} added to COLD list")
         return
 
-    # Fallback: conversational AI
+    # Fallback: conversational AI → IntentRouter when Ollama unavailable
     reply = await generate_ai_reply(content)
     if not reply:
-        reply = "Got you. What do you want to know about Lucas?"
+        reply, _rt = _intent_router.route_message(content)
     reply = maybe_add_dm_cta(user_id, reply)
     await send_logged(message.channel, guild_id="", content=reply, is_dm=1)
     log(f"🤖 AI replied to {username}")
@@ -4701,18 +4704,13 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         return
 
     # ------------------------------------------------------------
-    # Final AI fallback
+    # Final AI fallback → IntentRouter when Ollama unavailable
     # ------------------------------------------------------------
     reply = await generate_ai_reply(content)
     reply = sanitize_ai_reply(reply)
 
     if not reply or len(reply.strip()) < 8:
-        await telegram_reply_logged(
-            update,
-            context,
-            build_unknown_text_reply(low_promo=dm_in_low_promo_mode(user_key))
-        )
-        return
+        reply, _rt = _intent_router.route_message(content)
 
     await telegram_reply_logged(update, context, reply)
 
