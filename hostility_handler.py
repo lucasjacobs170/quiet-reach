@@ -42,6 +42,11 @@ OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 DB_PATH: str = os.getenv("HOSTILITY_DB_PATH", "quiet_reach.db")
 OLLAMA_TIMEOUT: int = 15  # seconds — keep short for real-time chat
 
+# Minimum confidence required before acting on a detection result.
+# Below this threshold the message is treated as non-hostile to avoid
+# false positives (Ollama was generating 50% false positives at confidence 0.0).
+MIN_CONFIDENCE_THRESHOLD: float = 0.7
+
 
 # ---------------------------------------------------------------------------
 # Enums / data structures
@@ -164,6 +169,12 @@ _FLAT_PATTERNS: list[tuple[str, HostilityLevel]] = []
 for _level in (HostilityLevel.THREAT, HostilityLevel.SEVERE, HostilityLevel.MILD):
     for _pat in sorted(_KEYWORD_LIBRARY[_level], key=len, reverse=True):
         _FLAT_PATTERNS.append((_pat, _level))
+
+# Pre-compile word-boundary regex for every keyword to avoid per-call recompilation
+_KW_REGEX_CACHE: dict[str, re.Pattern] = {
+    pat: re.compile(r'\b' + re.escape(pat) + r'\b')
+    for pat, _ in _FLAT_PATTERNS
+}
 
 
 # ---------------------------------------------------------------------------
@@ -387,7 +398,7 @@ def get_incident_count(user_key: str, db_path: str = DB_PATH) -> int:
 
 def classify_with_keywords(text: str) -> HostilityResult:
     """
-    Fast keyword-based hostility classification.
+    Fast keyword-based hostility classification using whole-word matching.
     Returns HostilityLevel.NONE if nothing matches.
     """
     t = (text or "").lower().strip()
@@ -395,7 +406,8 @@ def classify_with_keywords(text: str) -> HostilityResult:
         return HostilityResult(level=HostilityLevel.NONE)
 
     for pattern, level in _FLAT_PATTERNS:
-        if pattern in t:
+        # Use pre-compiled word-boundary patterns to avoid substring false positives
+        if _KW_REGEX_CACHE[pattern].search(t):
             return HostilityResult(
                 level=level,
                 confidence=0.9,
@@ -453,22 +465,23 @@ def analyze(text: str) -> HostilityResult:
     """
     Classify the hostility of *text*.
 
-    Strategy:
-      1. Try Ollama first (fast timeout).
-      2. On failure/unavailability, fall back to keyword matching.
-      3. Attach a premade response to non-NONE results.
-    """
-    result = classify_with_ollama(text)
+    Strategy (revised to eliminate Ollama false positives):
+      1. Run keyword matching first (fast, reliable, word-boundary based).
+      2. If keyword matching finds nothing → return NONE immediately.
+         Do NOT call Ollama — Ollama was flagging innocent messages as "mild"
+         with 0.0 confidence, causing a 50% false positive rate.
+      3. If keywords matched but confidence is below MIN_CONFIDENCE_THRESHOLD
+         → treat as NONE (uncertain = silent).
+      4. Attach a premade response to non-NONE results.
 
-    if result is None:
-        # Ollama unavailable — use keyword fallback
-        result = classify_with_keywords(text)
-    elif result.level == HostilityLevel.NONE:
-        # Ollama said none — quick sanity check with keywords
-        # (catches cases where Ollama under-classifies obvious slurs)
-        kw_result = classify_with_keywords(text)
-        if kw_result.level in (HostilityLevel.SEVERE, HostilityLevel.THREAT):
-            result = kw_result
+    Ollama is preserved in classify_with_ollama() for optional advanced use
+    but is no longer called automatically during normal message handling.
+    """
+    result = classify_with_keywords(text)
+
+    # Enforce confidence threshold: only act on high-confidence detections
+    if result.level != HostilityLevel.NONE and result.confidence < MIN_CONFIDENCE_THRESHOLD:
+        result = HostilityResult(level=HostilityLevel.NONE)
 
     # Attach premade response
     if result.level == HostilityLevel.MILD:
@@ -565,8 +578,18 @@ def handle_message(
             )
             return result
 
-    # --- Step 2: standard Ollama / keyword classification -------------------
-    result = analyze(text)
+    # --- Step 2: keyword / pattern classification ----------------------------
+    # If the insult detector ran and found NO patterns, default to NONE without
+    # calling analyze().  Previously this path called Ollama, which was
+    # generating ~50% false positives on innocent messages.
+    if _INSULT_DETECTOR_AVAILABLE and insult_result is not None and not insult_result.detected:
+        result = HostilityResult(level=HostilityLevel.NONE)
+    else:
+        result = analyze(text)
+
+    # Enforce confidence threshold — uncertain detections are treated as NONE
+    if result.level != HostilityLevel.NONE and result.confidence < MIN_CONFIDENCE_THRESHOLD:
+        result = HostilityResult(level=HostilityLevel.NONE)
 
     if result.level != HostilityLevel.NONE:
         _patterns_for_db: list = []
