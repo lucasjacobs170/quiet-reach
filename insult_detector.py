@@ -39,6 +39,20 @@ CAPS_BOOST: bool = bool(_THRESHOLDS.get("caps_severity_boost", True))
 # Fuzzy similarity threshold — tweak to taste (0.80 catches most single-char typos)
 FUZZY_THRESHOLD: float = 0.80
 
+# Minimum confidence for a match to be reported (below this the match is ignored)
+MIN_CONFIDENCE: float = 0.7
+
+# Question words whose presence before a matched term signals a non-hostile context
+_QUESTION_WORDS: frozenset = frozenset({
+    "what", "how", "why", "when", "where", "who", "which", "whose", "whom"
+})
+
+# Negation words whose presence before a matched term signals benign intent
+_NEGATION_WORDS: frozenset = frozenset({
+    "not", "no", "never", "didnt", "didn't", "dont", "don't", "wasnt",
+    "wasn't", "isnt", "isn't", "wont", "won't", "wouldnt", "wouldn't",
+})
+
 # ---------------------------------------------------------------------------
 # Build flat pattern index: list of (canonical_phrase, severity, all_tokens)
 # where all_tokens includes the phrase itself + all its listed variations.
@@ -61,6 +75,16 @@ for _cat_key, _cat_data in _LIBRARY["categories"].items():
         _variations = [v.lower().strip() for v in _entry.get("variations", [])]
         _tokens = list(dict.fromkeys([_phrase] + _variations))  # deduplicate, preserve order
         _PATTERNS.append(_PatternEntry(phrase=_phrase, severity=_entry["severity"], category=_cat_label, tokens=_tokens))
+
+# Pre-compile word-boundary regex patterns for every normalised token to avoid
+# recompiling the same pattern on every call to detect().
+_WB_REGEX_CACHE: dict[str, re.Pattern] = {}
+
+def _wb_pattern(token: str) -> re.Pattern:
+    """Return a compiled word-boundary regex for *token* (cached)."""
+    if token not in _WB_REGEX_CACHE:
+        _WB_REGEX_CACHE[token] = re.compile(r'\b' + re.escape(token) + r'\b')
+    return _WB_REGEX_CACHE[token]
 
 # ---------------------------------------------------------------------------
 # Per-user hostility score store (in-memory; intentionally lightweight)
@@ -167,21 +191,59 @@ def _similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, a, b).ratio()
 
 
-def _token_matches(input_token: str, pattern_token: str) -> bool:
+def _token_matches(input_text: str, pattern_token: str) -> bool:
     """
-    Return True if *input_token* is considered a match for *pattern_token*.
-    Exact substring match is tried first; fuzzy match is used as fallback.
+    Return True if *pattern_token* appears as a whole-word match inside
+    *input_text*.
+
+    Word-boundary matching (`\\b`) is used so that short variations such as
+    "fu" (a variation of "fuck you") cannot match inside innocent words like
+    "useful" or "respectful".
+
+    Fuzzy matching is kept as a fallback but is restricted to patterns of
+    4+ characters to prevent short abbreviations from generating false
+    positives on dissimilar words.
     """
-    if pattern_token in input_token:
+    # Whole-word exact match via word boundaries (uses cache)
+    if _wb_pattern(pattern_token).search(input_text):
         return True
-    # Fuzzy match is only worthwhile when lengths are somewhat close
-    max_len = max(len(input_token), len(pattern_token))
+    # Fuzzy fallback: only for patterns long enough to be meaningful
+    if len(pattern_token) < 4:
+        return False
+    max_len = max(len(input_text), len(pattern_token))
     if max_len == 0:
         return False
-    len_ratio = min(len(input_token), len(pattern_token)) / max_len
+    len_ratio = min(len(input_text), len(pattern_token)) / max_len
     if len_ratio < 0.5:
         return False
-    return _similarity(input_token, pattern_token) >= FUZZY_THRESHOLD
+    return _similarity(input_text, pattern_token) >= FUZZY_THRESHOLD
+
+
+def _is_question_context(normalized: str, pattern_token: str) -> bool:
+    """
+    Return True if *pattern_token* appears in a benign (non-hostile) context:
+
+    - **Question context**: a question word (what, how, why, etc.) precedes the
+      matched term within five tokens.
+      Example: "what do you mean?" → "mean" follows "what" → not hostile.
+
+    - **Negation context**: a negation word (not, didn't, don't, etc.) precedes
+      the matched term within five tokens.
+      Example: "I did not mean to sound annoyed" → "not" before "mean" → not hostile.
+    """
+    tokens = normalized.split()
+    pattern_parts = pattern_token.split()
+    if not pattern_parts:
+        return False
+    first_part = pattern_parts[0]
+    for i, tok in enumerate(tokens):
+        if tok == first_part:
+            look_back = tokens[max(0, i - 5):i]
+            if any(w in _QUESTION_WORDS for w in look_back):
+                return True
+            if any(w in _NEGATION_WORDS for w in look_back):
+                return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -224,15 +286,25 @@ def detect(text: str, user_key: str = "") -> InsultDetectionResult:
         for token in entry.tokens:
             norm_token = normalize_text(token)
             if _token_matches(normalized, norm_token):
-                # Compute confidence: exact substring = 1.0, fuzzy = similarity ratio
-                if norm_token in normalized:
+                # Compute confidence: word-boundary exact match = 1.0,
+                # fuzzy fallback = similarity ratio
+                wb_match = _wb_pattern(norm_token).search(normalized)
+                if wb_match:
                     confidence = 1.0
                 else:
                     confidence = _similarity(normalized, norm_token)
+
+                # Skip low-confidence token matches; try the next variation
+                if confidence < MIN_CONFIDENCE:
+                    continue
+
+                # Skip token matches that appear in a benign context (question/negation);
+                # try the next variation in case a more explicit one also appears
+                if _is_question_context(normalized, norm_token):
+                    continue
+
                 # Find position of matched token in normalized text (best effort)
-                pos = normalized.find(norm_token)
-                if pos == -1:
-                    pos = 0
+                pos = wb_match.start() if wb_match else 0
 
                 all_matches.append(MatchDetail(
                     pattern=entry.phrase,
