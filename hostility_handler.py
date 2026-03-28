@@ -29,7 +29,7 @@ from typing import Optional
 import requests
 
 try:
-    from insult_detector import detect as _insult_detect, reset_user_score as _reset_score
+    from insult_detector import detect as _insult_detect, reset_user_score as _reset_score, InsultDetectionResult as _InsultDetectionResult
     _INSULT_DETECTOR_AVAILABLE = True
 except ImportError:
     _INSULT_DETECTOR_AVAILABLE = False
@@ -192,26 +192,37 @@ def setup_hostility_db(db_path: str = DB_PATH) -> None:
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS hostile_incidents (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                ts_utc        TEXT NOT NULL,
-                platform      TEXT NOT NULL,
-                user_key      TEXT NOT NULL,
-                username      TEXT NOT NULL,
-                message       TEXT NOT NULL,
-                level         TEXT NOT NULL,
-                via_ollama    INTEGER NOT NULL DEFAULT 0,
-                response_sent TEXT NOT NULL DEFAULT '',
-                hostility_score INTEGER NOT NULL DEFAULT 0
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                ts_utc              TEXT NOT NULL,
+                platform            TEXT NOT NULL,
+                user_key            TEXT NOT NULL,
+                username            TEXT NOT NULL,
+                message             TEXT NOT NULL,
+                level               TEXT NOT NULL,
+                via_ollama          INTEGER NOT NULL DEFAULT 0,
+                response_sent       TEXT NOT NULL DEFAULT '',
+                hostility_score     INTEGER NOT NULL DEFAULT 0,
+                normalized_message  TEXT NOT NULL DEFAULT '',
+                all_patterns_matched TEXT NOT NULL DEFAULT '[]',
+                detection_method    TEXT NOT NULL DEFAULT '',
+                confidence_scores   TEXT NOT NULL DEFAULT '[]',
+                hostility_score_before INTEGER NOT NULL DEFAULT 0,
+                response_template   TEXT NOT NULL DEFAULT '',
+                false_positive_flag INTEGER NOT NULL DEFAULT 0,
+                context_notes       TEXT NOT NULL DEFAULT ''
             )
             """
         )
-        # Add hostility_score column to existing tables that were created without it
-        try:
-            conn.execute(
-                "ALTER TABLE hostile_incidents ADD COLUMN hostility_score INTEGER NOT NULL DEFAULT 0"
-            )
-        except sqlite3.OperationalError:
-            pass  # Column already exists
+        # Migrate existing tables that were created without the newer columns
+        _migrate_column(conn, "hostile_incidents", "hostility_score", "INTEGER NOT NULL DEFAULT 0")
+        _migrate_column(conn, "hostile_incidents", "normalized_message", "TEXT NOT NULL DEFAULT ''")
+        _migrate_column(conn, "hostile_incidents", "all_patterns_matched", "TEXT NOT NULL DEFAULT '[]'")
+        _migrate_column(conn, "hostile_incidents", "detection_method", "TEXT NOT NULL DEFAULT ''")
+        _migrate_column(conn, "hostile_incidents", "confidence_scores", "TEXT NOT NULL DEFAULT '[]'")
+        _migrate_column(conn, "hostile_incidents", "hostility_score_before", "INTEGER NOT NULL DEFAULT 0")
+        _migrate_column(conn, "hostile_incidents", "response_template", "TEXT NOT NULL DEFAULT ''")
+        _migrate_column(conn, "hostile_incidents", "false_positive_flag", "INTEGER NOT NULL DEFAULT 0")
+        _migrate_column(conn, "hostile_incidents", "context_notes", "TEXT NOT NULL DEFAULT ''")
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS blocked_users (
@@ -226,6 +237,14 @@ def setup_hostility_db(db_path: str = DB_PATH) -> None:
         conn.commit()
 
 
+def _migrate_column(conn: sqlite3.Connection, table: str, column: str, col_def: str) -> None:
+    """Add *column* to *table* if it doesn't exist yet."""
+    try:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {col_def}")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+
+
 def log_incident(
     platform: str,
     user_key: str,
@@ -234,15 +253,23 @@ def log_incident(
     result: HostilityResult,
     db_path: str = DB_PATH,
     hostility_score: int = 0,
-) -> None:
-    """Append one hostile incident to SQLite."""
+    normalized_message: str = "",
+    all_patterns_matched: Optional[list] = None,
+    detection_method: str = "",
+    confidence_scores: Optional[list] = None,
+    hostility_score_before: int = 0,
+    response_template: str = "",
+) -> Optional[int]:
+    """Append one hostile incident to SQLite. Returns the new row ID."""
     try:
         ts = datetime.now(timezone.utc).isoformat()
         with sqlite3.connect(db_path, timeout=30) as conn:
-            conn.execute(
+            cur = conn.execute(
                 "INSERT INTO hostile_incidents "
-                "(ts_utc, platform, user_key, username, message, level, via_ollama, response_sent, hostility_score) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "(ts_utc, platform, user_key, username, message, level, via_ollama, response_sent, "
+                "hostility_score, normalized_message, all_patterns_matched, detection_method, "
+                "confidence_scores, hostility_score_before, response_template) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     ts,
                     platform,
@@ -253,11 +280,19 @@ def log_incident(
                     int(result.via_ollama),
                     result.response[:2000],
                     hostility_score,
+                    normalized_message[:2000],
+                    json.dumps(all_patterns_matched or []),
+                    detection_method,
+                    json.dumps(confidence_scores or []),
+                    hostility_score_before,
+                    response_template,
                 ),
             )
             conn.commit()
+            return cur.lastrowid
     except Exception as exc:
         print(f"⚠️ hostility_handler: log_incident failed: {exc}")
+        return None
 
 
 def block_user(
@@ -465,10 +500,17 @@ def handle_message(
       4. Block the user on severe/threat.
       5. Return the result (caller sends result.response if non-empty).
     """
+    import time as _time
+    _msg_start = _time.monotonic()
+
     hostility_score = 0
+    hostility_score_before = 0
+    insult_result = None
 
     # --- Step 1: insult detector (runs before Ollama) -----------------------
     if _INSULT_DETECTOR_AVAILABLE and user_key:
+        from insult_detector import get_user_score as _get_score
+        hostility_score_before = _get_score(user_key)
         insult_result = _insult_detect(text, user_key=user_key)
         hostility_score = insult_result.cumulative_score
 
@@ -481,23 +523,144 @@ def handle_message(
                 via_ollama=False,
                 response=random.choice(SEVERE_RESPONSES),
             )
-            log_incident(platform, user_key, username, text, result,
-                         db_path=db_path, hostility_score=hostility_score)
+            _patterns_for_db = [
+                {"pattern": m.pattern, "category": m.category,
+                 "severity": m.severity, "confidence": m.confidence}
+                for m in insult_result.all_matches
+            ]
+            _confidence_scores = [m.confidence for m in insult_result.all_matches]
+            db_incident_id = log_incident(
+                platform, user_key, username, text, result,
+                db_path=db_path,
+                hostility_score=hostility_score,
+                normalized_message=insult_result.normalized_text,
+                all_patterns_matched=_patterns_for_db,
+                detection_method="detector",
+                confidence_scores=_confidence_scores,
+                hostility_score_before=hostility_score_before,
+                response_template="SEVERE_RESPONSES",
+            )
             block_user(user_key, username, platform,
                        reason="insult score threshold exceeded", db_path=db_path)
             _reset_score(user_key)
+
+            # Transcript logging
+            _log_to_transcript(
+                text=text,
+                user_key=user_key,
+                platform=platform,
+                insult_result=insult_result,
+                result=result,
+                hostility_score_before=hostility_score_before,
+                hostility_score_after=hostility_score,
+                action_taken="blocked_user",
+                db_incident_id=db_incident_id,
+                response_template="SEVERE_RESPONSES",
+                via_ollama=False,
+                msg_start=_msg_start,
+            )
             return result
 
     # --- Step 2: standard Ollama / keyword classification -------------------
     result = analyze(text)
 
     if result.level != HostilityLevel.NONE:
-        log_incident(platform, user_key, username, text, result,
-                     db_path=db_path, hostility_score=hostility_score)
+        _patterns_for_db: list = []
+        _confidence_scores: list = []
+        _normalized = ""
+        if insult_result is not None:
+            _patterns_for_db = [
+                {"pattern": m.pattern, "category": m.category,
+                 "severity": m.severity, "confidence": m.confidence}
+                for m in insult_result.all_matches
+            ]
+            _confidence_scores = [m.confidence for m in insult_result.all_matches]
+            _normalized = insult_result.normalized_text
+
+        _response_template = {
+            HostilityLevel.MILD: "MILD_RESPONSES",
+            HostilityLevel.SEVERE: "SEVERE_RESPONSES",
+            HostilityLevel.THREAT: "THREAT_RESPONSES",
+        }.get(result.level, "")
+
+        _det_method = "ollama" if result.via_ollama else "keyword"
+
+        db_incident_id = log_incident(
+            platform, user_key, username, text, result,
+            db_path=db_path,
+            hostility_score=hostility_score,
+            normalized_message=_normalized,
+            all_patterns_matched=_patterns_for_db,
+            detection_method=_det_method,
+            confidence_scores=_confidence_scores,
+            hostility_score_before=hostility_score_before,
+            response_template=_response_template,
+        )
+    else:
+        db_incident_id = None
+        _response_template = ""
+        _det_method = "ollama" if result.via_ollama else "keyword"
 
     if result.level in (HostilityLevel.SEVERE, HostilityLevel.THREAT):
         block_user(user_key, username, platform, reason=result.level.value, db_path=db_path)
         if _INSULT_DETECTOR_AVAILABLE and user_key:
             _reset_score(user_key)
+        _action = "blocked_user"
+    elif result.level != HostilityLevel.NONE:
+        _action = "warned_user"
+    else:
+        _action = "none"
+
+    # Transcript logging for all messages (including NONE) for full coverage
+    _log_to_transcript(
+        text=text,
+        user_key=user_key,
+        platform=platform,
+        insult_result=insult_result,
+        result=result,
+        hostility_score_before=hostility_score_before,
+        hostility_score_after=hostility_score,
+        action_taken=_action,
+        db_incident_id=db_incident_id,
+        response_template=_response_template,
+        via_ollama=result.via_ollama,
+        msg_start=_msg_start,
+    )
 
     return result
+
+
+def _log_to_transcript(
+    text: str,
+    user_key: str,
+    platform: str,
+    insult_result,
+    result: HostilityResult,
+    hostility_score_before: int,
+    hostility_score_after: int,
+    action_taken: str,
+    db_incident_id: Optional[int],
+    response_template: str,
+    via_ollama: bool,
+    msg_start: float,
+) -> None:
+    """Fire-and-forget call to the transcript logger (never raises)."""
+    try:
+        import time as _time
+        from transcript_logger import TranscriptLogger
+        TranscriptLogger.get_instance().log(
+            text=text,
+            user_key=user_key,
+            platform=platform,
+            insult_result=insult_result,
+            hostility_result=result,
+            hostility_score_before=hostility_score_before,
+            hostility_score_after=hostility_score_after,
+            action_taken=action_taken,
+            db_incident_id=db_incident_id,
+            response_template=response_template,
+            via_ollama=via_ollama,
+            total_time_ms=(_time.monotonic() - msg_start) * 1000,
+        )
+    except Exception:
+        pass  # Never let logging errors crash the bot
