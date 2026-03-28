@@ -3362,8 +3362,39 @@ def is_links_request(text: str) -> bool:
     if re.search(r"\blinks?\b", t):
         return True
 
-    # also treat "socials" as link list
+    # "socials" is now routed to the social-only handler; kept here as fallback
+    # for phrases like "all socials" or combined requests with other platforms.
+    if re.search(r"\bsocials?\b", t) and any(p in t for p in [
+        "all", "everything", "full", "onlyfans", "chaturbate", "discord"
+    ]):
+        return True
+
+    return False
+
+
+def is_socials_only_request(text: str) -> bool:
+    """
+    Return True when the user is asking specifically for social media
+    (Instagram + X/Twitter) rather than the full link list.
+
+    Catches: "socials", "social media", "twitter", "your socials", etc.
+    Excludes combined requests that also mention other platforms.
+    """
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+
+    # If they mention non-social platforms alongside, give them all links instead
+    non_social = ["onlyfans", "chaturbate", "discord", "all links", "everything"]
+    if any(p in t for p in non_social):
+        return False
+
     if re.search(r"\bsocials?\b", t):
+        return True
+    if "social media" in t or "social links" in t:
+        return True
+    # "twitter" alone triggers social-only (X is the same platform)
+    if re.search(r"\btwitter\b", t):
         return True
 
     return False
