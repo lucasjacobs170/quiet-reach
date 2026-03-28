@@ -6,10 +6,12 @@ routing logic to distinguish information requests, social queries, and
 casual conversation.
 
 Routing decision order:
-  1. Hostility check  — block or apply boundary
-  2. Information      — answer from verified knowledge_base.json
-  3. Casual           — reply from safe_responses.json (± light creativity)
-  4. Default          — unclear_question fallback
+  1. Hostility check      — block or apply boundary
+  2. Social media links   — Instagram + X only (filtered)
+  3. Information          — answer from verified knowledge_base.json
+  4. Casual               — reply from safe_responses.json (± light creativity)
+  5. Special topics       — hostile-handling, bot capabilities
+  6. AI fallback          — personality-wrapped response for unhandled intents
 """
 
 from __future__ import annotations
@@ -33,6 +35,12 @@ try:
     _SE_DETECTOR_AVAILABLE = True
 except ImportError:
     _SE_DETECTOR_AVAILABLE = False
+
+try:
+    from personality_manager import get_personality_manager as _get_pm
+    _PM_AVAILABLE = True
+except ImportError:
+    _PM_AVAILABLE = False
 
 # ---------------------------------------------------------------------------
 # Routing type constants
@@ -60,17 +68,20 @@ PROACTIVE_LINK_COUNT_THRESHOLD: int = 2
 # ---------------------------------------------------------------------------
 
 INTENT_CATEGORIES: dict[str, str] = {
-    "clearly_hostile":   "Direct insults, attacks",
-    "mildly_frustrated": "Annoyed but not attacking",
-    "sarcastic_cutting": "Sarcastic/sharp but not pure attack",
-    "asks_about_lucas":  "Questions about who Lucas is, what he does",
-    "asks_for_links":    "Wants social media links",
-    "asks_for_help":     "Wants bot to help with something",
-    "casual_greeting":   "Hi, hello, hey",
-    "casual_gratitude":  "Thanks, appreciate it",
-    "casual_goodbye":    "Bye, see you, catch you",
-    "small_talk":        "General conversation, observations",
-    "unclear":           "Can't determine intent",
+    "clearly_hostile":        "Direct insults, attacks",
+    "mildly_frustrated":      "Annoyed but not attacking",
+    "sarcastic_cutting":      "Sarcastic/sharp but not pure attack",
+    "asks_about_lucas":       "Questions about who Lucas is, what he does",
+    "asks_for_links":         "Wants social media links",
+    "asks_for_social_links":  "Wants only Instagram + X social links",
+    "asks_for_help":          "Wants bot to help with something",
+    "asks_about_hostility":   "Asking how bot handles hostile/mean people",
+    "asks_about_capabilities":"Questions about what bot can/cannot do",
+    "casual_greeting":        "Hi, hello, hey",
+    "casual_gratitude":       "Thanks, appreciate it",
+    "casual_goodbye":         "Bye, see you, catch you",
+    "small_talk":             "General conversation, observations",
+    "unclear":                "Can't determine intent",
 }
 
 # Keywords used to widen intent detection beyond the base classifier categories
@@ -80,10 +91,38 @@ _LINK_KEYWORDS: list[str] = [
     "x.com", "platform", "profile",
 ]
 
+# Social-media-only keywords: triggers "asks_for_social_links" (Instagram + X)
+# These are checked before general link keywords so they take priority.
+_SOCIAL_MEDIA_ONLY_KEYWORDS: list[str] = [
+    "social media", "socials", "social links", "your socials",
+    "his socials", "social platforms",
+]
+# Single-word social handles that alone indicate a social-only request
+_SOCIAL_SINGLE_WORDS: list[str] = ["twitter", "instagram"]
+
 _LUCAS_INFO_KEYWORDS: list[str] = [
-    "lucas", "tell me about", "about lucas", "does lucas", "lucas do",
+    "lucas", "tell me about lucas", "about lucas", "does lucas", "lucas do",
     "content", "stream", "show", "game", "ranch", "woods", "ocean",
     "surf", "jenga", "darts", "hottub", "shower", "onlyfans", "chaturbate",
+]
+
+# Hostile-handling detection: user asks how bot deals with mean/rude people
+_HOSTILE_HANDLING_KEYWORDS: list[str] = [
+    "hostile people", "mean people", "rude people", "handle hostile",
+    "handle mean", "handle rude", "if someone is mean", "when someone is rude",
+    "what do you do if", "how do you deal with", "how do you handle hostile",
+    "how do you handle mean", "how do you handle rude", "mean users",
+    "rude users", "someone being rude", "someone being mean",
+    "someone being hostile",
+]
+
+# Bot capabilities / limitations detection
+_BOT_CAPABILITIES_KEYWORDS: list[str] = [
+    "what can you do", "what can't you do", "what cant you do",
+    "your capabilities", "your limitations", "what are you capable of",
+    "what do you know", "what don't you know", "what dont you know",
+    "how smart are you", "what can you help with", "your abilities",
+    "what you can do", "what you cant do",
 ]
 
 _GREETING_KEYWORDS: list[str] = ["hi", "hey", "hello", "sup", "yo", "what's up", "howdy"]
@@ -186,7 +225,13 @@ class IntentRouter:
         # 2. Information routing (verified facts only)
         if extended_intent == "asks_about_lucas":
             response = self._answer_about_lucas(user_message)
+            response = self._apply_personality(response, topic="lucas_info")
             self._record(user_key, extended_intent, user_message, response, topic="lucas_info")
+            return response, ROUTE_KNOWLEDGE_BASE
+
+        if extended_intent == "asks_for_social_links":
+            response = self._get_social_links()
+            self._record(user_key, extended_intent, user_message, response, topic="links")
             return response, ROUTE_KNOWLEDGE_BASE
 
         if extended_intent == "asks_for_links":
@@ -196,6 +241,18 @@ class IntentRouter:
 
         if extended_intent == "asks_for_help":
             response = self._get_response("greetings")
+            response = self._apply_personality(response, topic="general")
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_SAFE_RESPONSE
+
+        # Special topics
+        if extended_intent == "asks_about_hostility":
+            response = self._get_response("hostile_handling")
+            self._record(user_key, extended_intent, user_message, response)
+            return response, ROUTE_SAFE_RESPONSE
+
+        if extended_intent == "asks_about_capabilities":
+            response = self._get_response("bot_capabilities")
             self._record(user_key, extended_intent, user_message, response)
             return response, ROUTE_SAFE_RESPONSE
 
@@ -226,8 +283,10 @@ class IntentRouter:
             self._record(user_key, extended_intent, user_message, response)
             return response, ROUTE_SAFE_RESPONSE
 
-        # 4. Default fallback
+        # 4. Comprehensive fallback — unclear intent still gets a response
+        # Try a personality-enhanced fallback before the generic unclear_question.
         response = self._get_response("unclear_question")
+        response = self._apply_personality(response, topic="general")
         self._record(user_key, extended_intent, user_message, response)
         return response, ROUTE_DEFAULT
 
@@ -269,8 +328,25 @@ class IntentRouter:
         # Neutral → inspect content for a more specific intent
         t = message.lower()
 
+        # Social-media-only links (Instagram + X) — check before general link keywords
+        if _matches_any(t, _SOCIAL_MEDIA_ONLY_KEYWORDS):
+            return "asks_for_social_links"
+        # Single-word social handles only when no other platform keywords are present
+        if (_matches_any(t, _SOCIAL_SINGLE_WORDS)
+                and not _matches_any(t, ["chaturbate", "onlyfans", "discord", "telegram"])):
+            return "asks_for_social_links"
+
+        # General link request
         if _matches_any(t, _LINK_KEYWORDS):
             return "asks_for_links"
+
+        # Hostile-handling question
+        if _matches_any(t, _HOSTILE_HANDLING_KEYWORDS):
+            return "asks_about_hostility"
+
+        # Bot capabilities / limitations
+        if _matches_any(t, _BOT_CAPABILITIES_KEYWORDS):
+            return "asks_about_capabilities"
 
         if _matches_any(t, _LUCAS_INFO_KEYWORDS):
             return "asks_about_lucas"
@@ -345,6 +421,27 @@ class IntentRouter:
 
         return "\n".join(lines)
 
+    def _get_social_links(self) -> str:
+        """Return ONLY Instagram and X (Twitter) links — the social-media-only response."""
+        platforms = self.knowledge_base["platforms"]["primary"]
+
+        social_names = {"X (Twitter)", "Instagram"}
+        social_lines: list[str] = []
+        for p in platforms:
+            if p.get("name") in social_names:
+                social_lines.append(f"📱 {p['name']}: {p['url']}")
+
+        if not social_lines:
+            # Fallback if KB structure differs
+            return "Lucas is active on X and Instagram — let me know if you want the specific links!"
+
+        intro = random.choice([
+            "Here are his social media links 📱",
+            "Sure! Here's where to find Lucas on social media:",
+            "His socials right here 👇",
+        ])
+        return intro + "\n\n" + "\n".join(social_lines)
+
     def _handle_links_request(self, user_key: str = "") -> str:
         """
         Return platform links, with context-aware messaging on repeated requests.
@@ -404,6 +501,15 @@ class IntentRouter:
         """Return a random response from the given safe_responses category."""
         options = self.safe_responses.get(category, ["I'm not sure. Feel free to ask Lucas!"])
         return random.choice(options)
+
+    def _apply_personality(self, response: str, topic: str = "general") -> str:
+        """Apply personality overlay if personality_manager is available."""
+        if _PM_AVAILABLE:
+            try:
+                return _get_pm().apply(response, category=topic)
+            except Exception:
+                pass
+        return response
 
 
 # ---------------------------------------------------------------------------

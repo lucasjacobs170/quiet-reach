@@ -2524,6 +2524,58 @@ def build_other_options_hint(except_keys: list[str] | None = None) -> str:
     return f"Also available: {', '.join(options)}. If you want the full list, say `links`."
 
 
+def is_social_media_only_request(text: str) -> bool:
+    """
+    True when user is asking specifically for social media links (Instagram + X only),
+    NOT asking for the full platform list or OnlyFans/Discord/Chaturbate.
+    """
+    t = (text or "").strip().lower()
+    if not t:
+        return False
+
+    # Explicit social-only phrases
+    social_phrases = [
+        "social media", "socials", "social links", "social media links",
+        "his socials", "your socials", "social platforms",
+    ]
+    if any(p in t for p in social_phrases):
+        # Make sure they're not asking for specific adult/community platforms
+        if not any(w in t for w in ["onlyfans", "chaturbate", "discord", "of ", "telegram"]):
+            return True
+
+    # Twitter/Instagram only when no other platform names present
+    has_twitter = bool(re.search(r"\btwitter\b", t))
+    has_instagram = bool(re.search(r"\binstagram\b", t) or re.search(r"(?:^|\s)ig(?:$|\s)", t))
+    has_other = any(w in t for w in ["onlyfans", "chaturbate", "discord", "telegram"])
+
+    if (has_twitter or has_instagram) and not has_other:
+        return True
+
+    return False
+
+
+def build_social_links_only_message() -> str:
+    """Return a friendly response with ONLY Instagram and X links."""
+    intro = random.choice([
+        "Here are his social media links 📱",
+        "Sure! Here's where to find him on social media:",
+        "His socials right here 👇",
+    ])
+    lines = [intro, ""]
+    if X_URL:
+        lines.append(f"• X (Twitter): {X_URL}")
+        lines.append(f"  {LINK_BLURBS['x']}")
+        lines.append("")
+    if INSTAGRAM_URL:
+        lines.append(f"• Instagram: {INSTAGRAM_URL}")
+        lines.append(f"  {LINK_BLURBS['instagram']}")
+        lines.append("")
+    if not X_URL and not INSTAGRAM_URL:
+        return "I don't have those social links saved right now."
+    lines.append("Want the full platform list? Just say `links`.")
+    return "\n".join(lines).strip()
+
+
 def dm_link_router(content_lower: str) -> str | None:
     """
     Returns a DM response string if this message is requesting links/contact.
@@ -2534,6 +2586,10 @@ def dm_link_router(content_lower: str) -> str | None:
         return None
 
     soft = random.choice(DM_SOFTENERS)
+
+    # 0) Social-media-only request → send ONLY Instagram + X (not OnlyFans/Discord)
+    if is_social_media_only_request(t):
+        return build_social_links_only_message()
 
     # 1) Contact intent -> give best contact options (not a sales pitch)
     if is_contact_intent(t):
@@ -4761,6 +4817,8 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
 
     if is_brief_acknowledgment(content_lower):
         if dm_in_low_promo_mode(user_key):
+            # Don't stay silent — send a minimal, non-pushy acknowledgment
+            await telegram_reply_logged(update, context, "Got it! 👍")
             return
         await telegram_reply_logged(update, context, build_brief_acknowledgment_reply(content_lower))
         return

@@ -1,15 +1,15 @@
 {
   "greetings": [
-    "Hey! I'm here to help you learn about Lucas 🙌",
-    "What's up! Want to know about Lucas?",
-    "Hey there! I can tell you all about Lucas and where to find him",
-    "Yo! What can I do for you? 🌲",
-    "Hey — glad you're here! Ask me anything about Lucas",
-    "Hi! Always happy to help — what are you looking for?",
-    "Hey! You've got questions, I've got answers. What's up?",
-    "What's going on! I'm here for anything Lucas-related 🌊",
-    "Hey there — I'm ready when you are. What do you need?",
-    "Hiya! I'm Quiet Reach — what can I help you with today?"
+    "Hey! I'm Quiet Reach — Lucas's assistant. What can I help you with? 🌲",
+    "Hey there! Glad you swung by — ask me anything about Lucas!",
+    "Oh hey! I'm Quiet Reach — Lucas's digital guide. What's on your mind? ⚡",
+    "Hi! Always happy to help — what are you looking for? 🙌",
+    "Hey — nice to meet you! I can tell you about Lucas, his content, or send links. What do you need?",
+    "What's up! I'm Quiet Reach. You've got questions, I've got answers 🔥",
+    "Hiya! I'm here for anything Lucas-related — what are you after? 🌿",
+    "Hey! You found me — I'm Quiet Reach, Lucas's assistant. What can I do for you?",
+    "Oh hi! I'm Quiet Reach — happy to help with anything about Lucas. Where do you want to start?",
+    "Hey, I'm here! I'm Quiet Reach — ask me about Lucas, his links, or anything else ✨"
   ],
 
   "thank_you": [
@@ -107,16 +107,19 @@
   ],
 
   "small_talk": [
-    "That sounds cool!",
-    "I like where your head's at",
-    "Ha, fair point!",
-    "You're right about that",
+    "That's pretty cool! 😄",
+    "Ha — I like where your head's at",
+    "Fair point honestly!",
+    "You're right about that 🌿",
     "Nice one!",
     "Ha! Fair enough.",
-    "Love that energy.",
+    "Love that energy ⚡",
     "Not bad at all.",
     "Haha, I can respect that.",
-    "You're onto something there 🌿"
+    "You're onto something there 🌲",
+    "That tracks!",
+    "Honestly, yeah — couldn't agree more.",
+    "Ha, solid take 🔥"
   ],
 
   "first_touch_dm": [
@@ -133,6 +136,26 @@
     "Hey! Good to see you back. What do you need?",
     "Welcome back — what are you looking for today?",
     "Hey again! What can I do for you? 🙌"
+  ],
+
+  "hostile_handling": [
+    "Honestly? I've got a pretty simple approach — if someone's being mean or hostile, I apply a firm boundary and step back. I'm not here to argue or take abuse. If things cool down, I'm happy to help again. 😊",
+    "Good question! I handle hostile messages with a tiered system — mild frustration gets empathy, but direct insults get a firm 'that's not something I'll engage with.' I'd rather reset the conversation than go back and forth. No hard feelings though!",
+    "I've got a boundary system — basically: if someone's rude or hostile, I acknowledge it once, set a limit, and go quiet. I'm not built to fight, just to help. Once they're ready to chat normally, I'm here. 🌿",
+    "Short answer: I don't take it personally! I have a few response levels — gentle redirect for mild frustration, firm boundary for actual hostility, and then I just step back. Everyone has bad days; I'm here when they're ready to reset."
+  ],
+
+  "bot_capabilities": [
+    "I can answer questions about Lucas, share his official platform links (Instagram, X, OnlyFans, Chaturbate, Discord), tell you about his content, and help point you to the right place. What I *can't* do: invent facts, give you links I don't have saved, or know things Lucas hasn't told me. 🌲",
+    "Here's the deal — I know Lucas's world pretty well: who he is, what he creates, where to find him, and how to contact him. I can send specific links on request. I won't guess at things I don't know, and I won't make up facts. Ask away and I'll tell you if I can help! ⚡",
+    "I'm built to help with three things: info about Lucas, his official links, and pointing you to the right platform. I'm grounded in verified facts so I won't hallucinate — if I don't know something, I'll say so and point you to Lucas directly. 🙌",
+    "Good question! My capabilities: answering Lucas questions, sending platform links, describing his content, and keeping conversations real. My limitations: I can't access real-time info, I won't invent links, and I don't know things outside the knowledge base. Anything specific you're after?"
+  ],
+
+  "social_media_links": [
+    "His social media — here you go 📱\n\n• X (Twitter): https://x.com/lucasjacobs170\n• Instagram: https://www.instagram.com/lucas_jacobs17/?hl=en",
+    "Sure! Here are his socials 👇\n\n📱 X: https://x.com/lucasjacobs170\n📸 Instagram: https://www.instagram.com/lucas_jacobs17/?hl=en",
+    "Here are his social links:\n\n• X: https://x.com/lucasjacobs170 — quick updates + teasers\n• Instagram: https://www.instagram.com/lucas_jacobs17/?hl=en — casual photos + daily vibes"
   ]
 }
 
