@@ -186,12 +186,12 @@ class IntentRouter:
         # 2. Information routing (verified facts only)
         if extended_intent == "asks_about_lucas":
             response = self._answer_about_lucas(user_message)
-            self._record(user_key, extended_intent, user_message, response)
+            self._record(user_key, extended_intent, user_message, response, topic="lucas_info")
             return response, ROUTE_KNOWLEDGE_BASE
 
         if extended_intent == "asks_for_links":
             response = self._handle_links_request(user_key)
-            self._record(user_key, extended_intent, user_message, response)
+            self._record(user_key, extended_intent, user_message, response, topic="links")
             return response, ROUTE_KNOWLEDGE_BASE
 
         if extended_intent == "asks_for_help":
@@ -386,19 +386,19 @@ class IntentRouter:
                     "I'm here! Ask me anything about Lucas or his links.",
                 ])
                 return random.choice(proactive)
-        responses = [
+        responses = self.safe_responses.get("small_talk", [
             "That sounds cool!",
             "I like where your head's at",
             "Ha, fair point!",
             "You're right about that",
             "Nice one!",
-        ]
+        ])
         return random.choice(responses)
 
-    def _record(self, user_key: str, intent: str, message: str, response: str) -> None:
+    def _record(self, user_key: str, intent: str, message: str, response: str, topic: str = "") -> None:
         """Record a completed request/response pair in the conversation context."""
         if user_key and self._ctx:
-            self._ctx.record(user_key=user_key, intent=intent, message=message, response=response)
+            self._ctx.record(user_key=user_key, intent=intent, message=message, response=response, topic=topic)
 
     def _get_response(self, category: str) -> str:
         """Return a random response from the given safe_responses category."""

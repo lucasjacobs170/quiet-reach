@@ -4,7 +4,12 @@
     "What's up! Want to know about Lucas?",
     "Hey there! I can tell you all about Lucas and where to find him",
     "Yo! What can I do for you? 🌲",
-    "Hey — glad you're here! Ask me anything about Lucas"
+    "Hey — glad you're here! Ask me anything about Lucas",
+    "Hi! Always happy to help — what are you looking for?",
+    "Hey! You've got questions, I've got answers. What's up?",
+    "What's going on! I'm here for anything Lucas-related 🌊",
+    "Hey there — I'm ready when you are. What do you need?",
+    "Hiya! I'm Quiet Reach — what can I help you with today?"
   ],
 
   "thank_you": [
@@ -12,7 +17,12 @@
     "Happy to help!",
     "Anytime! Feel free to ask anything else",
     "Of course! That's what I'm here for 🙌",
-    "You got it!"
+    "You got it!",
+    "Glad I could help!",
+    "Always — don't hesitate to ask again.",
+    "That's what I'm here for. Come back anytime!",
+    "Easy! Let me know if there's anything else.",
+    "Absolutely — anytime you need something, I'm here 🌿"
   ],
 
   "goodbyes": [
@@ -20,43 +30,60 @@
     "Take care! Come back if you have more questions",
     "Catch you later!",
     "Later! 🌲 Hope to hear from you again",
-    "Take it easy — come back anytime!"
+    "Take it easy — come back anytime!",
+    "See you around! Don't be a stranger.",
+    "Alright, take care! 👋",
+    "Catch you next time — have a good one!",
+    "Peace! Come back whenever you need something.",
+    "Later! It was great chatting 🌊"
   ],
 
   "i_dont_know": [
     "I don't know that one! You could ask Lucas directly on Telegram (@LucasJacobs17) or Discord",
     "That's not something I have info on, but Lucas might know! Hit him up on Telegram or Discord",
-    "Not sure about that! Best to ask Lucas directly on his socials"
+    "Not sure about that! Best to ask Lucas directly on his socials",
+    "Hmm, that one's outside my knowledge. Lucas would be the one to ask — Telegram or Discord works.",
+    "I honestly don't know that! Try reaching Lucas directly for the best answer."
   ],
 
   "unclear_question": [
     "Not sure I caught that. Want to know about Lucas, his platforms, or how to reach him?",
     "Could you rephrase that? I'm here to help with questions about Lucas!",
-    "I'm not quite following. Ask me about Lucas and I'll help!"
+    "I'm not quite following. Ask me about Lucas and I'll help!",
+    "Hmm, I'm not sure what you're looking for — try asking about Lucas, his links, or his content.",
+    "I want to help, but I'm not sure I got that right. Can you try it a different way?"
   ],
 
   "boundary_responses": [
     "Let's keep it respectful here. I'm just trying to help 😊",
     "Hey, I'm on your side. What can I actually help with?",
-    "I get it, but let's dial it back. What do you need?"
+    "I get it, but let's dial it back. What do you need?",
+    "No worries — let's reset. What were you actually looking for?",
+    "I hear you. Let's start fresh — what can I help with?"
   ],
 
   "firm_boundary": [
     "That's not something I'm willing to engage with. I'm stepping back.",
     "That kind of language isn't something I'll respond to. Feel free to reach out when you're ready for a fresh start.",
-    "Not going there. Come back when you want to have a real conversation."
+    "Not going there. Come back when you want to have a real conversation.",
+    "I'm going to step back here. Reach out again when things are cooler.",
+    "That's a hard stop from me. Happy to help when you're ready to chat normally."
   ],
 
   "acknowledge_frustration": [
     "I hear you. Let me help clarify.",
     "Fair point. Let me explain better.",
-    "You're right to be confused. Let me clear that up."
+    "You're right to be confused. Let me clear that up.",
+    "Totally get it — let me try that again.",
+    "I can see why that's frustrating. Here's the deal:"
   ],
 
   "offer_help": [
     "What can I help you with?",
     "Happy to help! What do you need?",
-    "Let me know what you need and I'll help"
+    "Let me know what you need and I'll help",
+    "I'm all ears — what are you looking for?",
+    "What's on your mind? I'm here."
   ],
 
   "link_repeat_acknowledgment": [
@@ -64,7 +91,9 @@
     "Happy to share again! Here are Lucas's links:",
     "Sure thing! Here they are once more:",
     "Already sent these, but no worries — here you go:",
-    "Here are those links again:"
+    "Here are those links again:",
+    "No problem — let me drop those again for you:",
+    "Happy to! Here's the link list one more time:"
   ],
 
   "proactive_offer": [
@@ -72,7 +101,38 @@
     "It looks like you might need something — what can I do for you?",
     "I'm here! Ask me anything about Lucas or his links.",
     "Want me to share Lucas's links or tell you more about him? Just say the word!",
-    "Looks like you're curious about something — I'm all ears 🌲"
+    "Looks like you're curious about something — I'm all ears 🌲",
+    "I've been watching the conversation — want me to just send you the links directly?",
+    "Hey — seems like you're still looking for something. What would actually be helpful right now?"
+  ],
+
+  "small_talk": [
+    "That sounds cool!",
+    "I like where your head's at",
+    "Ha, fair point!",
+    "You're right about that",
+    "Nice one!",
+    "Ha! Fair enough.",
+    "Love that energy.",
+    "Not bad at all.",
+    "Haha, I can respect that.",
+    "You're onto something there 🌿"
+  ],
+
+  "first_touch_dm": [
+    "Hey! I'm Quiet Reach — Lucas's assistant. What can I help you with? 🌲",
+    "Hey there! Glad you reached out. I'm here to answer questions about Lucas, share links, or just help you find what you're looking for.",
+    "Oh hey! I'm Quiet Reach — think of me as Lucas's digital guide. What's on your mind?",
+    "Hi! I'm Lucas's assistant — ask me about his platforms, his content, or anything you want to know. What are you looking for?",
+    "Hey! You found me — I'm Quiet Reach. I help people connect with Lucas's world. What can I do for you? ⚡"
+  ],
+
+  "returning_user_dm": [
+    "Hey, welcome back! What can I help you with?",
+    "Oh hey again! What's up?",
+    "Hey! Good to see you back. What do you need?",
+    "Welcome back — what are you looking for today?",
+    "Hey again! What can I do for you? 🙌"
   ]
 }
 

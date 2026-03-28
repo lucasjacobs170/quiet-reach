@@ -11,6 +11,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, Con
 import hostility_handler
 from hostility_handler import HostilityLevel, handle_message as hh_handle_message
 from intent_router import IntentRouter as _IntentRouter
+from personality_manager import get_personality_manager as _get_pm
 
 _intent_router = _IntentRouter()
 
@@ -2821,6 +2822,7 @@ async def handle_dm_reply(message):
         reply = await generate_ai_reply(content)
         if not reply:
             reply, _rt = _intent_router.route_message(content)
+        reply = _get_pm().overlay_personality(reply, topic="lucas_info")
         reply = maybe_add_dm_cta(user_id, reply)
         await send_logged(message.channel, guild_id="", content=reply, is_dm=1)
         return
@@ -2854,6 +2856,7 @@ async def handle_dm_reply(message):
     reply = await generate_ai_reply(content)
     if not reply:
         reply, _rt = _intent_router.route_message(content)
+    reply = _get_pm().overlay_personality(reply, topic="general")
     reply = maybe_add_dm_cta(user_id, reply)
     await send_logged(message.channel, guild_id="", content=reply, is_dm=1)
     log(f"🤖 AI replied to {username}")
@@ -3455,6 +3458,11 @@ DM_SOFTENERS = [
     "You got it —",
     "Yep —",
     "Good question —",
+    "Absolutely —",
+    "For sure —",
+    "Happy to —",
+    "Of course —",
+    "Right —",
 ]
 
 PUBLIC_GREETING_OPENERS = [
@@ -3462,12 +3470,22 @@ PUBLIC_GREETING_OPENERS = [
     "Hi there.",
     "Yo.",
     "Hey hey.",
+    "What's up!",
+    "Hey, glad you stopped by.",
+    "Oh hey!",
+    "Hi!",
+    "Hey there —",
+    "What's good!",
 ]
 
 PUBLIC_QUESTION_OPENERS = [
     "Good question.",
     "Yep — I can help with that.",
     "For sure.",
+    "Happy to help with that.",
+    "Sure thing.",
+    "Glad you asked.",
+    "On it.",
 ]
 
 QUIET_REACH_CANON_LORE_FULL = """
@@ -3480,10 +3498,35 @@ BOT_BACKSTORY_LINES = [
     "I’m Quiet Reach — Lucas’s friendly guide and right-hand assistant. I’m here to answer questions about his platforms and content without the noise.",
     "Think of me as a digital concierge for Lucas’s world: quick answers, official links on request, no pushy promotions.",
     "I’m Quiet Reach — built to keep things simple and helpful. Ask me about Lucas, his platforms, or anything you want to know.",
+    "Hey — I’m Quiet Reach, Lucas’s assistant. I know his content, his platforms, and how to connect with him. What do you want to know?",
+    "Quiet Reach here — I was built to be the easiest way to find out about Lucas without the noise. What are you looking for?",
 ]
 
 def optin_footer() -> str:
     return " If you want, I can DM details — just reply “yes”."
+
+# Varied first-touch non-question openers (replaces the generic "I'm Lucas's assistant")
+_PUBLIC_FIRST_TOUCH_OPENERS = [
+    "Hey — I’m Quiet Reach, Lucas’s assistant. What are you looking for?",
+    "Hey! I’m here for anything Lucas-related — just let me know what you need.",
+    "Oh hey! I’m Quiet Reach — I can help with info about Lucas, links, or anything in between. What’s up?",
+    "Hey there — I’m Quiet Reach. I help people find Lucas’s stuff without the hassle. What do you need?",
+    "Hi! I’m Lucas’s assistant. Tell me what you’re after and I’ll point you the right way.",
+]
+
+# Varied purpose question responses
+_PUBLIC_PURPOSE_RESPONSES = [
+    "I’m Lucas’s assistant — I answer quick questions and help point people to his official pages. If you ever want links, I can DM them so the channel stays clean.",
+    "Good question! I’m Quiet Reach — I help people find Lucas’s content, answer questions about him, and share official links on request.",
+    "I’m here to make it easy to connect with Lucas’s world: quick answers, official links, no spam. What can I help with?",
+]
+
+# Varied "who is Lucas" responses
+_PUBLIC_WHO_IS_LUCAS_RESPONSES = [
+    "Lucas is a content creator. If you tell me what you’re looking for (live, premium, or socials), I can point you the right way — and I can DM official links if you ask.",
+    "Lucas Jacobs is a content creator with a live cam presence and premium platforms. Want me to tell you more or share links?",
+    "He’s a content creator — live shows, premium content, and a solid community. What do you want to know about him?",
+]
 
 async def build_public_response(user_text: str, touches: int) -> str:
     """
@@ -3498,24 +3541,23 @@ async def build_public_response(user_text: str, touches: int) -> str:
     # 1) Greetings: keep it natural + non-salesy
     if is_greeting(msg):
         opener = random.choice(PUBLIC_GREETING_OPENERS)
-        return (
-            f"{opener} I’m Quiet Reach — Lucas’s assistant. "
-            "What can I help you with?"
-        )
+        greeting_hooks = [
+            "What can I help you with?",
+            "What brings you here?",
+            "What do you need?",
+            "What are you looking for?",
+            "Ask me anything!",
+        ]
+        hook = random.choice(greeting_hooks)
+        return f"{opener} I’m Quiet Reach — Lucas’s assistant. {hook}"
 
     # 2) Public FAQ overrides (reduce weird AI drift / hallucinations)
     if looks_like_question(msg):
         if is_purpose_question(msg):
-            return (
-                "I’m Lucas’s assistant — I answer quick questions and help point people "
-                "to his official pages. If you ever want links, I can DM them so the channel stays clean."
-            )
+            return random.choice(_PUBLIC_PURPOSE_RESPONSES)
 
         if is_who_is_lucas_question(msg):
-            return (
-                "Lucas is a content creator. If you tell me what you’re looking for (live, premium, or socials), "
-                "I can point you the right way — and I can DM official links if you ask."
-            )
+            return random.choice(_PUBLIC_WHO_IS_LUCAS_RESPONSES)
 
         # Normal question: KB-grounded AI answer, then soft DM offer
         opener = random.choice(PUBLIC_QUESTION_OPENERS)
@@ -3525,24 +3567,24 @@ async def build_public_response(user_text: str, touches: int) -> str:
         return f"{opener} I’m not 100% sure on that, but I can try to help.{optin_footer()}"
 
     # 3) Non-question, non-greeting (mentions/replies that are vague)
-    # Keep it simple and human
+    # Use varied openers on first touch instead of the generic fallback
     if touches <= 1:
-        return (
-            "Hey — I’m Lucas’s assistant. "
-            "If you tell me what you’re looking for, I’ll point you the right way."
-        )
+        return random.choice(_PUBLIC_FIRST_TOUCH_OPENERS)
 
     # Later touches: gently steer
     if touches == 3:
-        return (
-            "Quick heads up: I keep server replies limited so I don’t spam the channel. "
-            "If you want details, I can DM you — just reply “yes”."
-        )
+        later_touch_responses = [
+            "Quick heads up: I keep server replies limited so I don’t spam the channel. If you want details, I can DM you — just reply “yes”.",
+            "Just so you know, I try to keep things tidy here — if you want the full breakdown, reply “yes” and I’ll DM you.",
+        ]
+        return random.choice(later_touch_responses)
 
-    return (
-        "Got you. What are you looking for — info about Lucas, or where to find him? "
-        "If you want links, I can DM them."
-    )
+    followup_responses = [
+        "Got you. What are you looking for — info about Lucas, or where to find him? If you want links, I can DM them.",
+        "Happy to help! Are you after info about Lucas, his content, or links to his pages?",
+        "What can I do for you? Info about Lucas, or do you want links sent to your DMs?",
+    ]
+    return random.choice(followup_responses)
 
 @client.event
 async def on_message(message):
