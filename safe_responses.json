@@ -1,0 +1,43 @@
+{
+  "greetings": [
+    "Hey! I'm here to help you learn about Lucas 🙌",
+    "What's up! Want to know about Lucas?",
+    "Hey there! I can tell you all about Lucas and where to find him"
+  ],
+
+  "thank_you": [
+    "No problem!",
+    "Happy to help!",
+    "Anytime! Feel free to ask anything else"
+  ],
+
+  "goodbyes": [
+    "See you later! Feel free to reach out anytime",
+    "Take care! Come back if you have more questions",
+    "Catch you later!"
+  ],
+
+  "i_dont_know": [
+    "I don't know that one! You could ask Lucas directly on Telegram (@LucasJacobs17) or Discord",
+    "That's not something I have info on, but Lucas might know! Hit him up on Telegram or Discord",
+    "Not sure about that! Best to ask Lucas directly on his socials"
+  ],
+
+  "unclear_question": [
+    "Not sure I caught that. Want to know about Lucas, his platforms, or how to reach him?",
+    "Could you rephrase that? I'm here to help with questions about Lucas!",
+    "I'm not quite following. Ask me about Lucas and I'll help!"
+  ],
+
+  "boundary_responses": [
+    "Let's keep it respectful here. I'm just trying to help 😊",
+    "Hey, I'm on your side. What can I actually help with?",
+    "I get it, but let's dial it back. What do you need?"
+  ],
+
+  "firm_boundary": [
+    "That's not something I'm willing to engage with. I'm stepping back.",
+    "That kind of language isn't something I'll respond to. Feel free to reach out when you're ready for a fresh start.",
+    "Not going there. Come back when you want to have a real conversation."
+  ]
+}

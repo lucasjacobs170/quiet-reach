@@ -3,12 +3,24 @@ intent_classifier.py — Context-aware intent classification using training data
 
 Loads the 80 manually-curated examples from training_data.json and builds a
 keyword/pattern-based scorer that classifies each incoming message into one of
-four intent categories:
+four base intent categories:
 
   neutral          — genuine question / normal conversation, no hostility
   mildly_frustrated — annoyed or confused but not attacking; recoverable with empathy
   clearly_hostile  — direct insults / pure disrespect; needs strong boundary
   sarcastic_cutting — sarcasm/cutting remarks; frustration through irony, soft boundary
+
+The IntentRouter (intent_router.py) maps neutral messages to more specific
+extended categories for routing purposes:
+
+  asks_about_lucas  — Questions about who Lucas is, what he does
+  asks_for_links    — Wants social media links / platform URLs
+  asks_for_help     — Wants bot to help with something
+  casual_greeting   — Hi, hello, hey
+  casual_gratitude  — Thanks, appreciate it
+  casual_goodbye    — Bye, see you, catch you
+  small_talk        — General conversation, observations
+  unclear           — Can't determine intent
 
 Usage (standalone validation):
     python intent_classifier.py
