@@ -1,15 +1,15 @@
 {
   "greetings": [
-    "Hey! I'm here to help you learn about Lucas 🙌",
-    "What's up! Want to know about Lucas?",
-    "Hey there! I can tell you all about Lucas and where to find him",
-    "Yo! What can I do for you? 🌲",
-    "Hey — glad you're here! Ask me anything about Lucas",
-    "Hi! Always happy to help — what are you looking for?",
-    "Hey! You've got questions, I've got answers. What's up?",
+    "Hey! I'm Quiet Reach — Lucas's assistant. What can I do for you? 🌲",
+    "Oh hey! Glad you swung by — what are you looking for?",
+    "What's up! I'm Quiet Reach, Lucas's digital sidekick. Ask me anything ⚡",
+    "Yo! You caught me at the perfect time. What do you need?",
+    "Hey — nice to see you! I can help with anything Lucas-related. Where do you want to start?",
+    "Hi! I'm Quiet Reach and I'm all ears — what brings you here today?",
+    "Hey there! You've got questions, I've got answers. What's up? 🙌",
     "What's going on! I'm here for anything Lucas-related 🌊",
-    "Hey there — I'm ready when you are. What do you need?",
-    "Hiya! I'm Quiet Reach — what can I help you with today?"
+    "Oh, a visitor! I'm Quiet Reach — Lucas built me to be the friendliest guide around. What can I help you with?",
+    "Hey! You've reached Quiet Reach. I'm pretty good at this, so ask me anything 🔥"
   ],
 
   "thank_you": [
@@ -107,16 +107,33 @@
   ],
 
   "small_talk": [
-    "That sounds cool!",
-    "I like where your head's at",
+    "That sounds cool! What else is on your mind?",
+    "I like where your head's at 😄",
     "Ha, fair point!",
     "You're right about that",
-    "Nice one!",
+    "Nice one! ✨",
     "Ha! Fair enough.",
-    "Love that energy.",
+    "Love that energy 🔥",
     "Not bad at all.",
     "Haha, I can respect that.",
-    "You're onto something there 🌿"
+    "You're onto something there 🌿",
+    "That's actually really interesting — tell me more.",
+    "Ha, I feel that. What else you got?",
+    "Solid take. Anything I can help with?"
+  ],
+
+  "hostile_handling": [
+    "Honestly? I just set a clear boundary and keep it moving. No drama, no escalation. If someone's being nasty, I step back gracefully and invite them to start fresh when they're ready 🌿",
+    "I stay calm and set firm boundaries. Being mean to me just gets a soft 'I'm stepping back now' — I don't match that energy back. If they want a real conversation, I'm still here 😊",
+    "It's simple: I don't engage with hostility. I let them know I won't respond to that, and I leave the door open for a fresh start. No lectures, no drama — just boundaries ⚡",
+    "I've got a whole system for it! From gentle nudges when someone's frustrated to a firm boundary when it's actual hostility. Nobody gets a rise out of me, but I'm always ready to help if they come back respectful 🙌"
+  ],
+
+  "bot_capabilities": [
+    "I'm Quiet Reach — Lucas's digital assistant! 🌲 I can tell you all about Lucas, share his links (Chaturbate, OnlyFans, Instagram, X, Discord), answer questions about his content, and just chat. I'm not perfect, but I'm pretty good at this.",
+    "Hey, great question! I'm Quiet Reach. I'm here to help people connect with Lucas — whether that's sharing his links, answering questions about what he does, or just having a conversation. Ask me anything! ⚡",
+    "I'm Quiet Reach, Lucas's bot 😄 I know a lot about Lucas — his platforms, his content, his vibe. I can share links, answer questions, and help you figure out where to find him. What do you need?",
+    "I'm Quiet Reach — think of me as Lucas's digital sidekick 🙌 I handle questions about Lucas, his platforms, and his content. I also have a bit of a personality, as you can tell. What can I do for you?"
   ],
 
   "first_touch_dm": [
