@@ -243,6 +243,24 @@ class TranscriptLogger:
             # Never crash the bot — silently swallow logging errors
             print(f"⚠️ transcript_logger: log() failed: {exc}")
 
+    def close(self) -> None:
+        """Flush any in-memory state and release the singleton instance.
+
+        After calling this the next call to ``get_instance()`` will create a
+        fresh logger with a new session file, so all file handles from the
+        previous session are freed.
+        """
+        TranscriptLogger.close_instance()
+
+    @classmethod
+    def close_instance(cls) -> None:
+        """Class-level cleanup: release the singleton so its file handle is freed.
+
+        Safe to call even if no instance exists yet.
+        """
+        with cls._lock:
+            cls._instance = None
+
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
