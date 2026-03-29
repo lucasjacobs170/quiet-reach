@@ -13,6 +13,7 @@ from hostility_handler import HostilityLevel, handle_message as hh_handle_messag
 from intent_router import IntentRouter as _IntentRouter
 from personality_manager import get_personality_manager as _get_pm
 from response_variation_engine import get_variation_engine as _get_rve
+from resource_manager import ManagedConnection, cleanup_all, track_task, untrack_task
 
 _intent_router = _IntentRouter()
 
@@ -394,7 +395,7 @@ def telegram_login_dialog(root):
     
 def setup_database():
     try:
-        with sqlite3.connect(DB_PATH) as c:
+        with ManagedConnection(DB_PATH) as c:
             k = c.cursor()
 
             k.execute(
@@ -534,104 +535,113 @@ def _compute_next_post_at_utc(window_start_pt: int, window_end_pt: int) -> str:
     return scheduled_utc.isoformat()
 
 def promo_set_channel(guild_id: int, channel_id: int):
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "INSERT INTO promo_channels(guild_id, channel_id) VALUES(?,?) "
-        "ON CONFLICT(guild_id) DO UPDATE SET channel_id=excluded.channel_id",
-        (str(guild_id), str(channel_id))
-    )
-    c.commit(); c.close()
+    with ManagedConnection(DB_PATH) as c:
+        c.cursor().execute(
+            "INSERT INTO promo_channels(guild_id, channel_id) VALUES(?,?) "
+            "ON CONFLICT(guild_id) DO UPDATE SET channel_id=excluded.channel_id",
+            (str(guild_id), str(channel_id))
+        )
+        c.commit()
 
 def promo_set_window(guild_id: int, start_pt: int, end_pt: int):
     next_utc = _compute_next_post_at_utc(start_pt, end_pt)
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "INSERT INTO promo_channels(guild_id, window_start_pt, window_end_pt, next_post_at_utc) "
-        "VALUES(?,?,?,?) "
-        "ON CONFLICT(guild_id) DO UPDATE SET window_start_pt=excluded.window_start_pt, "
-        "window_end_pt=excluded.window_end_pt, next_post_at_utc=excluded.next_post_at_utc",
-        (str(guild_id), int(start_pt), int(end_pt), next_utc)
-    )
-    c.commit(); c.close()
+    with ManagedConnection(DB_PATH) as c:
+        c.cursor().execute(
+            "INSERT INTO promo_channels(guild_id, window_start_pt, window_end_pt, next_post_at_utc) "
+            "VALUES(?,?,?,?) "
+            "ON CONFLICT(guild_id) DO UPDATE SET window_start_pt=excluded.window_start_pt, "
+            "window_end_pt=excluded.window_end_pt, next_post_at_utc=excluded.next_post_at_utc",
+            (str(guild_id), int(start_pt), int(end_pt), next_utc)
+        )
+        c.commit()
 
 def promo_set_enabled(guild_id: int, enabled: bool):
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "INSERT INTO promo_channels(guild_id, enabled) VALUES(?,?) "
-        "ON CONFLICT(guild_id) DO UPDATE SET enabled=excluded.enabled",
-        (str(guild_id), 1 if enabled else 0)
-    )
-    c.commit(); c.close()
+    with ManagedConnection(DB_PATH) as c:
+        c.cursor().execute(
+            "INSERT INTO promo_channels(guild_id, enabled) VALUES(?,?) "
+            "ON CONFLICT(guild_id) DO UPDATE SET enabled=excluded.enabled",
+            (str(guild_id), 1 if enabled else 0)
+        )
+        c.commit()
 
 def promo_get_config_row(guild_id: int):
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "SELECT guild_id, channel_id, enabled, window_start_pt, window_end_pt, next_post_at_utc, last_post_at_utc "
-        "FROM promo_channels WHERE guild_id=?",
-        (str(guild_id),)
-    )
-    row = k.fetchone()
-    c.close()
-    return row
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute(
+            "SELECT guild_id, channel_id, enabled, window_start_pt, window_end_pt, next_post_at_utc, last_post_at_utc "
+            "FROM promo_channels WHERE guild_id=?",
+            (str(guild_id),)
+        )
+        return k.fetchone()
 
 def promo_get_enabled_rows():
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "SELECT guild_id, channel_id, window_start_pt, window_end_pt, next_post_at_utc "
-        "FROM promo_channels WHERE enabled=1 AND channel_id IS NOT NULL"
-    )
-    rows = k.fetchall()
-    c.close()
-    return rows
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute(
+            "SELECT guild_id, channel_id, window_start_pt, window_end_pt, next_post_at_utc "
+            "FROM promo_channels WHERE enabled=1 AND channel_id IS NOT NULL"
+        )
+        return k.fetchall()
 
 def promo_update_next(guild_id: int, start_pt: int, end_pt: int):
     next_utc = _compute_next_post_at_utc(start_pt, end_pt)
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "UPDATE promo_channels SET next_post_at_utc=? WHERE guild_id=?",
-        (next_utc, str(guild_id))
-    )
-    c.commit(); c.close()
+    with ManagedConnection(DB_PATH) as c:
+        c.cursor().execute(
+            "UPDATE promo_channels SET next_post_at_utc=? WHERE guild_id=?",
+            (next_utc, str(guild_id))
+        )
+        c.commit()
 
 def promo_record_history(guild_id: int, channel_id: int, image_path: str, caption: str):
     now_utc = datetime.now(timezone.utc).isoformat()
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "INSERT INTO promo_history(guild_id, channel_id, posted_at_utc, image_path, caption) "
-        "VALUES(?,?,?,?,?)",
-        (str(guild_id), str(channel_id), now_utc, image_path, caption)
-    )
-    k.execute(
-        "UPDATE promo_channels SET last_post_at_utc=? WHERE guild_id=?",
-        (now_utc, str(guild_id))
-    )
-    c.commit(); c.close()
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute(
+            "INSERT INTO promo_history(guild_id, channel_id, posted_at_utc, image_path, caption) "
+            "VALUES(?,?,?,?,?)",
+            (str(guild_id), str(channel_id), now_utc, image_path, caption)
+        )
+        k.execute(
+            "UPDATE promo_channels SET last_post_at_utc=? WHERE guild_id=?",
+            (now_utc, str(guild_id))
+        )
+        c.commit()
 
 def get_keywords(ln):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT word FROM keywords WHERE list_name=?",(ln,));w=[r[0].lower().strip()for r in k.fetchall()];c.close();return w
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute("SELECT word FROM keywords WHERE list_name=?", (ln,))
+        return [r[0].lower().strip() for r in k.fetchall()]
 
 def get_user(did):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT*FROM users WHERE discord_id=?",(str(did),));u=k.fetchone();c.close();return u
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute("SELECT*FROM users WHERE discord_id=?", (str(did),))
+        return k.fetchone()
 
 def upsert_user(did, un, lt, opt_out=0):
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
-    k.execute(
-        'INSERT INTO users VALUES(?,?,?,?,?) '
-        'ON CONFLICT(discord_id) DO UPDATE SET '
-        'list_type=excluded.list_type, '
-        'last_contacted=excluded.last_contacted, '
-        'opt_out=excluded.opt_out',
-        (str(did), un, lt, str(datetime.now()), opt_out)
-    )
-    c.commit()
-    c.close()
+    with ManagedConnection(DB_PATH) as c:
+        c.cursor().execute(
+            'INSERT INTO users VALUES(?,?,?,?,?) '
+            'ON CONFLICT(discord_id) DO UPDATE SET '
+            'list_type=excluded.list_type, '
+            'last_contacted=excluded.last_contacted, '
+            'opt_out=excluded.opt_out',
+            (str(did), un, lt, str(datetime.now()), opt_out)
+        )
+        c.commit()
 
 def check_server_cap(sid):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT dm_count FROM server_caps WHERE server_id=? AND date=?",(str(sid),str(date.today())));r=k.fetchone();c.close();return(r[0]if r else 0)>=5
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute("SELECT dm_count FROM server_caps WHERE server_id=? AND date=?", (str(sid), str(date.today())))
+        r = k.fetchone()
+        return (r[0] if r else 0) >= 5
 
 def increment_server_cap(sid):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute('INSERT INTO server_caps VALUES(?,?,1)ON CONFLICT(server_id,date)DO UPDATE SET dm_count=dm_count+1',(str(sid),str(date.today())));c.commit();c.close()
+    with ManagedConnection(DB_PATH) as c:
+        c.cursor().execute('INSERT INTO server_caps VALUES(?,?,1)ON CONFLICT(server_id,date)DO UPDATE SET dm_count=dm_count+1', (str(sid), str(date.today())))
+        c.commit()
 
 def user_on_cooldown(did):
     u=get_user(did)
@@ -640,59 +650,66 @@ def user_on_cooldown(did):
     return(datetime.now()-datetime.fromisoformat(u[3])).days<7
 
 def add_ambiguous(did,un,msg):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("INSERT INTO ambiguous(discord_id,username,message,timestamp)VALUES(?,?,?,?)",(str(did),un,msg,str(datetime.now())));c.commit();c.close()
+    with ManagedConnection(DB_PATH) as c:
+        c.cursor().execute("INSERT INTO ambiguous(discord_id,username,message,timestamp)VALUES(?,?,?,?)", (str(did), un, msg, str(datetime.now())))
+        c.commit()
 
 def get_users_by_list(lt):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT discord_id,username,last_contacted FROM users WHERE list_type=? AND opt_out=0",(lt,));u=k.fetchall();c.close();return u
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute("SELECT discord_id,username,last_contacted FROM users WHERE list_type=? AND opt_out=0", (lt,))
+        return k.fetchall()
 
 def get_ambiguous_entries():
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("SELECT id,discord_id,username,message,timestamp FROM ambiguous");e=k.fetchall();c.close();return e
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute("SELECT id,discord_id,username,message,timestamp FROM ambiguous")
+        return k.fetchall()
 
 def delete_ambiguous(eid):
-    c=sqlite3.connect(DB_PATH);k=c.cursor();k.execute("DELETE FROM ambiguous WHERE id=?",(eid,));c.commit();c.close()
+    with ManagedConnection(DB_PATH) as c:
+        c.cursor().execute("DELETE FROM ambiguous WHERE id=?", (eid,))
+        c.commit()
 
 def get_stats():
-    c=sqlite3.connect(DB_PATH);k=c.cursor()
-    k.execute("SELECT COUNT(*)FROM users WHERE list_type='warm'");w=k.fetchone()[0]
-    k.execute("SELECT COUNT(*)FROM users WHERE list_type='cold'");co=k.fetchone()[0]
-    k.execute("SELECT COUNT(*)FROM users WHERE list_type='neutral'");n=k.fetchone()[0]
-    k.execute("SELECT SUM(dm_count)FROM server_caps");t=k.fetchone()[0]or 0
-    k.execute("SELECT COUNT(*)FROM ambiguous");p=k.fetchone()[0];c.close();return w,co,n,t,p
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute("SELECT COUNT(*)FROM users WHERE list_type='warm'"); w=k.fetchone()[0]
+        k.execute("SELECT COUNT(*)FROM users WHERE list_type='cold'"); co=k.fetchone()[0]
+        k.execute("SELECT COUNT(*)FROM users WHERE list_type='neutral'"); n=k.fetchone()[0]
+        k.execute("SELECT SUM(dm_count)FROM server_caps"); t=k.fetchone()[0] or 0
+        k.execute("SELECT COUNT(*)FROM ambiguous"); p=k.fetchone()[0]
+        return w, co, n, t, p
 def get_opt_in(did: int) -> bool:
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
-    k.execute("SELECT opted_in FROM dm_optins WHERE discord_id=?", (str(did),))
-    row = k.fetchone()
-    c.close()
-    return bool(row and row[0] == 1)
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute("SELECT opted_in FROM dm_optins WHERE discord_id=?", (str(did),))
+        row = k.fetchone()
+        return bool(row and row[0] == 1)
 
 def set_opt_in(did: int, username: str, opted_in: int = 1):
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
-    k.execute(
-        "INSERT INTO dm_optins(discord_id, username, opted_in, opted_in_at) "
-        "VALUES(?,?,?,?) "
-        "ON CONFLICT(discord_id) DO UPDATE SET "
-        "username=excluded.username, opted_in=excluded.opted_in, opted_in_at=excluded.opted_in_at",
-        (str(did), username, int(opted_in), str(datetime.now()))
-    )
-    c.commit()
-    c.close()
+    with ManagedConnection(DB_PATH) as c:
+        c.cursor().execute(
+            "INSERT INTO dm_optins(discord_id, username, opted_in, opted_in_at) "
+            "VALUES(?,?,?,?) "
+            "ON CONFLICT(discord_id) DO UPDATE SET "
+            "username=excluded.username, opted_in=excluded.opted_in, opted_in_at=excluded.opted_in_at",
+            (str(did), username, int(opted_in), str(datetime.now()))
+        )
+        c.commit()
 
 def get_touches(did: int) -> int:
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
-    k.execute("SELECT touches FROM public_touches WHERE discord_id=?", (str(did),))
-    row = k.fetchone()
-    c.close()
-    return int(row[0]) if row else 0
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute("SELECT touches FROM public_touches WHERE discord_id=?", (str(did),))
+        row = k.fetchone()
+        return int(row[0]) if row else 0
 
 def can_public_touch(did: int) -> bool:
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
-    k.execute("SELECT last_touch FROM public_touches WHERE discord_id=?", (str(did),))
-    row = k.fetchone()
-    c.close()
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
+        k.execute("SELECT last_touch FROM public_touches WHERE discord_id=?", (str(did),))
+        row = k.fetchone()
     if not row or not row[0]:
         return True
     try:
@@ -705,32 +722,31 @@ def record_touch(did: int, username: str) -> int:
     """Increment touch counter; return new touches count."""
     now = datetime.now().isoformat()
 
-    c = sqlite3.connect(DB_PATH)
-    k = c.cursor()
+    with ManagedConnection(DB_PATH) as c:
+        k = c.cursor()
 
-    # Fetch current count
-    k.execute(
-        "SELECT touches FROM public_touches WHERE discord_id=?",
-        (str(did),)
-    )
-    row = k.fetchone()
-
-    if row:
-        touches = int(row[0]) + 1
+        # Fetch current count
         k.execute(
-            "UPDATE public_touches SET username=?, touches=?, last_touch=? WHERE discord_id=?",
-            (username, touches, now, str(did))
+            "SELECT touches FROM public_touches WHERE discord_id=?",
+            (str(did),)
         )
-    else:
-        touches = 1
-        k.execute(
-            "INSERT INTO public_touches(discord_id, username, touches, last_touch) VALUES(?,?,?,?)",
-            (str(did), username, touches, now)
-        )
+        row = k.fetchone()
 
-    c.commit()
-    c.close()
-    return touches
+        if row:
+            touches = int(row[0]) + 1
+            k.execute(
+                "UPDATE public_touches SET username=?, touches=?, last_touch=? WHERE discord_id=?",
+                (username, touches, now, str(did))
+            )
+        else:
+            touches = 1
+            k.execute(
+                "INSERT INTO public_touches(discord_id, username, touches, last_touch) VALUES(?,?,?,?)",
+                (str(did), username, touches, now)
+            )
+
+        c.commit()
+        return touches
 
 intents=discord.Intents.default();intents.message_content=True;intents.members=True;intents.presences=True
 client=discord.Client(intents=intents);ui_log=None
@@ -977,24 +993,22 @@ def convo_log(
         return
 
     try:
-        c = sqlite3.connect(DB_PATH, timeout=30)
-        k = c.cursor()
-        k.execute(
-            "INSERT INTO conversation_log(ts_utc,guild_id,channel_id,user_id,username,is_dm,direction,message) "
-            "VALUES(?,?,?,?,?,?,?,?)",
-            (
-                event["ts_utc"],
-                event["guild_id"],
-                event["channel_id"],
-                event["user_id"],
-                event["username"],
-                event["is_dm"],
-                event["direction"],
-                event["message"],
+        with ManagedConnection(DB_PATH, timeout=30) as c:
+            c.cursor().execute(
+                "INSERT INTO conversation_log(ts_utc,guild_id,channel_id,user_id,username,is_dm,direction,message) "
+                "VALUES(?,?,?,?,?,?,?,?)",
+                (
+                    event["ts_utc"],
+                    event["guild_id"],
+                    event["channel_id"],
+                    event["user_id"],
+                    event["username"],
+                    event["is_dm"],
+                    event["direction"],
+                    event["message"],
+                )
             )
-        )
-        c.commit()
-        c.close()
+            c.commit()
     except Exception as e:
         log(f"⚠️ convo_log (db) failed: {e}")
 
@@ -1166,12 +1180,12 @@ def _sanitize_caption(text: str) -> str:
     return t
 
 def promo_set_next_post_at(guild_id: int, next_post_at_utc_iso: str):
-    c = sqlite3.connect(DB_PATH); k = c.cursor()
-    k.execute(
-        "UPDATE promo_channels SET next_post_at_utc=? WHERE guild_id=?",
-        (next_post_at_utc_iso, str(guild_id))
-    )
-    c.commit(); c.close()
+    with ManagedConnection(DB_PATH) as c:
+        c.cursor().execute(
+            "UPDATE promo_channels SET next_post_at_utc=? WHERE guild_id=?",
+            (next_post_at_utc_iso, str(guild_id))
+        )
+        c.commit()
 
 async def generate_promo_caption(theme: str, seed: str) -> str:
     """
@@ -1378,6 +1392,7 @@ async def on_ready():
     # Start promo loop once
     if promo_task is None or promo_task.done():
         promo_task = asyncio.create_task(promo_loop())
+        track_task(promo_task)
         log("📣 Promo loop started.")
     
 def build_official_links_all_message() -> str:
@@ -5326,7 +5341,7 @@ class QuietReachUI:
                 else:
                     print("ℹ️ No Ollama processes found.")
 
-                # Step 5: Flush logging handlers
+                # Step 5: Flush logging handlers and release all remaining resources
                 print("📝 Flushing log handlers...")
                 for handler in logging.root.handlers:
                     try:
@@ -5334,6 +5349,11 @@ class QuietReachUI:
                         handler.close()
                     except Exception:
                         pass
+
+                # Step 6: Final cleanup of any remaining SQLite connections / tasks
+                print("🧹 Final resource cleanup...")
+                cleanup_all()
+
                 print("✅ Shutdown complete.")
             except Exception as e:
                 print(f"⚠️ Shutdown error: {e}")
@@ -5957,6 +5977,20 @@ class QuietReachUI:
 
         if self.loop and self.loop.is_running():
             async def _shutdown():
+                global promo_task
+                # Cancel promo background task first
+                if promo_task and not promo_task.done():
+                    promo_task.cancel()
+                    try:
+                        await asyncio.wait_for(asyncio.shield(promo_task), timeout=2)
+                    except Exception:
+                        pass
+                promo_task = None
+                untrack_task(promo_task)
+
+                # Release all tracked SQLite connections and file handles
+                cleanup_all()
+
                 try:
                     await client.close()
                 finally:
@@ -5966,6 +6000,9 @@ class QuietReachUI:
                         pass
 
             asyncio.run_coroutine_threadsafe(_shutdown(), self.loop)
+        else:
+            # Loop not running — still run cleanup synchronously
+            cleanup_all()
 
         self.reset_buttons()
         self.status_label.config(text="⚫ Offline", fg="#aaaaaa")
@@ -6135,6 +6172,8 @@ class QuietReachUI:
                         self.append_log(f"❌ Telegram shutdown error: {e}")
                     finally:
                         telegram_app = None
+                        # Release all tracked SQLite connections and file handles
+                        cleanup_all()
                         try:
                             self.telegram_loop.stop()
                         except Exception:
@@ -6280,12 +6319,11 @@ class QuietReachUI:
             def add_w():
                 w = ent.get().strip().lower()
                 if w:
-                    c = sqlite3.connect(DB_PATH)
-                    c.cursor().execute(
-                        "INSERT OR IGNORE INTO keywords VALUES (?,?)",
-                        (w, ln))
-                    c.commit()
-                    c.close()
+                    with ManagedConnection(DB_PATH) as c:
+                        c.cursor().execute(
+                            "INSERT OR IGNORE INTO keywords VALUES (?,?)",
+                            (w, ln))
+                        c.commit()
                     lb.insert('end', f"  {w}")
                     ent.delete(0, 'end')
                     self.append_log(f"✅ Added '{w}' to {ln}")
@@ -6294,12 +6332,11 @@ class QuietReachUI:
                 sel = lb.curselection()
                 if sel:
                     w = lb.get(sel[0]).strip()
-                    c = sqlite3.connect(DB_PATH)
-                    c.cursor().execute(
-                        "DELETE FROM keywords WHERE word=? AND list_name=?",
-                        (w, ln))
-                    c.commit()
-                    c.close()
+                    with ManagedConnection(DB_PATH) as c:
+                        c.cursor().execute(
+                            "DELETE FROM keywords WHERE word=? AND list_name=?",
+                            (w, ln))
+                        c.commit()
                     lb.delete(sel[0])
                     self.append_log(f"🗑️ Removed '{w}' from {ln}")
 
@@ -6649,54 +6686,48 @@ class QuietReachUI:
 
     def reset_warm(self):
         if messagebox.askyesno("Reset", "Wipe Warm List?"):
-            c = sqlite3.connect(DB_PATH)
-            c.cursor().execute("DELETE FROM users WHERE list_type='warm'")
-            c.commit()
-            c.close()
+            with ManagedConnection(DB_PATH) as c:
+                c.cursor().execute("DELETE FROM users WHERE list_type='warm'")
+                c.commit()
             self.append_log("🔄 Warm List wiped!")
 
     def reset_cold(self):
         if messagebox.askyesno("Reset", "Wipe Cold List?"):
-            c = sqlite3.connect(DB_PATH)
-            c.cursor().execute("DELETE FROM users WHERE list_type='cold'")
-            c.commit()
-            c.close()
+            with ManagedConnection(DB_PATH) as c:
+                c.cursor().execute("DELETE FROM users WHERE list_type='cold'")
+                c.commit()
             self.append_log("🔄 Cold List wiped!")
 
     def reset_neutral(self):
         if messagebox.askyesno("Reset", "Wipe Neutral List?"):
-            c = sqlite3.connect(DB_PATH)
-            c.cursor().execute("DELETE FROM users WHERE list_type='neutral'")
-            c.commit()
-            c.close()
+            with ManagedConnection(DB_PATH) as c:
+                c.cursor().execute("DELETE FROM users WHERE list_type='neutral'")
+                c.commit()
             self.append_log("🔄 Neutral List wiped!")
 
     def reset_ambiguous(self):
         if messagebox.askyesno("Reset", "Wipe Ambiguous replies?"):
-            c = sqlite3.connect(DB_PATH)
-            c.cursor().execute("DELETE FROM ambiguous")
-            c.commit()
-            c.close()
+            with ManagedConnection(DB_PATH) as c:
+                c.cursor().execute("DELETE FROM ambiguous")
+                c.commit()
             self.append_log("🔄 Ambiguous wiped!")
 
     def reset_caps(self):
         if messagebox.askyesno("Reset", "Reset server caps?"):
-            c = sqlite3.connect(DB_PATH)
-            c.cursor().execute("DELETE FROM server_caps")
-            c.commit()
-            c.close()
+            with ManagedConnection(DB_PATH) as c:
+                c.cursor().execute("DELETE FROM server_caps")
+                c.commit()
             self.append_log("🔄 Server caps reset!")
 
     def reset_all(self):
         if messagebox.askyesno("⚠️ WIPE ALL", "Wipe ALL data? This cannot be undone!"):
             if messagebox.askyesno("⚠️ FINAL WARNING", "Are you absolutely sure?"):
-                c = sqlite3.connect(DB_PATH)
-                cur = c.cursor()
-                cur.execute("DELETE FROM users")
-                cur.execute("DELETE FROM ambiguous")
-                cur.execute("DELETE FROM server_caps")
-                c.commit()
-                c.close()
+                with ManagedConnection(DB_PATH) as c:
+                    cur = c.cursor()
+                    cur.execute("DELETE FROM users")
+                    cur.execute("DELETE FROM ambiguous")
+                    cur.execute("DELETE FROM server_caps")
+                    c.commit()
                 self.append_log("💀 ALL DATA WIPED!")
 
 # ============================================================
