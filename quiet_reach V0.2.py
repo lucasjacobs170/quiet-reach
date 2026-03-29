@@ -1,5 +1,5 @@
 # 🤫 QUIET REACH v1.2
-import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, re, json, signal, sys
+import discord, tkinter as tk, sqlite3, asyncio, threading, random, os, re, json, signal, sys, subprocess, logging
 from tkinter import ttk, scrolledtext, messagebox
 import tkinter.font as tkfont
 from datetime import datetime, date, timedelta
@@ -5078,6 +5078,39 @@ async def telegram_on_shutdown(app):
 # 🖥️ TKINTER DESKTOP UI
 # ============================================================
 
+def _kill_ollama_processes():
+    """
+    Find and terminate all running Ollama processes.
+    Returns the number of processes killed.
+    """
+    killed = 0
+    try:
+        if sys.platform == "win32":
+            result = subprocess.run(
+                ["taskkill", "/F", "/IM", "ollama.exe"],
+                capture_output=True, timeout=5
+            )
+            if result.returncode == 0:
+                killed += 1
+            # Also try to kill the Ollama runner process
+            result2 = subprocess.run(
+                ["taskkill", "/F", "/IM", "ollama_llama_server.exe"],
+                capture_output=True, timeout=5
+            )
+            if result2.returncode == 0:
+                killed += 1
+        else:
+            result = subprocess.run(
+                ["pkill", "-f", "ollama"],
+                capture_output=True, timeout=5
+            )
+            if result.returncode == 0:
+                killed += 1
+    except Exception as e:
+        print(f"⚠️ Could not kill Ollama processes: {e}")
+    return killed
+
+
 class QuietReachUI:
 
     def show_commands_help(self):
@@ -5241,18 +5274,80 @@ class QuietReachUI:
 
     def on_closing(self):
         """
-        Handle clean shutdown when the window is closed or a termination signal is received.
-        Stops any running bots before destroying the window.
+        Handle complete graceful shutdown when the window is closed or a termination signal is received.
+        Ensures ALL processes, threads, connections, and file handles are properly closed.
+        Applies a 5-second timeout and force-closes if graceful shutdown does not complete in time.
         """
         print("🛑 Shutting down Quiet Reach...")
+        self.append_log("🛑 Initiating graceful shutdown...")
 
-        if self.bot_running:
-            self.stop_bot()
+        shutdown_complete = threading.Event()
 
-        if self.telegram_running:
-            self.stop_telegram_bot()
+        def _do_shutdown():
+            try:
+                # Step 1: Stop Discord bot and wait for its thread
+                if self.bot_running:
+                    print("🔌 Closing Discord connection...")
+                    self.stop_bot()
+                    if self.bot_thread and self.bot_thread.is_alive():
+                        self.bot_thread.join(timeout=3)
+                    print("✅ Discord closed.")
 
-        self.root.destroy()
+                # Step 2: Stop Telegram bot and wait for its thread
+                if self.telegram_running:
+                    print("📱 Closing Telegram connection...")
+                    self.stop_telegram_bot()
+                    if self.telegram_thread and self.telegram_thread.is_alive():
+                        self.telegram_thread.join(timeout=3)
+                    print("✅ Telegram closed.")
+
+                # Step 3: Cancel all remaining async tasks on both loops
+                print("🔄 Cancelling pending async tasks...")
+                for loop in [self.loop, self.telegram_loop]:
+                    if loop and not loop.is_closed():
+                        try:
+                            tasks = asyncio.all_tasks(loop)
+                            for task in tasks:
+                                task.cancel()
+                        except Exception:
+                            pass
+                print("✅ Async tasks cancelled.")
+
+                # Step 4: Kill Ollama processes
+                print("🤖 Terminating Ollama processes...")
+                killed = _kill_ollama_processes()
+                if killed:
+                    print(f"✅ Killed {killed} Ollama process(es).")
+                else:
+                    print("ℹ️ No Ollama processes found.")
+
+                # Step 5: Flush logging handlers
+                print("📝 Flushing log handlers...")
+                for handler in logging.root.handlers:
+                    try:
+                        handler.flush()
+                        handler.close()
+                    except Exception:
+                        pass
+                print("✅ Shutdown complete.")
+            except Exception as e:
+                print(f"⚠️ Shutdown error: {e}")
+            finally:
+                shutdown_complete.set()
+
+        shutdown_thread = threading.Thread(target=_do_shutdown, daemon=True)
+        shutdown_thread.start()
+        shutdown_thread.join(timeout=5)
+
+        if not shutdown_complete.is_set():
+            print("⚠️ Graceful shutdown timed out after 5 seconds. Force closing...")
+
+        try:
+            self.root.destroy()
+        except Exception:
+            pass
+
+        sys.exit(0)
 
     def build_ui(self):
         t = self.THEME
