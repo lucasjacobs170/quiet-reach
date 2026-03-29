@@ -173,7 +173,12 @@ class IntentRouter:
     # Public API
     # ------------------------------------------------------------------
 
-    def route_message(self, user_message: str, user_key: str = "") -> tuple[str, str]:
+    def route_message(
+        self,
+        user_message: str,
+        user_key: str = "",
+        is_group_chat: bool = False,
+    ) -> tuple[str, str]:
         """
         Route *user_message* to the appropriate response.
 
@@ -184,6 +189,9 @@ class IntentRouter:
         user_key : str
             Opaque per-user identifier used for conversation-context tracking.
             Pass an empty string to skip context tracking.
+        is_group_chat : bool
+            When True, social/link requests redirect to DM instead of sharing
+            links directly.  Group chats should never expose raw URLs.
 
         Returns:
             (response_text, routing_type)
@@ -222,12 +230,18 @@ class IntentRouter:
             return response, ROUTE_KNOWLEDGE_BASE
 
         if extended_intent == "asks_for_socials":
-            response = self._handle_socials_request()
+            if is_group_chat:
+                response = self._get_group_links_redirect()
+            else:
+                response = self._handle_socials_request()
             self._record(user_key, extended_intent, user_message, response, topic="links")
             return response, ROUTE_KNOWLEDGE_BASE
 
         if extended_intent == "asks_for_links":
-            response = self._handle_links_request(user_key)
+            if is_group_chat:
+                response = self._get_group_links_redirect()
+            else:
+                response = self._handle_links_request(user_key)
             self._record(user_key, extended_intent, user_message, response, topic="links")
             return response, ROUTE_KNOWLEDGE_BASE
 
@@ -389,6 +403,21 @@ class IntentRouter:
 
         # Fall back to general description
         return self.knowledge_base["who_is_lucas"]["description"]
+
+    def _get_group_links_redirect(self) -> str:
+        """
+        Return a DM-redirect message for group chats.
+
+        Links are never shared in group chats; instead the user is directed
+        to open a private conversation with the bot.
+        """
+        redirects = [
+            "I keep links out of group chat to avoid spam 📵 — message me privately and I'll send them over!",
+            "Links are DM-only 🔒 — shoot me a private message and I'll share everything you need.",
+            "I don't drop links in public chats — DM me and I'll send the full list right away! 📲",
+            "Sharing links privately keeps things tidy here — DM me and I'll hook you up! 🤫",
+        ]
+        return random.choice(redirects)
 
     def _get_links(self) -> str:
         """Return all verified platform links as a formatted string."""

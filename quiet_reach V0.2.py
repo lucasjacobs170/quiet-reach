@@ -1656,24 +1656,6 @@ def build_offerings_summary() -> str:
         "Want details on any of these?"
     )
 
-
-
-    t = (text or "").strip().lower()
-    if not t:
-        return False
-    phrases = [
-        "that's not what i asked",
-        "thats not what i asked",
-        "i didn't ask",
-        "i didnt ask",
-        "you didn't answer",
-        "you didnt answer",
-        "i asked who is lucas",
-        "you sent them all again",
-        "i only want one link",
-    ]
-    return any(p in t for p in phrases)
-
 def is_single_link_followup(text: str) -> bool:
     t = (text or "").strip().lower()
     if not t:
@@ -3643,11 +3625,16 @@ async def build_public_response(user_text: str, touches: int) -> str:
         if is_who_is_lucas_question(msg):
             return random.choice(_PUBLIC_WHO_IS_LUCAS_RESPONSES)
 
-        # Normal question: KB-grounded AI answer, then soft DM offer
+        # Normal question: KB-grounded AI answer, then intent_router fallback
         opener = random.choice(PUBLIC_QUESTION_OPENERS)
         ai = await generate_ai_reply(msg)
         if ai:
             return f"{opener} {ai}{optin_footer()}"
+        # AI unavailable — use intent_router for a grounded KB response
+        ir_reply, _rt = _intent_router.route_message(msg, is_group_chat=True)
+        ir_reply = _strip_links_and_discord_words(ir_reply)
+        if ir_reply and len(ir_reply.strip()) >= 8:
+            return ir_reply
         return f"{opener} I’m not 100% sure on that, but I can try to help.{optin_footer()}"
 
     # 3) Non-question, non-greeting (mentions/replies that are vague)
@@ -4857,6 +4844,15 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
     topic = get_dm_topic(user_key) or "general"
     reply = _get_pm().overlay_personality(reply, topic=topic)
 
+    # Wrap with response variation engine to avoid repetitive templates
+    exchange_count = 1
+    if user_key and hasattr(_intent_router, "_ctx") and _intent_router._ctx:
+        try:
+            exchange_count = max(1, _intent_router._ctx.get_exchange_count(user_key))
+        except Exception:
+            pass
+    reply = _get_rve().wrap_reply(reply, topic=topic, exchange_count=exchange_count)
+
     await telegram_reply_logged(update, context, reply)
 
 async def handle_telegram_group_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -5065,6 +5061,15 @@ async def telegram_text_handler(update: Update, context: ContextTypes.DEFAULT_TY
             telegram_ui_ref.append_log(f"❌ Telegram text handler error: {e}")
         else:
             log(f"❌ Telegram text handler error: {e}")
+        # Send a fallback response so the user never gets silence on errors
+        try:
+            if update and update.message:
+                fallback = _intent_router.route_message(
+                    (update.message.text or ""), is_group_chat=not telegram_is_private_chat(update)
+                )[0]
+                await update.message.reply_text(fallback)
+        except Exception:
+            pass
 
 async def telegram_on_startup(app):
     if telegram_ui_ref:
