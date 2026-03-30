@@ -25,6 +25,12 @@ try:
     _COOLDOWN_MGR_AVAILABLE = True
 except ImportError:
     _COOLDOWN_MGR_AVAILABLE = False
+try:
+    from social_media_handler import handle_social_query as _handle_social_query
+    _SM_HANDLER_AVAILABLE = True
+except ImportError:
+    _SM_HANDLER_AVAILABLE = False
+    _handle_social_query = None
 
 _intent_router = _IntentRouter()
 
@@ -4709,6 +4715,22 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         else:
             await telegram_reply_logged(update, context, build_single_link_message(link_keys[0]))
         return
+
+    # ------------------------------------------------------------
+    # Social media platform queries — data-driven formatted responses
+    # Handles: "what is his instagram?", "does he have onlyfans?", etc.
+    # Uses social_media_data.json as the single source of truth so the
+    # bot never invents links or descriptions.
+    # ------------------------------------------------------------
+    if _SM_HANDLER_AVAILABLE and _handle_social_query:
+        _sm_reply = _handle_social_query(content_lower)
+        if _sm_reply:
+            clear_dm_pending_action(user_key)
+            if requested_keys:
+                remember_dm_link_context(user_key, requested_keys)
+            log(f"🎯 Telegram routing: social_media_handler")
+            await telegram_reply_logged(update, context, _sm_reply)
+            return
 
     # ------------------------------------------------------------
     # Platform confirmation questions

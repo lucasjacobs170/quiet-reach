@@ -54,6 +54,12 @@ try:
 except ImportError:
     _QUESTION_DETECTOR_AVAILABLE = False
 
+try:
+    from social_media_handler import SocialMediaHandler as _SocialMediaHandler
+    _SM_HANDLER_AVAILABLE = True
+except ImportError:
+    _SM_HANDLER_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # Routing type constants
 # ---------------------------------------------------------------------------
@@ -262,6 +268,11 @@ class IntentRouter:
         # keyword matching alone tends to miss (e.g. "send me his x").
         self._question_detector = _QuestionDetector() if _QUESTION_DETECTOR_AVAILABLE else None
 
+        # Social media handler — data-driven detection and formatting for social
+        # media platform queries.  Uses social_media_data.json as the single
+        # source of truth so no URLs or platform info are ever invented.
+        self._sm_handler = _SocialMediaHandler() if _SM_HANDLER_AVAILABLE else None
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -312,14 +323,34 @@ class IntentRouter:
         lowercase_message = user_message.lower()
         _platform_intent: Optional[str] = None
         _pattern_platform: Optional[dict] = None  # platform dict resolved from QuestionDetector
-        # Check for a specific platform mention first so that messages like
-        # "is he on discord?" are NOT swallowed by a generic all-platforms keyword
-        # (e.g. "is he on" inside _all_platforms_kws).  Specific platform detection
-        # always takes precedence over all-platform keywords.
-        if self._detect_platform(user_message) is not None:
-            _platform_intent = "asks_platform_specific"
-        elif _matches_any(lowercase_message, self._location_kws) or _matches_any(lowercase_message, self._all_platforms_kws):
-            _platform_intent = "asks_platform_all"
+        _sm_response: Optional[str] = None         # pre-formatted response from social_media_handler
+
+        # Social media handler — data-driven detection and formatting.
+        # Runs first to catch explicit social media queries ("what is his instagram?",
+        # "does he have onlyfans?") and return a fully formatted, link-inclusive
+        # response sourced entirely from social_media_data.json.
+        if self._sm_handler:
+            _sm_response = self._sm_handler.handle(user_message)
+            if _sm_response:
+                # Determine if this is a specific-platform or all-platforms response
+                _platform_intent = (
+                    "asks_platform_all"
+                    if self._sm_handler.is_all_platforms_query(lowercase_message)
+                    else "asks_platform_specific"
+                )
+
+        # Keyword / regex platform detection — runs when social_media_handler
+        # did not produce a result, so that messages like "onlyfans?" (bare
+        # platform name) are still caught.
+        if _platform_intent is None:
+            # Check for a specific platform mention first so that messages like
+            # "is he on discord?" are NOT swallowed by a generic all-platforms keyword
+            # (e.g. "is he on" inside _all_platforms_kws).  Specific platform detection
+            # always takes precedence over all-platform keywords.
+            if self._detect_platform(user_message) is not None:
+                _platform_intent = "asks_platform_specific"
+            elif _matches_any(lowercase_message, self._location_kws) or _matches_any(lowercase_message, self._all_platforms_kws):
+                _platform_intent = "asks_platform_all"
 
         # Pattern detection — runs after keyword-based detection to catch
         # natural-language queries that keyword/regex matching misses.
@@ -369,6 +400,9 @@ class IntentRouter:
         if _platform_intent is not None:
             if is_group_chat:
                 response = self._get_group_links_redirect()
+            elif _sm_response:
+                # Use the pre-formatted social_media_handler response when available
+                response = _sm_response
             elif _platform_intent == "asks_platform_all":
                 response = self._handle_platform_all_request()
             else:
