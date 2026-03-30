@@ -34,7 +34,7 @@ from typing import Any, Optional
 
 TRANSCRIPT_DIR: str = os.getenv("TRANSCRIPT_DIR", ".")
 SESSION_FILE: str = os.path.join(TRANSCRIPT_DIR, "transcript_current_session.json")
-DEFAULT_OUTPUT: str = os.path.join(TRANSCRIPT_DIR, "transcript_unified.json")
+DEFAULT_OUTPUT: str = os.path.join(TRANSCRIPT_DIR, "transcripts", "session_latest.json")
 
 # False-positive heuristic thresholds (shared across all analysis helpers)
 _FP_MAX_CONFIDENCE: float = 0.5
@@ -493,7 +493,12 @@ def export_unified_transcript(
 ) -> str:
     """
     Generate the unified transcript and write it to *output_path* as JSON.
-    Returns the path of the written file.
+
+    When *output_path* is the default ``transcripts/session_latest.json`` a
+    timestamped backup (``transcripts/session_YYYYMMDD_HHMMSS.json``) is also
+    written alongside it so that previous sessions are never overwritten.
+
+    Returns the path of the primary written file.
     """
     data = build_unified_transcript(transcript_file)
 
@@ -501,6 +506,15 @@ def export_unified_transcript(
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+
+    # Write a timestamped backup next to session_latest.json so previous
+    # sessions are preserved (e.g. transcripts/session_20260330_194330.json).
+    default_path = Path(DEFAULT_OUTPUT)
+    if path.resolve() == default_path.resolve():
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = path.parent / f"session_{ts}.json"
+        with open(backup_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
 
     return output_path
 
