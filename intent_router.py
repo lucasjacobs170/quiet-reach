@@ -21,6 +21,8 @@ import re
 import random
 from typing import Optional
 
+import requests
+
 from intent_classifier import IntentClassifier
 
 try:
@@ -51,6 +53,24 @@ ROUTE_CREATIVE       = "creative"
 ROUTE_HOSTILE_BLOCK  = "hostile_block"
 ROUTE_BOUNDARY       = "boundary"
 ROUTE_DEFAULT        = "default"
+
+# ---------------------------------------------------------------------------
+# Ollama configuration (for generating contextual replies)
+# ---------------------------------------------------------------------------
+
+_OLLAMA_URL: str = os.getenv("OLLAMA_URL", "http://localhost:11434")
+_OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+_OLLAMA_TIMEOUT: int = 10  # seconds — keep short for real-time chat
+
+# System prompt used when asking Ollama to generate a response.
+# Guardrails: never invent links/URLs, stay on-brand, keep answers short.
+_OLLAMA_SYSTEM_PROMPT = (
+    "You are Quiet Reach, a helpful assistant for Lucas Jacobs, a content creator. "
+    "Keep responses short (1-3 sentences), warm, and on-brand. "
+    "NEVER invent URLs or links — if a user asks for links, tell them you'll DM them. "
+    "NEVER make up facts about Lucas. Only mention things you are certain about. "
+    "If you don't know something, say so honestly."
+)
 
 # ---------------------------------------------------------------------------
 # Proactive-engagement thresholds
@@ -281,8 +301,13 @@ class IntentRouter:
             self._record(user_key, extended_intent, user_message, response)
             return response, ROUTE_CREATIVE
 
-        # Unknown question (has "?" but no matching topic) → i_dont_know
+        # Unknown question (has "?" but no matching topic) — try Ollama first
         if extended_intent == "unknown_question":
+            ollama_reply = self._generate_with_ollama(user_message)
+            if ollama_reply:
+                response = self._apply_personality(ollama_reply)
+                self._record(user_key, extended_intent, user_message, response)
+                return response, ROUTE_CREATIVE
             response = self._get_response("i_dont_know")
             self._record(user_key, extended_intent, user_message, response)
             return response, ROUTE_SAFE_RESPONSE
@@ -484,6 +509,9 @@ class IntentRouter:
 
         If the user has sent several unanswered requests, proactively offer help
         instead of a generic small-talk reply.
+
+        When Ollama is available, generate a contextual response. Otherwise fall
+        back to pre-written safe responses.
         """
         if user_key and self._ctx:
             unanswered = self._ctx.unanswered_count(user_key)
@@ -495,6 +523,12 @@ class IntentRouter:
                     "I'm here! Ask me anything about Lucas or his links.",
                 ])
                 return random.choice(proactive)
+
+        # Try Ollama for a contextual reply first
+        ollama_reply = self._generate_with_ollama(user_message)
+        if ollama_reply:
+            return ollama_reply
+
         responses = self.safe_responses.get("small_talk", [
             "That sounds cool!",
             "I like where your head's at",
@@ -503,6 +537,50 @@ class IntentRouter:
             "Nice one!",
         ])
         return random.choice(responses)
+
+    def _generate_with_ollama(self, user_message: str) -> str:
+        """
+        Ask Ollama to generate a short, grounded conversational reply.
+
+        Guardrails applied:
+          - Short system prompt prevents hallucination of links / facts.
+          - Reply is rejected if it contains a URL (likely hallucinated).
+          - Returns an empty string when Ollama is unavailable or generates
+            a response that fails guardrail checks.
+        """
+        prompt = (
+            f"{_OLLAMA_SYSTEM_PROMPT}\n\n"
+            f"User: {user_message.strip()[:400]}\n"
+            "Assistant:"
+        )
+        try:
+            resp = requests.post(
+                f"{_OLLAMA_URL}/api/generate",
+                json={"model": _OLLAMA_MODEL, "prompt": prompt, "stream": False},
+                timeout=_OLLAMA_TIMEOUT,
+            )
+            resp.raise_for_status()
+            reply = (resp.json().get("response") or "").strip()
+
+            # Guardrail: reject if empty or too short
+            if not reply or len(reply) < 8:
+                return ""
+
+            # Guardrail: reject replies that contain URLs (hallucinated links)
+            if re.search(r"https?://|www\.", reply, re.IGNORECASE):
+                return ""
+
+            # Guardrail: truncate very long replies to keep responses snappy
+            if len(reply) > 400:
+                # Cut at the last sentence boundary within 400 chars
+                truncated = reply[:400]
+                last_period = truncated.rfind(".")
+                reply = truncated[: last_period + 1] if last_period > 50 else truncated
+
+            return reply
+
+        except Exception:
+            return ""  # Ollama unavailable — caller uses safe_responses fallback
 
     def _record(self, user_key: str, intent: str, message: str, response: str, topic: str = "") -> None:
         """Record a completed request/response pair in the conversation context."""

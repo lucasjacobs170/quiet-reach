@@ -40,6 +40,12 @@ try:
 except ImportError:
     _INTENT_CLASSIFIER_AVAILABLE = False
 
+try:
+    import hostility_cooldown_manager as _cooldown_mgr
+    _COOLDOWN_MGR_AVAILABLE = True
+except ImportError:
+    _COOLDOWN_MGR_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # Configuration (inherit from environment or use the same defaults as the bot)
 # ---------------------------------------------------------------------------
@@ -541,11 +547,12 @@ def handle_message(
 ) -> HostilityResult:
     """
     Full pipeline:
+      0. Check if the user is in a cooldown period — return early if so.
       1. Run insult detector (fast, pattern-based) — block immediately if threshold reached.
       2. Check social-engineering / escalation patterns (graduated first warning).
       3. Classify the message via Ollama / keyword fallback.
       4. Log to DB if hostile.
-      5. Block the user on severe/threat.
+      5. Block the user on severe/threat; set cooldown on mild.
       6. Return the result (caller sends result.response if non-empty).
 
     Parameters
@@ -557,6 +564,23 @@ def handle_message(
     """
     import time as _time
     _msg_start = _time.monotonic()
+
+    # --- Step 0: cooldown check — silently ignore users in cooldown ----------
+    if user_key and _COOLDOWN_MGR_AVAILABLE:
+        try:
+            if _cooldown_mgr.is_in_cooldown(user_key, db_path=db_path):
+                cooldown_response = _cooldown_mgr.get_cooldown_response(
+                    user_key, db_path=db_path
+                )
+                return HostilityResult(
+                    level=HostilityLevel.MILD,
+                    confidence=1.0,
+                    matched_pattern="cooldown",
+                    via_ollama=False,
+                    response=cooldown_response,
+                )
+        except Exception:
+            pass
 
     hostility_score = 0
     hostility_score_before = 0
@@ -619,6 +643,15 @@ def handle_message(
             block_user(user_key, username, platform,
                        reason="insult score threshold exceeded", db_path=db_path)
             _reset_score(user_key)
+            # Set indefinite cooldown for insult-threshold breaches
+            if _COOLDOWN_MGR_AVAILABLE:
+                try:
+                    _cooldown_mgr.set_cooldown(
+                        user_key, level="severe",
+                        username=username, platform=platform, db_path=db_path,
+                    )
+                except Exception:
+                    pass
             _incident_count = get_incident_count(user_key, db_path=db_path)
 
             # Transcript logging
@@ -748,8 +781,26 @@ def handle_message(
         block_user(user_key, username, platform, reason=result.level.value, db_path=db_path)
         if _INSULT_DETECTOR_AVAILABLE and user_key:
             _reset_score(user_key)
+        # Also set an indefinite cooldown so unblocked users still have a gate
+        if user_key and _COOLDOWN_MGR_AVAILABLE:
+            try:
+                _cooldown_mgr.set_cooldown(
+                    user_key, level=result.level.value,
+                    username=username, platform=platform, db_path=db_path,
+                )
+            except Exception:
+                pass
         _action = "blocked_user"
-    elif result.level != HostilityLevel.NONE:
+    elif result.level == HostilityLevel.MILD:
+        # Set a timed cooldown for mild hostility
+        if user_key and _COOLDOWN_MGR_AVAILABLE:
+            try:
+                _cooldown_mgr.set_cooldown(
+                    user_key, level="mild",
+                    username=username, platform=platform, db_path=db_path,
+                )
+            except Exception:
+                pass
         _action = "warned_user"
     else:
         _action = "none"

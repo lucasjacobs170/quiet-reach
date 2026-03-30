@@ -34,6 +34,12 @@ import re
 from pathlib import Path
 from typing import Optional
 
+try:
+    from pattern_detector_v2 import adjust_classification_scores as _adjust_scores
+    _PATTERN_DETECTOR_V2_AVAILABLE = True
+except ImportError:
+    _PATTERN_DETECTOR_V2_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # Training data path
 # ---------------------------------------------------------------------------
@@ -370,6 +376,14 @@ class IntentClassifier:
         if max_score > 1.0:
             for c in CATEGORIES:
                 scores[c] = min(1.0, scores[c] / max_score)
+
+        # --- Apply context-aware score adjustments (pattern_detector_v2) ---
+        if _PATTERN_DETECTOR_V2_AVAILABLE:
+            scores = _adjust_scores(
+                scores,
+                message,
+                sarcasm_markers_matched=tone.get("sarcasm", []),
+            )
 
         return scores
 
