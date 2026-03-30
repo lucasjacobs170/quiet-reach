@@ -1,0 +1,149 @@
+{
+  "session_metadata": {
+    "session_id": "session_20260330_203818",
+    "platform": "telegram",
+    "user_id": "telegram:7436564099",
+    "username": "@LucasJacobs17",
+    "start_time": "2026-03-30T20:38:18.216470+00:00",
+    "end_time": "2026-03-30T20:38:22.666Z",
+    "total_messages": 4,
+    "total_user_messages": 2,
+    "total_bot_responses": 2,
+    "session_duration_seconds": 4.4
+  },
+  "conversation": [
+    {
+      "sequence": 1,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:38:18.216Z",
+      "message": "test",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 90.593,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 2,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:38:18.225Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 9.626,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 3,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:38:22.665Z",
+      "message": "hello",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Polite markers: ['hello']. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 25.529,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 4,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:38:22.666Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 1.381,
+      "routing_explanation": "Routing type unknown"
+    }
+  ],
+  "summary": {
+    "total_user_messages": 2,
+    "detection_rate_by_severity": {
+      "none": 2,
+      "mild": 0,
+      "moderate": 0,
+      "severe": 0,
+      "threat": 0
+    },
+    "false_positive_estimate": 0.0,
+    "false_negative_estimate": 0.0,
+    "blocking_rate": 0.0,
+    "warnings_issued": 0,
+    "routing_breakdown": {},
+    "intent_breakdown": {
+      "neutral": 2
+    },
+    "patterns": [],
+    "pattern_effectiveness": [],
+    "recommendations": [
+      "Detection performance looks healthy. Keep monitoring."
+    ]
+  }
+}
