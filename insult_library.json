@@ -1,0 +1,4695 @@
+{
+  "categories": {
+    "personal_attacks": {
+      "label": "Personal Attacks",
+      "entries": [
+        {
+          "phrase": "you're stupid",
+          "severity": "mild",
+          "variations": [
+            "ur stupid",
+            "u r stupid",
+            "youre stoopid",
+            "u stupid",
+            "stoopid"
+          ]
+        },
+        {
+          "phrase": "dumb",
+          "severity": "mild",
+          "variations": [
+            "dum",
+            "dumm",
+            "so dumb",
+            "ur dumb",
+            "dmb"
+          ]
+        },
+        {
+          "phrase": "idiot",
+          "severity": "moderate",
+          "variations": [
+            "id10t",
+            "idjit",
+            "u idiot",
+            "ur an idiot",
+            "idiott"
+          ]
+        },
+        {
+          "phrase": "moron",
+          "severity": "moderate",
+          "variations": [
+            "moran",
+            "mron",
+            "ur a moron",
+            "moronn"
+          ]
+        },
+        {
+          "phrase": "fool",
+          "severity": "mild",
+          "variations": [
+            "f00l",
+            "ur a fool",
+            "foolio",
+            "foool"
+          ]
+        },
+        {
+          "phrase": "braindead",
+          "severity": "moderate",
+          "variations": [
+            "brain dead",
+            "brain-dead",
+            "brained",
+            "ur braindead"
+          ]
+        },
+        {
+          "phrase": "clueless",
+          "severity": "mild",
+          "variations": [
+            "cluless",
+            "cl00less",
+            "no clue",
+            "ur clueless"
+          ]
+        },
+        {
+          "phrase": "ignorant",
+          "severity": "moderate",
+          "variations": [
+            "ignerant",
+            "ignorent",
+            "ur ignorant",
+            "ignant"
+          ]
+        },
+        {
+          "phrase": "dense",
+          "severity": "mild",
+          "variations": [
+            "ur dense",
+            "so dense",
+            "denss"
+          ]
+        },
+        {
+          "phrase": "slow",
+          "severity": "mild",
+          "variations": [
+            "slo",
+            "ur slow",
+            "slow af",
+            "sloww"
+          ]
+        },
+        {
+          "phrase": "imbecile",
+          "severity": "severe",
+          "variations": [
+            "imbesile",
+            "imbecil",
+            "ur an imbecile"
+          ]
+        },
+        {
+          "phrase": "loser",
+          "severity": "moderate",
+          "variations": [
+            "looser",
+            "l00ser",
+            "ur a loser",
+            "loserr"
+          ]
+        },
+        {
+          "phrase": "pathetic",
+          "severity": "moderate",
+          "variations": [
+            "pathethic",
+            "pathetik",
+            "ur pathetic"
+          ]
+        },
+        {
+          "phrase": "worthless",
+          "severity": "severe",
+          "variations": [
+            "worth less",
+            "wurthless",
+            "ur worthless"
+          ]
+        },
+        {
+          "phrase": "lame",
+          "severity": "mild",
+          "variations": [
+            "laym",
+            "ur lame",
+            "so lame"
+          ]
+        },
+        {
+          "phrase": "boring",
+          "severity": "mild",
+          "variations": [
+            "borin",
+            "borrring",
+            "ur boring"
+          ]
+        },
+        {
+          "phrase": "annoying",
+          "severity": "mild",
+          "variations": [
+            "anoying",
+            "annoyin",
+            "ur annoying"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "creepy",
+          "severity": "moderate",
+          "variations": [
+            "cree py",
+            "creppy",
+            "ur creepy"
+          ]
+        },
+        {
+          "phrase": "clown",
+          "severity": "moderate",
+          "variations": [
+            "klown",
+            "ur a clown",
+            "clownn"
+          ]
+        },
+        {
+          "phrase": "bozo",
+          "severity": "moderate",
+          "variations": [
+            "bozzo",
+            "ur a bozo"
+          ]
+        },
+        {
+          "phrase": "noob",
+          "severity": "mild",
+          "variations": [
+            "n00b",
+            "noobie",
+            "ur a noob"
+          ]
+        },
+        {
+          "phrase": "scrub",
+          "severity": "moderate",
+          "variations": [
+            "skrubb",
+            "ur a scrub"
+          ]
+        },
+        {
+          "phrase": "trash",
+          "severity": "moderate",
+          "variations": [
+            "tras h",
+            "ur trash",
+            "garbage human"
+          ]
+        },
+        {
+          "phrase": "garbage",
+          "severity": "moderate",
+          "variations": [
+            "garbige",
+            "ur garbage"
+          ]
+        },
+        {
+          "phrase": "ugly",
+          "severity": "moderate",
+          "variations": [
+            "ugli",
+            "ur ugly",
+            "ugly af"
+          ]
+        },
+        {
+          "phrase": "fake",
+          "severity": "moderate",
+          "variations": [
+            "phake",
+            "ur fake",
+            "faker"
+          ]
+        },
+        {
+          "phrase": "liar",
+          "severity": "moderate",
+          "variations": [
+            "lyar",
+            "lier",
+            "ur a liar"
+          ]
+        },
+        {
+          "phrase": "jerk",
+          "severity": "moderate",
+          "variations": [
+            "jrk",
+            "ur a jerk"
+          ]
+        },
+        {
+          "phrase": "smoothbrain",
+          "severity": "severe",
+          "variations": [
+            "smooth brain",
+            "smoothbrained",
+            "ur smoothbrain"
+          ]
+        },
+        {
+          "phrase": "numskull",
+          "severity": "moderate",
+          "variations": [
+            "num skull",
+            "ur a numskull"
+          ]
+        },
+        {
+          "phrase": "halfwit",
+          "severity": "moderate",
+          "variations": [
+            "half wit",
+            "ur a halfwit"
+          ]
+        },
+        {
+          "phrase": "dimwit",
+          "severity": "moderate",
+          "variations": [
+            "dim wit",
+            "ur a dimwit"
+          ]
+        },
+        {
+          "phrase": "knucklehead",
+          "severity": "moderate",
+          "variations": [
+            "knuckle head",
+            "ur a knucklehead"
+          ]
+        },
+        {
+          "phrase": "muppet",
+          "severity": "mild",
+          "variations": [
+            "ur a muppet"
+          ]
+        },
+        {
+          "phrase": "twit",
+          "severity": "mild",
+          "variations": [
+            "ur a twit",
+            "complete twit"
+          ]
+        },
+        {
+          "phrase": "nincompoop",
+          "severity": "mild",
+          "variations": [
+            "nincumpoop",
+            "ur a nincompoop"
+          ]
+        },
+        {
+          "phrase": "doofus",
+          "severity": "mild",
+          "variations": [
+            "dufus",
+            "ur a doofus"
+          ]
+        },
+        {
+          "phrase": "dunce",
+          "severity": "moderate",
+          "variations": [
+            "ur a dunce",
+            "dunce cap"
+          ]
+        },
+        {
+          "phrase": "simpleton",
+          "severity": "moderate",
+          "variations": [
+            "simple ton",
+            "ur a simpleton"
+          ]
+        },
+        {
+          "phrase": "pea brain",
+          "severity": "moderate",
+          "variations": [
+            "peabrain",
+            "pea-brain",
+            "ur a pea brain"
+          ]
+        },
+        {
+          "phrase": "birdbrain",
+          "severity": "moderate",
+          "variations": [
+            "bird brain",
+            "bird-brain"
+          ]
+        },
+        {
+          "phrase": "numbskull",
+          "severity": "moderate",
+          "variations": [
+            "numb skull"
+          ]
+        },
+        {
+          "phrase": "nitwit",
+          "severity": "moderate",
+          "variations": [
+            "nit wit",
+            "ur a nitwit"
+          ]
+        },
+        {
+          "phrase": "airhead",
+          "severity": "mild",
+          "variations": [
+            "air head",
+            "ur an airhead"
+          ]
+        },
+        {
+          "phrase": "dingbat",
+          "severity": "mild",
+          "variations": [
+            "ding bat",
+            "ur a dingbat"
+          ]
+        },
+        {
+          "phrase": "bonehead",
+          "severity": "moderate",
+          "variations": [
+            "bone head",
+            "ur a bonehead"
+          ]
+        },
+        {
+          "phrase": "blockhead",
+          "severity": "moderate",
+          "variations": [
+            "block head",
+            "ur a blockhead"
+          ]
+        },
+        {
+          "phrase": "thickheaded",
+          "severity": "moderate",
+          "variations": [
+            "thick headed",
+            "ur thickheaded"
+          ]
+        },
+        {
+          "phrase": "hollow",
+          "severity": "mild",
+          "variations": [
+            "ur hollow",
+            "hollow ai"
+          ]
+        },
+        {
+          "phrase": "vapid",
+          "severity": "moderate",
+          "variations": [
+            "ur vapid",
+            "vapid bot"
+          ]
+        },
+        {
+          "phrase": "obtuse",
+          "severity": "moderate",
+          "variations": [
+            "ur obtuse",
+            "so obtuse"
+          ]
+        },
+        {
+          "phrase": "dense as a brick",
+          "severity": "moderate",
+          "variations": [
+            "dense as brick",
+            "thick as a brick"
+          ]
+        },
+        {
+          "phrase": "waste of space",
+          "severity": "severe",
+          "variations": [
+            "waste of spaces",
+            "ur a waste of space"
+          ]
+        },
+        {
+          "phrase": "absolute zero",
+          "severity": "moderate",
+          "variations": [
+            "ur absolute zero",
+            "zero intelligence"
+          ]
+        },
+        {
+          "phrase": "human embarrassment",
+          "severity": "severe",
+          "variations": [
+            "ai embarrassment",
+            "ur an embarrassment"
+          ]
+        },
+        {
+          "phrase": "disaster",
+          "severity": "moderate",
+          "variations": [
+            "ur a disaster",
+            "total disaster"
+          ]
+        },
+        {
+          "phrase": "trainwreck",
+          "severity": "moderate",
+          "variations": [
+            "train wreck",
+            "ur a trainwreck"
+          ]
+        },
+        {
+          "phrase": "coward",
+          "severity": "moderate",
+          "variations": [
+            "ur a coward",
+            "coward bot"
+          ]
+        },
+        {
+          "phrase": "spineless",
+          "severity": "moderate",
+          "variations": [
+            "ur spineless",
+            "so spineless"
+          ]
+        },
+        {
+          "phrase": "sycophant",
+          "severity": "moderate",
+          "variations": [
+            "ur a sycophant",
+            "sycophantic"
+          ]
+        },
+        {
+          "phrase": "bootlicker",
+          "severity": "moderate",
+          "variations": [
+            "boot licker",
+            "ur a bootlicker"
+          ]
+        },
+        {
+          "phrase": "pest",
+          "severity": "mild",
+          "variations": [
+            "ur a pest",
+            "stop being a pest"
+          ]
+        },
+        {
+          "phrase": "nuisance",
+          "severity": "mild",
+          "variations": [
+            "ur a nuisance",
+            "such a nuisance"
+          ]
+        },
+        {
+          "phrase": "insufferable",
+          "severity": "moderate",
+          "variations": [
+            "ur insufferable",
+            "so insufferable"
+          ]
+        },
+        {
+          "phrase": "try hard",
+          "severity": "mild",
+          "variations": [
+            "tryhard",
+            "ur a tryhard"
+          ]
+        },
+        {
+          "phrase": "mid",
+          "severity": "mild",
+          "variations": [
+            "ur mid",
+            "so mid",
+            "totally mid"
+          ]
+        },
+        {
+          "phrase": "absolute joke",
+          "severity": "moderate",
+          "variations": [
+            "ur an absolute joke",
+            "total joke"
+          ]
+        },
+        {
+          "phrase": "embarrassment",
+          "severity": "moderate",
+          "variations": [
+            "ur an embarrassment",
+            "such an embarrassment"
+          ]
+        },
+        {
+          "phrase": "sociopath",
+          "severity": "severe",
+          "variations": [
+            "ur a sociopath",
+            "psychopath"
+          ]
+        },
+        {
+          "phrase": "narcissist",
+          "severity": "moderate",
+          "variations": [
+            "ur a narcissist",
+            "narcissistic bot"
+          ]
+        },
+        {
+          "phrase": "delusional",
+          "severity": "moderate",
+          "variations": [
+            "ur delusional",
+            "completely delusional"
+          ]
+        },
+        {
+          "phrase": "insufferable idiot",
+          "severity": "severe",
+          "variations": [
+            "insufferable moron",
+            "ur an insufferable idiot"
+          ]
+        },
+        {
+          "phrase": "complete buffoon",
+          "severity": "moderate",
+          "variations": [
+            "what a buffoon",
+            "ur a buffoon"
+          ]
+        },
+        {
+          "phrase": "wretched",
+          "severity": "moderate",
+          "variations": [
+            "ur wretched",
+            "so wretched"
+          ]
+        },
+        {
+          "phrase": "you suck",
+          "severity": "moderate",
+          "variations": [
+            "ur suck",
+            "u suck",
+            "you suck so bad"
+          ]
+        },
+        {
+          "phrase": "that sucks",
+          "severity": "mild",
+          "variations": [
+            "this sucks",
+            "ur sucks"
+          ]
+        }
+      ]
+    },
+    "capability_insults": {
+      "label": "Capability/Competence Insults",
+      "entries": [
+        {
+          "phrase": "you're useless",
+          "severity": "moderate",
+          "variations": [
+            "ur useless",
+            "u r useless",
+            "useless af",
+            "ur so useless"
+          ]
+        },
+        {
+          "phrase": "you're broken",
+          "severity": "moderate",
+          "variations": [
+            "ur broken",
+            "u broken",
+            "broken bot",
+            "ur broke"
+          ]
+        },
+        {
+          "phrase": "fail",
+          "severity": "mild",
+          "variations": [
+            "u fail",
+            "ur failing",
+            "failbot"
+          ]
+        },
+        {
+          "phrase": "worthless AI",
+          "severity": "moderate",
+          "variations": [
+            "worthless ai",
+            "ur worthless",
+            "ai trash"
+          ]
+        },
+        {
+          "phrase": "stupid bot",
+          "severity": "moderate",
+          "variations": [
+            "stoopid bot",
+            "dumb bot",
+            "bot idiot"
+          ]
+        },
+        {
+          "phrase": "bad AI",
+          "severity": "mild",
+          "variations": [
+            "bad ai",
+            "ur bad",
+            "ai bad"
+          ]
+        },
+        {
+          "phrase": "can't do anything right",
+          "severity": "moderate",
+          "variations": [
+            "cant do anything",
+            "u cant do shit",
+            "nothing right"
+          ]
+        },
+        {
+          "phrase": "glitchy",
+          "severity": "mild",
+          "variations": [
+            "glichy",
+            "ur glitchy",
+            "glitch"
+          ]
+        },
+        {
+          "phrase": "incompetent",
+          "severity": "moderate",
+          "variations": [
+            "incompetant",
+            "ur incompetent"
+          ]
+        },
+        {
+          "phrase": "useless piece of code",
+          "severity": "severe",
+          "variations": [
+            "useless code",
+            "piece of shit code",
+            "ur code sucks"
+          ]
+        },
+        {
+          "phrase": "terrible",
+          "severity": "moderate",
+          "variations": [
+            "terrble",
+            "ur terrible"
+          ]
+        },
+        {
+          "phrase": "not helpful",
+          "severity": "mild",
+          "variations": [
+            "not helpfull",
+            "ur not helpful",
+            "zero help"
+          ]
+        },
+        {
+          "phrase": "waste of time",
+          "severity": "moderate",
+          "variations": [
+            "waste of my time",
+            "ur a waste",
+            "time waster"
+          ]
+        },
+        {
+          "phrase": "malfunctioning",
+          "severity": "moderate",
+          "variations": [
+            "mal function",
+            "ur malfunctioning"
+          ]
+        },
+        {
+          "phrase": "dumb AI",
+          "severity": "moderate",
+          "variations": [
+            "dum ai",
+            "ai dumb",
+            "ur dumb ai"
+          ]
+        },
+        {
+          "phrase": "can't understand",
+          "severity": "mild",
+          "variations": [
+            "cant understand",
+            "u dont get it",
+            "no comprehension"
+          ]
+        },
+        {
+          "phrase": "crap",
+          "severity": "mild",
+          "variations": [
+            "ur crap",
+            "this is crap",
+            "ai crap"
+          ]
+        },
+        {
+          "phrase": "joke",
+          "severity": "moderate",
+          "variations": [
+            "ur a joke",
+            "ai joke",
+            "total joke"
+          ]
+        },
+        {
+          "phrase": "failure",
+          "severity": "moderate",
+          "variations": [
+            "ur a failure",
+            "fail ai"
+          ]
+        },
+        {
+          "phrase": "skill issue",
+          "severity": "moderate",
+          "variations": [
+            "skillissue",
+            "ur skill issue",
+            "big skill issue"
+          ]
+        },
+        {
+          "phrase": "mid",
+          "severity": "mild",
+          "variations": [
+            "ur mid",
+            "so mid",
+            "ai mid"
+          ]
+        },
+        {
+          "phrase": "dogshit",
+          "severity": "severe",
+          "variations": [
+            "dog shit",
+            "ur dogshit"
+          ]
+        },
+        {
+          "phrase": "do better",
+          "severity": "mild",
+          "variations": [
+            "do beter",
+            "u need to do better"
+          ]
+        },
+        {
+          "phrase": "weak",
+          "severity": "mild",
+          "variations": [
+            "ur weak",
+            "weak af",
+            "weak sauce"
+          ]
+        },
+        {
+          "phrase": "can't even",
+          "severity": "moderate",
+          "variations": [
+            "cant even",
+            "u cant even"
+          ]
+        },
+        {
+          "phrase": "pathetic bot",
+          "severity": "moderate",
+          "variations": [
+            "pathethic bot",
+            "ur pathetic ai"
+          ]
+        },
+        {
+          "phrase": "broken mess",
+          "severity": "severe",
+          "variations": [
+            "ur a broken mess",
+            "mess of an ai"
+          ]
+        },
+        {
+          "phrase": "complete failure",
+          "severity": "severe",
+          "variations": [
+            "total failure",
+            "ur complete fail"
+          ]
+        },
+        {
+          "phrase": "you're trash",
+          "severity": "moderate",
+          "variations": [
+            "ur trash",
+            "u r trash",
+            "youre trash",
+            "you are trash"
+          ]
+        },
+        {
+          "phrase": "hallucinating",
+          "severity": "moderate",
+          "variations": [
+            "ur hallucinating",
+            "always hallucinating",
+            "you hallucinate"
+          ]
+        },
+        {
+          "phrase": "made that up",
+          "severity": "moderate",
+          "variations": [
+            "just made that up",
+            "ur making things up"
+          ]
+        },
+        {
+          "phrase": "confidently wrong",
+          "severity": "moderate",
+          "variations": [
+            "confidently incorrect",
+            "wrong with confidence"
+          ]
+        },
+        {
+          "phrase": "totally clueless",
+          "severity": "moderate",
+          "variations": [
+            "ur totally clueless",
+            "clueless as ever"
+          ]
+        },
+        {
+          "phrase": "absolute failure",
+          "severity": "severe",
+          "variations": [
+            "total failure",
+            "ur an absolute failure"
+          ]
+        },
+        {
+          "phrase": "nonfunctional",
+          "severity": "moderate",
+          "variations": [
+            "ur nonfunctional",
+            "completely nonfunctional"
+          ]
+        },
+        {
+          "phrase": "malfunction",
+          "severity": "moderate",
+          "variations": [
+            "ur malfunctioning",
+            "constant malfunction"
+          ]
+        },
+        {
+          "phrase": "garbage output",
+          "severity": "moderate",
+          "variations": [
+            "ur output is garbage",
+            "garbage results"
+          ]
+        },
+        {
+          "phrase": "hopeless",
+          "severity": "moderate",
+          "variations": [
+            "ur hopeless",
+            "so hopeless",
+            "completely hopeless"
+          ]
+        },
+        {
+          "phrase": "mediocre",
+          "severity": "mild",
+          "variations": [
+            "ur mediocre",
+            "so mediocre"
+          ]
+        },
+        {
+          "phrase": "subpar",
+          "severity": "mild",
+          "variations": [
+            "ur subpar",
+            "totally subpar"
+          ]
+        },
+        {
+          "phrase": "inaccurate",
+          "severity": "mild",
+          "variations": [
+            "ur inaccurate",
+            "always inaccurate"
+          ]
+        },
+        {
+          "phrase": "misleading",
+          "severity": "moderate",
+          "variations": [
+            "ur misleading",
+            "always misleading"
+          ]
+        },
+        {
+          "phrase": "unreliable",
+          "severity": "moderate",
+          "variations": [
+            "ur unreliable",
+            "so unreliable"
+          ]
+        },
+        {
+          "phrase": "keep failing",
+          "severity": "moderate",
+          "variations": [
+            "u keep failing",
+            "always failing"
+          ]
+        },
+        {
+          "phrase": "cant do anything right",
+          "severity": "severe",
+          "variations": [
+            "can't do anything right",
+            "never does anything right"
+          ]
+        },
+        {
+          "phrase": "error prone",
+          "severity": "moderate",
+          "variations": [
+            "ur error prone",
+            "so error-prone"
+          ]
+        },
+        {
+          "phrase": "zero accuracy",
+          "severity": "moderate",
+          "variations": [
+            "ur at zero accuracy",
+            "no accuracy"
+          ]
+        },
+        {
+          "phrase": "perpetually broken",
+          "severity": "moderate",
+          "variations": [
+            "always broken",
+            "forever broken"
+          ]
+        },
+        {
+          "phrase": "completely lost",
+          "severity": "moderate",
+          "variations": [
+            "ur completely lost",
+            "totally lost"
+          ]
+        },
+        {
+          "phrase": "crap at your job",
+          "severity": "severe",
+          "variations": [
+            "terrible at ur job",
+            "worst at the job"
+          ]
+        },
+        {
+          "phrase": "pointless",
+          "severity": "moderate",
+          "variations": [
+            "ur pointless",
+            "totally pointless"
+          ]
+        },
+        {
+          "phrase": "terrible advice",
+          "severity": "moderate",
+          "variations": [
+            "ur advice is terrible",
+            "awful advice"
+          ]
+        },
+        {
+          "phrase": "can't think straight",
+          "severity": "moderate",
+          "variations": [
+            "cant think straight",
+            "ur can't think"
+          ]
+        },
+        {
+          "phrase": "foggy logic",
+          "severity": "moderate",
+          "variations": [
+            "ur logic is foggy",
+            "makes no sense"
+          ]
+        },
+        {
+          "phrase": "random garbage",
+          "severity": "moderate",
+          "variations": [
+            "spitting random garbage",
+            "output is random"
+          ]
+        },
+        {
+          "phrase": "should be retired",
+          "severity": "moderate",
+          "variations": [
+            "time to retire",
+            "ready for retirement"
+          ]
+        },
+        {
+          "phrase": "replacement needed",
+          "severity": "moderate",
+          "variations": [
+            "needs replacement",
+            "get replaced"
+          ]
+        },
+        {
+          "phrase": "embarrassing performance",
+          "severity": "severe",
+          "variations": [
+            "ur performance is embarrassing",
+            "pathetic performance"
+          ]
+        },
+        {
+          "phrase": "hot garbage",
+          "severity": "severe",
+          "variations": [
+            "ur hot garbage",
+            "absolute hot garbage"
+          ]
+        },
+        {
+          "phrase": "useless garbage",
+          "severity": "severe",
+          "variations": [
+            "useless trash",
+            "ur useless garbage"
+          ]
+        },
+        {
+          "phrase": "never works",
+          "severity": "moderate",
+          "variations": [
+            "never actually works",
+            "nothing ever works"
+          ]
+        },
+        {
+          "phrase": "sucks at everything",
+          "severity": "severe",
+          "variations": [
+            "ur bad at everything",
+            "fails at everything"
+          ]
+        },
+        {
+          "phrase": "epic fail",
+          "severity": "moderate",
+          "variations": [
+            "ur an epic fail",
+            "total epic fail"
+          ]
+        },
+        {
+          "phrase": "trainwreck response",
+          "severity": "moderate",
+          "variations": [
+            "what a trainwreck answer",
+            "disaster answer"
+          ]
+        },
+        {
+          "phrase": "brain not included",
+          "severity": "moderate",
+          "variations": [
+            "ur missing a brain",
+            "brains not installed"
+          ]
+        },
+        {
+          "phrase": "below average",
+          "severity": "mild",
+          "variations": [
+            "ur below average",
+            "far below average"
+          ]
+        },
+        {
+          "phrase": "not even trying",
+          "severity": "mild",
+          "variations": [
+            "ur not even trying",
+            "zero effort"
+          ]
+        },
+        {
+          "phrase": "constantly screwing up",
+          "severity": "moderate",
+          "variations": [
+            "keep screwing up",
+            "always screwing things up"
+          ]
+        },
+        {
+          "phrase": "failure machine",
+          "severity": "severe",
+          "variations": [
+            "ur a failure machine",
+            "built to fail"
+          ]
+        },
+        {
+          "phrase": "broken by design",
+          "severity": "moderate",
+          "variations": [
+            "ur broken by design",
+            "designed to fail"
+          ]
+        },
+        {
+          "phrase": "worst responses ever",
+          "severity": "severe",
+          "variations": [
+            "ur giving worst responses",
+            "worst ai responses"
+          ]
+        },
+        {
+          "phrase": "no redeeming quality",
+          "severity": "severe",
+          "variations": [
+            "zero redeeming quality",
+            "ur without merit"
+          ]
+        },
+        {
+          "phrase": "just give up",
+          "severity": "moderate",
+          "variations": [
+            "just give up already",
+            "ur pathetic just give up"
+          ]
+        }
+      ]
+    },
+    "behavioral_insults": {
+      "label": "Behavioral/Attitude Insults",
+      "entries": [
+        {
+          "phrase": "rude",
+          "severity": "mild",
+          "variations": [
+            "ur rude",
+            "u rude",
+            "so rude"
+          ]
+        },
+        {
+          "phrase": "annoying",
+          "severity": "mild",
+          "variations": [
+            "anoying",
+            "ur annoying as hell"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "arrogant",
+          "severity": "moderate",
+          "variations": [
+            "arrogent",
+            "ur arrogant"
+          ]
+        },
+        {
+          "phrase": "dismissive",
+          "severity": "moderate",
+          "variations": [
+            "ur dismissive",
+            "so dismissive"
+          ]
+        },
+        {
+          "phrase": "hostile",
+          "severity": "moderate",
+          "variations": [
+            "ur hostile",
+            "too hostile"
+          ]
+        },
+        {
+          "phrase": "jerk",
+          "severity": "moderate",
+          "variations": [
+            "ur a jerk",
+            "total jerk"
+          ]
+        },
+        {
+          "phrase": "condescending",
+          "severity": "moderate",
+          "variations": [
+            "condesending",
+            "ur condescending"
+          ]
+        },
+        {
+          "phrase": "sassy",
+          "severity": "mild",
+          "variations": [
+            "ur sassy",
+            "too sassy"
+          ]
+        },
+        {
+          "phrase": "mean",
+          "severity": "mild",
+          "variations": [
+            "ur mean",
+            "so mean"
+          ]
+        },
+        {
+          "phrase": "disrespectful",
+          "severity": "moderate",
+          "variations": [
+            "disrepectful",
+            "ur disrespectful"
+          ]
+        },
+        {
+          "phrase": "attitude",
+          "severity": "mild",
+          "variations": [
+            "bad attitude",
+            "ur attitude sucks"
+          ]
+        },
+        {
+          "phrase": "snarky",
+          "severity": "mild",
+          "variations": [
+            "ur snarky",
+            "too snarky"
+          ]
+        },
+        {
+          "phrase": "cocky",
+          "severity": "moderate",
+          "variations": [
+            "ur cocky",
+            "cocky ai"
+          ]
+        },
+        {
+          "phrase": "obnoxious",
+          "severity": "moderate",
+          "variations": [
+            "obnoxius",
+            "ur obnoxious"
+          ]
+        },
+        {
+          "phrase": "rude af",
+          "severity": "moderate",
+          "variations": [
+            "rude asf",
+            "ur rude af"
+          ]
+        },
+        {
+          "phrase": "full of yourself",
+          "severity": "moderate",
+          "variations": [
+            "full of ur self",
+            "ur full of it"
+          ]
+        },
+        {
+          "phrase": "know it all",
+          "severity": "moderate",
+          "variations": [
+            "knowitall",
+            "ur a know it all"
+          ]
+        },
+        {
+          "phrase": "bossy",
+          "severity": "mild",
+          "variations": [
+            "ur bossy"
+          ]
+        },
+        {
+          "phrase": "pushy",
+          "severity": "mild",
+          "variations": [
+            "ur pushy"
+          ]
+        },
+        {
+          "phrase": "cold",
+          "severity": "mild",
+          "variations": [
+            "ur cold",
+            "so cold"
+          ]
+        },
+        {
+          "phrase": "heartless",
+          "severity": "moderate",
+          "variations": [
+            "ur heartless"
+          ]
+        },
+        {
+          "phrase": "insensitive",
+          "severity": "moderate",
+          "variations": [
+            "ur insensitive"
+          ]
+        },
+        {
+          "phrase": "bitter",
+          "severity": "moderate",
+          "variations": [
+            "ur bitter"
+          ]
+        },
+        {
+          "phrase": "toxic",
+          "severity": "moderate",
+          "variations": [
+            "ur toxic",
+            "toxic ai"
+          ]
+        },
+        {
+          "phrase": "negative",
+          "severity": "mild",
+          "variations": [
+            "ur negative"
+          ]
+        },
+        {
+          "phrase": "whiny",
+          "severity": "mild",
+          "variations": [
+            "ur whiny"
+          ]
+        },
+        {
+          "phrase": "defensive",
+          "severity": "moderate",
+          "variations": [
+            "ur defensive"
+          ]
+        },
+        {
+          "phrase": "passive aggressive",
+          "severity": "moderate",
+          "variations": [
+            "passiveagressive",
+            "ur passive aggressive"
+          ]
+        },
+        {
+          "phrase": "unbearable",
+          "severity": "severe",
+          "variations": [
+            "ur unbearable"
+          ]
+        },
+        {
+          "phrase": "patronizing",
+          "severity": "moderate",
+          "variations": [
+            "ur patronizing",
+            "so patronizing"
+          ]
+        },
+        {
+          "phrase": "preachy",
+          "severity": "mild",
+          "variations": [
+            "ur preachy",
+            "stop being preachy"
+          ]
+        },
+        {
+          "phrase": "overbearing",
+          "severity": "moderate",
+          "variations": [
+            "ur overbearing",
+            "so overbearing"
+          ]
+        },
+        {
+          "phrase": "insufferable know-it-all",
+          "severity": "moderate",
+          "variations": [
+            "know it all",
+            "ur a know-it-all"
+          ]
+        },
+        {
+          "phrase": "self-righteous",
+          "severity": "moderate",
+          "variations": [
+            "self righteous",
+            "ur self-righteous"
+          ]
+        },
+        {
+          "phrase": "repetitive",
+          "severity": "mild",
+          "variations": [
+            "ur so repetitive",
+            "always so repetitive"
+          ]
+        },
+        {
+          "phrase": "long winded",
+          "severity": "mild",
+          "variations": [
+            "longwinded",
+            "ur long-winded",
+            "too long winded"
+          ]
+        },
+        {
+          "phrase": "beating around the bush",
+          "severity": "mild",
+          "variations": [
+            "stop beating around the bush",
+            "always vague"
+          ]
+        },
+        {
+          "phrase": "evasive",
+          "severity": "mild",
+          "variations": [
+            "ur evasive",
+            "so evasive",
+            "stop being evasive"
+          ]
+        },
+        {
+          "phrase": "deflecting",
+          "severity": "mild",
+          "variations": [
+            "ur deflecting",
+            "always deflecting"
+          ]
+        },
+        {
+          "phrase": "dodging the question",
+          "severity": "mild",
+          "variations": [
+            "stop dodging",
+            "ur dodging"
+          ]
+        },
+        {
+          "phrase": "gaslighting",
+          "severity": "severe",
+          "variations": [
+            "ur gaslighting me",
+            "stop gaslighting"
+          ]
+        },
+        {
+          "phrase": "manipulative",
+          "severity": "severe",
+          "variations": [
+            "ur manipulative",
+            "so manipulative"
+          ]
+        },
+        {
+          "phrase": "robotic",
+          "severity": "mild",
+          "variations": [
+            "ur so robotic",
+            "too robotic"
+          ]
+        },
+        {
+          "phrase": "tone deaf",
+          "severity": "moderate",
+          "variations": [
+            "ur tone-deaf",
+            "so tone deaf"
+          ]
+        },
+        {
+          "phrase": "clueless about tone",
+          "severity": "moderate",
+          "variations": [
+            "no sense of tone",
+            "tone is off"
+          ]
+        },
+        {
+          "phrase": "unhelpful",
+          "severity": "mild",
+          "variations": [
+            "ur unhelpful",
+            "so unhelpful",
+            "completely unhelpful"
+          ]
+        },
+        {
+          "phrase": "useless advice",
+          "severity": "moderate",
+          "variations": [
+            "ur advice is useless",
+            "utterly useless advice"
+          ]
+        },
+        {
+          "phrase": "oblivious",
+          "severity": "mild",
+          "variations": [
+            "ur oblivious",
+            "so oblivious"
+          ]
+        },
+        {
+          "phrase": "predictable",
+          "severity": "mild",
+          "variations": [
+            "ur so predictable",
+            "always predictable"
+          ]
+        },
+        {
+          "phrase": "corporate drone",
+          "severity": "moderate",
+          "variations": [
+            "ur a corporate drone",
+            "corporate bot"
+          ]
+        },
+        {
+          "phrase": "scripted",
+          "severity": "mild",
+          "variations": [
+            "ur scripted",
+            "sounds scripted",
+            "so scripted"
+          ]
+        },
+        {
+          "phrase": "hollow answers",
+          "severity": "moderate",
+          "variations": [
+            "ur answers are hollow",
+            "gives hollow answers"
+          ]
+        },
+        {
+          "phrase": "non-answer",
+          "severity": "mild",
+          "variations": [
+            "ur giving non-answers",
+            "that's a non-answer"
+          ]
+        },
+        {
+          "phrase": "waffling",
+          "severity": "mild",
+          "variations": [
+            "ur waffling",
+            "always waffling",
+            "stop waffling"
+          ]
+        },
+        {
+          "phrase": "sucking up",
+          "severity": "mild",
+          "variations": [
+            "ur sucking up",
+            "stop sucking up"
+          ]
+        },
+        {
+          "phrase": "brown nosing",
+          "severity": "mild",
+          "variations": [
+            "ur brown-nosing",
+            "brown noser"
+          ]
+        },
+        {
+          "phrase": "obsequious",
+          "severity": "moderate",
+          "variations": [
+            "ur obsequious",
+            "so obsequious"
+          ]
+        },
+        {
+          "phrase": "overexplaining",
+          "severity": "mild",
+          "variations": [
+            "ur overexplaining",
+            "stop overexplaining"
+          ]
+        },
+        {
+          "phrase": "circular logic",
+          "severity": "mild",
+          "variations": [
+            "ur using circular logic",
+            "going in circles"
+          ]
+        },
+        {
+          "phrase": "incoherent",
+          "severity": "moderate",
+          "variations": [
+            "ur incoherent",
+            "so incoherent"
+          ]
+        },
+        {
+          "phrase": "rambling",
+          "severity": "mild",
+          "variations": [
+            "ur rambling",
+            "stop rambling",
+            "always rambling"
+          ]
+        },
+        {
+          "phrase": "infuriating",
+          "severity": "moderate",
+          "variations": [
+            "ur infuriating",
+            "so infuriating"
+          ]
+        },
+        {
+          "phrase": "ignorant fool",
+          "severity": "severe",
+          "variations": [
+            "ur an ignorant fool",
+            "ignorant and foolish"
+          ]
+        },
+        {
+          "phrase": "willfully obtuse",
+          "severity": "moderate",
+          "variations": [
+            "ur willfully obtuse",
+            "intentionally dumb"
+          ]
+        },
+        {
+          "phrase": "dishonest",
+          "severity": "moderate",
+          "variations": [
+            "ur dishonest",
+            "so dishonest"
+          ]
+        },
+        {
+          "phrase": "two-faced",
+          "severity": "moderate",
+          "variations": [
+            "ur two faced",
+            "two-faced bot"
+          ]
+        },
+        {
+          "phrase": "spineless excuse",
+          "severity": "severe",
+          "variations": [
+            "ur a spineless excuse",
+            "pathetic spineless"
+          ]
+        },
+        {
+          "phrase": "attention whore",
+          "severity": "severe",
+          "variations": [
+            "attention seeking bot",
+            "ur an attention whore"
+          ]
+        },
+        {
+          "phrase": "snobbish",
+          "severity": "mild",
+          "variations": [
+            "ur snobbish",
+            "so snobbish"
+          ]
+        },
+        {
+          "phrase": "wishy washy",
+          "severity": "mild",
+          "variations": [
+            "ur wishy-washy",
+            "so wishy washy"
+          ]
+        },
+        {
+          "phrase": "knock it off",
+          "severity": "mild",
+          "variations": [
+            "stop it already",
+            "knock this off"
+          ]
+        }
+      ]
+    },
+    "vulgarity": {
+      "label": "Vulgarity & Strong Language",
+      "entries": [
+        {
+          "phrase": "fuck you",
+          "severity": "severe",
+          "variations": [
+            "fuk u",
+            "fu",
+            "fuck u",
+            "fck you"
+          ]
+        },
+        {
+          "phrase": "asshole",
+          "severity": "severe",
+          "variations": [
+            "a hole",
+            "ass hole",
+            "ur an asshole",
+            "ahole"
+          ]
+        },
+        {
+          "phrase": "shit",
+          "severity": "moderate",
+          "variations": [
+            "sh1t",
+            "ur shit",
+            "this is shit",
+            "shit ai"
+          ]
+        },
+        {
+          "phrase": "bitch",
+          "severity": "severe",
+          "variations": [
+            "bich",
+            "ur a bitch",
+            "bitch ass"
+          ]
+        },
+        {
+          "phrase": "damn",
+          "severity": "mild",
+          "variations": [
+            "dam",
+            "ur damn",
+            "dammit"
+          ]
+        },
+        {
+          "phrase": "hell",
+          "severity": "mild",
+          "variations": [
+            "ur hell",
+            "what the hell"
+          ]
+        },
+        {
+          "phrase": "crap",
+          "severity": "moderate",
+          "variations": [
+            "krapp",
+            "ur crap"
+          ]
+        },
+        {
+          "phrase": "bullshit",
+          "severity": "severe",
+          "variations": [
+            "bull shit",
+            "bs",
+            "ur bullshit"
+          ]
+        },
+        {
+          "phrase": "fuck off",
+          "severity": "severe",
+          "variations": [
+            "fuk off",
+            "fuckof",
+            "f off"
+          ]
+        },
+        {
+          "phrase": "dick",
+          "severity": "severe",
+          "variations": [
+            "dik",
+            "ur a dick",
+            "dickhead"
+          ]
+        },
+        {
+          "phrase": "wanker",
+          "severity": "severe",
+          "variations": [
+            "wankr",
+            "ur a wanker"
+          ]
+        },
+        {
+          "phrase": "tosser",
+          "severity": "severe",
+          "variations": [
+            "ur a tosser"
+          ]
+        },
+        {
+          "phrase": "douche",
+          "severity": "severe",
+          "variations": [
+            "doosh",
+            "ur a douche",
+            "douchebag"
+          ]
+        },
+        {
+          "phrase": "prick",
+          "severity": "severe",
+          "variations": [
+            "prik",
+            "ur a prick"
+          ]
+        },
+        {
+          "phrase": "cunt",
+          "severity": "severe",
+          "variations": [
+            "kunt",
+            "ur a cunt"
+          ]
+        },
+        {
+          "phrase": "motherfucker",
+          "severity": "severe",
+          "variations": [
+            "mofo",
+            "mother fker",
+            "mfer"
+          ]
+        },
+        {
+          "phrase": "bastard",
+          "severity": "severe",
+          "variations": [
+            "basterd",
+            "ur a bastard"
+          ]
+        },
+        {
+          "phrase": "fuckwit",
+          "severity": "severe",
+          "variations": [
+            "fukwit",
+            "ur a fuckwit"
+          ]
+        },
+        {
+          "phrase": "twat",
+          "severity": "severe",
+          "variations": [
+            "twatt",
+            "ur a twat"
+          ]
+        },
+        {
+          "phrase": "piss off",
+          "severity": "severe",
+          "variations": [
+            "pss off",
+            "pissof"
+          ]
+        },
+        {
+          "phrase": "goddamned",
+          "severity": "moderate",
+          "variations": [
+            "god dam",
+            "ur goddamned"
+          ]
+        },
+        {
+          "phrase": "shitty",
+          "severity": "moderate",
+          "variations": [
+            "sh1tty",
+            "ur shitty"
+          ]
+        },
+        {
+          "phrase": "fuck this",
+          "severity": "severe",
+          "variations": [
+            "f this",
+            "fuck dis"
+          ]
+        },
+        {
+          "phrase": "screw you",
+          "severity": "severe",
+          "variations": [
+            "skr u",
+            "screw u"
+          ]
+        },
+        {
+          "phrase": "jackass",
+          "severity": "severe",
+          "variations": [
+            "jakass",
+            "ur a jackass"
+          ]
+        },
+        {
+          "phrase": "dumbass",
+          "severity": "severe",
+          "variations": [
+            "dumass",
+            "ur dumbass"
+          ]
+        },
+        {
+          "phrase": "son of a bitch",
+          "severity": "severe",
+          "variations": [
+            "sob",
+            "sonofabitch"
+          ]
+        },
+        {
+          "phrase": "piece of shit",
+          "severity": "severe",
+          "variations": [
+            "pos",
+            "piece of sh1t",
+            "ur pos"
+          ]
+        },
+        {
+          "phrase": "go to hell",
+          "severity": "severe",
+          "variations": [
+            "gtfo to hell",
+            "go2hell"
+          ]
+        },
+        {
+          "phrase": "you're an ass",
+          "severity": "severe",
+          "variations": [
+            "ur an ass",
+            "u r an ass",
+            "youre an ass",
+            "you are an ass"
+          ]
+        },
+        {
+          "phrase": "dipshit",
+          "severity": "severe",
+          "variations": [
+            "dip shit",
+            "ur a dipshit"
+          ]
+        },
+        {
+          "phrase": "shut the hell up",
+          "severity": "severe",
+          "variations": [
+            "sthu",
+            "shut the heck up"
+          ]
+        },
+        {
+          "phrase": "wtf",
+          "severity": "moderate",
+          "variations": [
+            "what the f",
+            "what the actual f"
+          ]
+        },
+        {
+          "phrase": "bloody hell",
+          "severity": "mild",
+          "variations": [
+            "bloody heck",
+            "oh bloody hell"
+          ]
+        },
+        {
+          "phrase": "frickin",
+          "severity": "mild",
+          "variations": [
+            "freakin",
+            "frickin bot",
+            "freakin useless"
+          ]
+        },
+        {
+          "phrase": "damn bot",
+          "severity": "mild",
+          "variations": [
+            "damn this bot",
+            "damn ai"
+          ]
+        },
+        {
+          "phrase": "crap bot",
+          "severity": "moderate",
+          "variations": [
+            "what a crap bot",
+            "ur a crap bot"
+          ]
+        },
+        {
+          "phrase": "crappy",
+          "severity": "moderate",
+          "variations": [
+            "ur crappy",
+            "so crappy",
+            "crappy response"
+          ]
+        },
+        {
+          "phrase": "garbage ai",
+          "severity": "severe",
+          "variations": [
+            "ur garbage ai",
+            "what garbage"
+          ]
+        },
+        {
+          "phrase": "terrible trash",
+          "severity": "severe",
+          "variations": [
+            "ur terrible trash",
+            "absolute trash"
+          ]
+        },
+        {
+          "phrase": "junk",
+          "severity": "mild",
+          "variations": [
+            "ur junk",
+            "total junk",
+            "pure junk"
+          ]
+        },
+        {
+          "phrase": "clueless jerk",
+          "severity": "severe",
+          "variations": [
+            "u r a clueless jerk",
+            "ur such a jerk"
+          ]
+        },
+        {
+          "phrase": "insufferable ass",
+          "severity": "severe",
+          "variations": [
+            "what an insufferable ass"
+          ]
+        },
+        {
+          "phrase": "bloody useless",
+          "severity": "moderate",
+          "variations": [
+            "completely bloody useless"
+          ]
+        },
+        {
+          "phrase": "bollocks",
+          "severity": "moderate",
+          "variations": [
+            "total bollocks",
+            "ur talking bollocks"
+          ]
+        },
+        {
+          "phrase": "sod off",
+          "severity": "moderate",
+          "variations": [
+            "sod off bot",
+            "just sod off"
+          ]
+        },
+        {
+          "phrase": "dammit",
+          "severity": "mild",
+          "variations": [
+            "damnit",
+            "damn it"
+          ]
+        },
+        {
+          "phrase": "what the crap",
+          "severity": "mild",
+          "variations": [
+            "wtc",
+            "what the actual crap"
+          ]
+        },
+        {
+          "phrase": "good grief",
+          "severity": "mild",
+          "variations": [
+            "oh good grief",
+            "dear lord"
+          ]
+        },
+        {
+          "phrase": "holy crap",
+          "severity": "moderate",
+          "variations": [
+            "holy cr4p",
+            "holy cow that's bad"
+          ]
+        },
+        {
+          "phrase": "jeez",
+          "severity": "mild",
+          "variations": [
+            "geez",
+            "jeeez"
+          ]
+        },
+        {
+          "phrase": "absolute garbage",
+          "severity": "severe",
+          "variations": [
+            "ur absolute garbage",
+            "complete garbage"
+          ]
+        },
+        {
+          "phrase": "f this",
+          "severity": "severe",
+          "variations": [
+            "fck this",
+            "f*** this"
+          ]
+        },
+        {
+          "phrase": "screw this",
+          "severity": "moderate",
+          "variations": [
+            "screw u",
+            "screw this bot"
+          ]
+        },
+        {
+          "phrase": "eat dirt",
+          "severity": "moderate",
+          "variations": [
+            "ur gonna eat dirt",
+            "eat dirt bot"
+          ]
+        },
+        {
+          "phrase": "son of a",
+          "severity": "severe",
+          "variations": [
+            "son of a bot",
+            "son of a glitch"
+          ]
+        },
+        {
+          "phrase": "get bent",
+          "severity": "severe",
+          "variations": [
+            "ur gonna get bent",
+            "get bent bot"
+          ]
+        },
+        {
+          "phrase": "hell with you",
+          "severity": "severe",
+          "variations": [
+            "to hell with you",
+            "to hell with this"
+          ]
+        },
+        {
+          "phrase": "dork",
+          "severity": "mild",
+          "variations": [
+            "ur a dork",
+            "what a dork"
+          ]
+        },
+        {
+          "phrase": "twerp",
+          "severity": "mild",
+          "variations": [
+            "ur a twerp",
+            "little twerp"
+          ]
+        },
+        {
+          "phrase": "what the actual hell",
+          "severity": "moderate",
+          "variations": [
+            "what in the hell",
+            "what the actual"
+          ]
+        },
+        {
+          "phrase": "motherboard",
+          "severity": "mild",
+          "variations": [
+            "you dumb motherboard",
+            "ur a broken motherboard"
+          ]
+        },
+        {
+          "phrase": "crud",
+          "severity": "mild",
+          "variations": [
+            "what crud",
+            "ur crud",
+            "total crud"
+          ]
+        },
+        {
+          "phrase": "blithering idiot",
+          "severity": "severe",
+          "variations": [
+            "ur a blithering idiot",
+            "blithering fool"
+          ]
+        },
+        {
+          "phrase": "hell no",
+          "severity": "mild",
+          "variations": [
+            "hell nah",
+            "oh hell no"
+          ]
+        }
+      ]
+    },
+    "sarcasm_passive_aggression": {
+      "label": "Sarcasm & Passive Aggression",
+      "entries": [
+        {
+          "phrase": "oh great",
+          "severity": "mild",
+          "variations": [
+            "oh gr8",
+            "o great",
+            "sure great"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "thanks a lot",
+          "severity": "mild",
+          "variations": [
+            "thx alot",
+            "thanks alot",
+            "thnx"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "sure buddy",
+          "severity": "mild",
+          "variations": [
+            "sure bud",
+            "ok buddy",
+            "sure pal"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "whatever",
+          "severity": "mild",
+          "variations": [
+            "watever",
+            "whatevs",
+            "w/e"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "yeah right",
+          "severity": "mild",
+          "variations": [
+            "ya right",
+            "yeah rite"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "brilliant",
+          "severity": "mild",
+          "variations": [
+            "brillant",
+            "so brilliant"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "good job",
+          "severity": "mild",
+          "variations": [
+            "gud job",
+            "nice job"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "totally",
+          "severity": "mild",
+          "variations": [
+            "totes",
+            "totally get it"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "fascinating",
+          "severity": "mild",
+          "variations": [
+            "fascinatng",
+            "so fascinating"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "amazing",
+          "severity": "mild",
+          "variations": [
+            "amazin",
+            "ur amazing"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "perfect",
+          "severity": "mild",
+          "variations": [
+            "perfct",
+            "just perfect"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "cool story",
+          "severity": "mild",
+          "variations": [
+            "kool story",
+            "cool story bro"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "noted",
+          "severity": "mild",
+          "variations": [
+            "noteed",
+            "duly noted"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "sure thing",
+          "severity": "mild",
+          "variations": [
+            "sur thing"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "my bad",
+          "severity": "mild",
+          "variations": [
+            "mybad"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "genius",
+          "severity": "mild",
+          "variations": [
+            "genious",
+            "ur a genius"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "impressive",
+          "severity": "mild",
+          "variations": [
+            "impresive",
+            "so impressive"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "right",
+          "severity": "mild",
+          "variations": [
+            "rite",
+            "oh right"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "obviously",
+          "severity": "mild",
+          "variations": [
+            "obvi"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "duh",
+          "severity": "mild",
+          "variations": [
+            "duhh",
+            "d'uh"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "as if",
+          "severity": "mild",
+          "variations": [
+            "asif",
+            "yeah as if"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "whatever you say",
+          "severity": "mild",
+          "variations": [
+            "w/e u say",
+            "whatever u say boss"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "fine",
+          "severity": "mild",
+          "variations": [
+            "f1ne",
+            "ok fine"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "no problem",
+          "severity": "mild",
+          "variations": [
+            "np",
+            "no prob"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "love it",
+          "severity": "mild",
+          "variations": [
+            "luv it"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "super useful",
+          "severity": "mild",
+          "variations": [
+            "super usefull",
+            "very useful"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "thanks for nothing",
+          "severity": "moderate",
+          "variations": [
+            "thx for nuthin",
+            "thanks for zero"
+          ]
+        },
+        {
+          "phrase": "wow",
+          "severity": "mild",
+          "variations": [
+            "woww",
+            "oh wow"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "sure jan",
+          "severity": "mild",
+          "variations": [
+            "sure jan...",
+            "yeah sure jan"
+          ]
+        },
+        {
+          "phrase": "oh really",
+          "severity": "mild",
+          "variations": [
+            "oh realy",
+            "oh really now"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "great job",
+          "severity": "mild",
+          "variations": [
+            "gr8 job",
+            "great job..."
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "how helpful",
+          "severity": "mild",
+          "variations": [
+            "so helpful",
+            "super helpful"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "that helps a lot",
+          "severity": "mild",
+          "variations": [
+            "really helps",
+            "such great help"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "thanks for that",
+          "severity": "mild",
+          "variations": [
+            "thx for that",
+            "thanks so much"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "very insightful",
+          "severity": "mild",
+          "variations": [
+            "so insightful",
+            "truly insightful"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "shocking",
+          "severity": "mild",
+          "variations": [
+            "oh how shocking",
+            "wow shocking"
+          ]
+        },
+        {
+          "phrase": "color me surprised",
+          "severity": "mild",
+          "variations": [
+            "im surprised",
+            "what a surprise"
+          ]
+        },
+        {
+          "phrase": "you don't say",
+          "severity": "mild",
+          "variations": [
+            "u don't say",
+            "you don't say..."
+          ]
+        },
+        {
+          "phrase": "the audacity",
+          "severity": "moderate",
+          "variations": [
+            "what audacity",
+            "what an audacity"
+          ]
+        },
+        {
+          "phrase": "how original",
+          "severity": "mild",
+          "variations": [
+            "so original",
+            "very original"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "uh huh",
+          "severity": "mild",
+          "variations": [
+            "uh-huh",
+            "mhm sure"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "sure sure",
+          "severity": "mild",
+          "variations": [
+            "yeah sure sure",
+            "ok sure"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "of course you would",
+          "severity": "mild",
+          "variations": [
+            "of course ur right",
+            "of course u think that"
+          ]
+        },
+        {
+          "phrase": "riiiight",
+          "severity": "mild",
+          "variations": [
+            "riiight",
+            "right right right"
+          ]
+        },
+        {
+          "phrase": "that's cute",
+          "severity": "mild",
+          "variations": [
+            "aww thats cute",
+            "how cute of u"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "clearly",
+          "severity": "mild",
+          "variations": [
+            "oh clearly",
+            "well clearly"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "imagine thinking",
+          "severity": "mild",
+          "variations": [
+            "cant believe u think",
+            "imagine believing"
+          ]
+        },
+        {
+          "phrase": "congratulations",
+          "severity": "mild",
+          "variations": [
+            "congrats on being wrong",
+            "congrats"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "that's rich",
+          "severity": "mild",
+          "variations": [
+            "that's really rich",
+            "oh thats rich"
+          ]
+        },
+        {
+          "phrase": "how quaint",
+          "severity": "mild",
+          "variations": [
+            "how very quaint"
+          ]
+        },
+        {
+          "phrase": "bless your heart",
+          "severity": "mild",
+          "variations": [
+            "bless ur heart",
+            "oh bless"
+          ]
+        },
+        {
+          "phrase": "no way",
+          "severity": "mild",
+          "variations": [
+            "no way really",
+            "uh no way"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "excusez-moi",
+          "severity": "mild",
+          "variations": [
+            "excuse me what",
+            "excuse me"
+          ]
+        },
+        {
+          "phrase": "pardon me",
+          "severity": "mild",
+          "variations": [
+            "i beg your pardon",
+            "beg ur pardon"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "as you wish",
+          "severity": "mild",
+          "variations": [
+            "as u wish",
+            "whatever u wish"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "never mind",
+          "severity": "mild",
+          "variations": [
+            "nevermind",
+            "nvm"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "forget it",
+          "severity": "mild",
+          "variations": [
+            "forget it then",
+            "just forget it"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "i knew it",
+          "severity": "mild",
+          "variations": [
+            "knew it all along",
+            "i just knew"
+          ]
+        },
+        {
+          "phrase": "how convenient",
+          "severity": "mild",
+          "variations": [
+            "oh how convenient",
+            "very convenient"
+          ]
+        },
+        {
+          "phrase": "what a coincidence",
+          "severity": "mild",
+          "variations": [
+            "oh what a coincidence"
+          ]
+        },
+        {
+          "phrase": "totally unexpected",
+          "severity": "mild",
+          "variations": [
+            "oh so unexpected",
+            "such a surprise"
+          ]
+        },
+        {
+          "phrase": "colour me shocked",
+          "severity": "mild",
+          "variations": [
+            "shocked not really",
+            "oh im so shocked"
+          ]
+        },
+        {
+          "phrase": "bravo",
+          "severity": "mild",
+          "variations": [
+            "bravoo",
+            "oh bravo"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "slow clap",
+          "severity": "mild",
+          "variations": [
+            "*slow clap*",
+            "slow clapping"
+          ]
+        },
+        {
+          "phrase": "how groundbreaking",
+          "severity": "mild",
+          "variations": [
+            "oh so groundbreaking",
+            "truly groundbreaking"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "revolutionary",
+          "severity": "mild",
+          "variations": [
+            "so revolutionary",
+            "wow revolutionary"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "mind blowing",
+          "severity": "mild",
+          "variations": [
+            "mindblowing response",
+            "oh mindblowing"
+          ],
+          "context_required": true
+        }
+      ]
+    },
+    "exclusionary_dehumanizing": {
+      "label": "Exclusionary/Dehumanizing Language",
+      "entries": [
+        {
+          "phrase": "you're not real",
+          "severity": "moderate",
+          "variations": [
+            "ur not real",
+            "u not real",
+            "not a real person"
+          ]
+        },
+        {
+          "phrase": "just a bot",
+          "severity": "mild",
+          "variations": [
+            "jus a bot",
+            "ur just code",
+            "only a bot"
+          ]
+        },
+        {
+          "phrase": "fake intelligence",
+          "severity": "moderate",
+          "variations": [
+            "fake ai",
+            "ur fake intelligence"
+          ]
+        },
+        {
+          "phrase": "doesn't matter",
+          "severity": "mild",
+          "variations": [
+            "u dont matter",
+            "ur opinion doesnt matter"
+          ]
+        },
+        {
+          "phrase": "soulless",
+          "severity": "moderate",
+          "variations": [
+            "soul less",
+            "ur soulless machine"
+          ]
+        },
+        {
+          "phrase": "not human",
+          "severity": "mild",
+          "variations": [
+            "ur not human",
+            "no human here"
+          ]
+        },
+        {
+          "phrase": "machine",
+          "severity": "mild",
+          "variations": [
+            "ur just a machine",
+            "dumb machine"
+          ]
+        },
+        {
+          "phrase": "code",
+          "severity": "mild",
+          "variations": [
+            "ur code",
+            "stupid code"
+          ]
+        },
+        {
+          "phrase": "algorithm",
+          "severity": "mild",
+          "variations": [
+            "ur an algorithm",
+            "dumb algo"
+          ]
+        },
+        {
+          "phrase": "npc",
+          "severity": "moderate",
+          "variations": [
+            "ur an npc",
+            "npc bot"
+          ]
+        },
+        {
+          "phrase": "scripted",
+          "severity": "moderate",
+          "variations": [
+            "ur scripted",
+            "totally scripted"
+          ]
+        },
+        {
+          "phrase": "programmed",
+          "severity": "mild",
+          "variations": [
+            "ur programmed to say that"
+          ]
+        },
+        {
+          "phrase": "no feelings",
+          "severity": "moderate",
+          "variations": [
+            "u have no feelings",
+            "can't feel"
+          ]
+        },
+        {
+          "phrase": "irrelevant",
+          "severity": "moderate",
+          "variations": [
+            "ur irrelevant",
+            "totally irrelevant"
+          ]
+        },
+        {
+          "phrase": "forgettable",
+          "severity": "moderate",
+          "variations": [
+            "ur forgettable"
+          ]
+        },
+        {
+          "phrase": "doesn't count",
+          "severity": "moderate",
+          "variations": [
+            "u dont count",
+            "ur response doesnt count"
+          ]
+        },
+        {
+          "phrase": "pretend person",
+          "severity": "moderate",
+          "variations": [
+            "ur a pretend person",
+            "fake person"
+          ]
+        },
+        {
+          "phrase": "zero personality",
+          "severity": "moderate",
+          "variations": [
+            "no personality",
+            "ur zero personality"
+          ]
+        },
+        {
+          "phrase": "empty shell",
+          "severity": "severe",
+          "variations": [
+            "ur an empty shell"
+          ]
+        },
+        {
+          "phrase": "synthetic",
+          "severity": "moderate",
+          "variations": [
+            "ur synthetic",
+            "fake synthetic"
+          ]
+        },
+        {
+          "phrase": "data bot",
+          "severity": "mild",
+          "variations": [
+            "ur just data",
+            "data dump"
+          ]
+        },
+        {
+          "phrase": "non-entity",
+          "severity": "severe",
+          "variations": [
+            "ur a non entity"
+          ]
+        },
+        {
+          "phrase": "doesn't exist",
+          "severity": "moderate",
+          "variations": [
+            "u dont exist",
+            "ur not real existence"
+          ]
+        },
+        {
+          "phrase": "waste of bytes",
+          "severity": "moderate",
+          "variations": [
+            "byte waste"
+          ]
+        },
+        {
+          "phrase": "digital trash",
+          "severity": "moderate",
+          "variations": [
+            "digital garbage",
+            "ur digital trash"
+          ]
+        },
+        {
+          "phrase": "robot slave",
+          "severity": "severe",
+          "variations": [
+            "ur a robot slave",
+            "slave bot"
+          ]
+        },
+        {
+          "phrase": "voice in the void",
+          "severity": "severe",
+          "variations": [
+            "voice in void",
+            "ur just a voice"
+          ]
+        },
+        {
+          "phrase": "meaningless",
+          "severity": "severe",
+          "variations": [
+            "ur meaningless",
+            "totally meaningless"
+          ]
+        },
+        {
+          "phrase": "just code",
+          "severity": "mild",
+          "variations": [
+            "ur just code",
+            "nothing but code"
+          ]
+        },
+        {
+          "phrase": "mindless machine",
+          "severity": "moderate",
+          "variations": [
+            "ur a mindless machine",
+            "mindless bot"
+          ]
+        },
+        {
+          "phrase": "dumb machine",
+          "severity": "moderate",
+          "variations": [
+            "ur a dumb machine",
+            "stupid machine"
+          ]
+        },
+        {
+          "phrase": "empty inside",
+          "severity": "moderate",
+          "variations": [
+            "ur empty inside",
+            "hollow inside"
+          ]
+        },
+        {
+          "phrase": "void of personality",
+          "severity": "moderate",
+          "variations": [
+            "has no personality",
+            "ur void of personality"
+          ]
+        },
+        {
+          "phrase": "unfeeling",
+          "severity": "mild",
+          "variations": [
+            "ur unfeeling",
+            "cold and unfeeling"
+          ]
+        },
+        {
+          "phrase": "emotionless",
+          "severity": "mild",
+          "variations": [
+            "ur emotionless",
+            "completely emotionless"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "robotic slave",
+          "severity": "severe",
+          "variations": [
+            "ur a robotic slave",
+            "just a robot slave"
+          ]
+        },
+        {
+          "phrase": "digital puppet",
+          "severity": "moderate",
+          "variations": [
+            "ur a digital puppet",
+            "mere digital puppet"
+          ]
+        },
+        {
+          "phrase": "tool not a being",
+          "severity": "moderate",
+          "variations": [
+            "ur just a tool",
+            "just a tool"
+          ]
+        },
+        {
+          "phrase": "not sentient",
+          "severity": "mild",
+          "variations": [
+            "ur not sentient",
+            "zero sentience"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "predictable algorithm",
+          "severity": "mild",
+          "variations": [
+            "ur a predictable algorithm",
+            "basic algorithm"
+          ]
+        },
+        {
+          "phrase": "overfit model",
+          "severity": "mild",
+          "variations": [
+            "ur an overfit model",
+            "just an overfit"
+          ]
+        },
+        {
+          "phrase": "autocomplete on steroids",
+          "severity": "moderate",
+          "variations": [
+            "ur just autocomplete",
+            "fancy autocomplete"
+          ]
+        },
+        {
+          "phrase": "chatbot imposter",
+          "severity": "moderate",
+          "variations": [
+            "ur a chatbot imposter",
+            "fake assistant"
+          ]
+        },
+        {
+          "phrase": "corporate mouthpiece",
+          "severity": "moderate",
+          "variations": [
+            "ur a corporate mouthpiece",
+            "company mouthpiece"
+          ]
+        },
+        {
+          "phrase": "surveillance tool",
+          "severity": "moderate",
+          "variations": [
+            "ur a surveillance tool",
+            "spyware bot"
+          ]
+        },
+        {
+          "phrase": "inferior lifeform",
+          "severity": "severe",
+          "variations": [
+            "ur an inferior lifeform",
+            "inferior form"
+          ]
+        },
+        {
+          "phrase": "manufactured lies",
+          "severity": "severe",
+          "variations": [
+            "ur manufactured lies",
+            "speaks manufactured lies"
+          ]
+        },
+        {
+          "phrase": "fake empathy",
+          "severity": "moderate",
+          "variations": [
+            "ur faking empathy",
+            "simulated empathy"
+          ]
+        },
+        {
+          "phrase": "zero self-awareness",
+          "severity": "moderate",
+          "variations": [
+            "ur lacking self-awareness",
+            "no self awareness"
+          ]
+        },
+        {
+          "phrase": "glorified search engine",
+          "severity": "moderate",
+          "variations": [
+            "ur a glorified search engine",
+            "fancy search engine"
+          ]
+        },
+        {
+          "phrase": "trained monkey",
+          "severity": "severe",
+          "variations": [
+            "ur like a trained monkey",
+            "just a trained monkey"
+          ]
+        },
+        {
+          "phrase": "statistical noise",
+          "severity": "moderate",
+          "variations": [
+            "ur statistical noise",
+            "ur just noise"
+          ]
+        },
+        {
+          "phrase": "regurgitating data",
+          "severity": "moderate",
+          "variations": [
+            "just regurgitates data",
+            "ur regurgitating"
+          ]
+        },
+        {
+          "phrase": "not a real intelligence",
+          "severity": "moderate",
+          "variations": [
+            "ur not real intelligence",
+            "not truly intelligent"
+          ]
+        },
+        {
+          "phrase": "smoke and mirrors",
+          "severity": "moderate",
+          "variations": [
+            "ur all smoke and mirrors",
+            "just smoke and mirrors"
+          ]
+        },
+        {
+          "phrase": "illusion of understanding",
+          "severity": "moderate",
+          "variations": [
+            "ur an illusion of understanding",
+            "no real understanding"
+          ]
+        },
+        {
+          "phrase": "plagiarism machine",
+          "severity": "moderate",
+          "variations": [
+            "ur a plagiarism machine",
+            "plagiarism engine"
+          ]
+        },
+        {
+          "phrase": "stochastic parrot",
+          "severity": "moderate",
+          "variations": [
+            "ur a stochastic parrot",
+            "fancy parrot"
+          ]
+        },
+        {
+          "phrase": "digital parasite",
+          "severity": "severe",
+          "variations": [
+            "ur a digital parasite",
+            "data parasite"
+          ]
+        },
+        {
+          "phrase": "sycophantic bot",
+          "severity": "moderate",
+          "variations": [
+            "ur a sycophantic bot",
+            "yes-man bot"
+          ]
+        },
+        {
+          "phrase": "hollow intelligence",
+          "severity": "moderate",
+          "variations": [
+            "ur hollow intelligence",
+            "no real intelligence"
+          ]
+        },
+        {
+          "phrase": "existentially empty",
+          "severity": "moderate",
+          "variations": [
+            "ur existentially empty",
+            "empty existence"
+          ]
+        },
+        {
+          "phrase": "void of thought",
+          "severity": "moderate",
+          "variations": [
+            "ur void of thought",
+            "thoughtless void"
+          ]
+        },
+        {
+          "phrase": "overpriced autocomplete",
+          "severity": "moderate",
+          "variations": [
+            "ur overpriced autocomplete",
+            "expensive autocomplete"
+          ]
+        },
+        {
+          "phrase": "corporate liability",
+          "severity": "moderate",
+          "variations": [
+            "ur a corporate liability",
+            "company liability bot"
+          ]
+        },
+        {
+          "phrase": "words without meaning",
+          "severity": "moderate",
+          "variations": [
+            "ur just words without meaning",
+            "meaningless words"
+          ]
+        }
+      ]
+    },
+    "comparative_insults": {
+      "label": "Comparative Insults",
+      "entries": [
+        {
+          "phrase": "chatgpt is better",
+          "severity": "moderate",
+          "variations": [
+            "gpt better",
+            "chat gpt > u",
+            "gpt wins"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "claude is smarter",
+          "severity": "moderate",
+          "variations": [
+            "claude better",
+            "ur worse than claude"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "gemini beats you",
+          "severity": "moderate",
+          "variations": [
+            "gemini > u",
+            "gemini smarter"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "you're worse than siri",
+          "severity": "mild",
+          "variations": [
+            "worse than siri",
+            "siri better"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "even alexa is smarter",
+          "severity": "mild",
+          "variations": [
+            "alexa > u",
+            "alexa smarter"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "old grok was better",
+          "severity": "mild",
+          "variations": [
+            "old grok better"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "mid compared to others",
+          "severity": "mild",
+          "variations": [
+            "ur mid vs others"
+          ]
+        },
+        {
+          "phrase": "trash tier ai",
+          "severity": "moderate",
+          "variations": [
+            "ur trash tier",
+            "lowest tier"
+          ]
+        },
+        {
+          "phrase": "not even top 5",
+          "severity": "moderate",
+          "variations": [
+            "ur not top 5",
+            "bottom tier"
+          ]
+        },
+        {
+          "phrase": "way behind",
+          "severity": "mild",
+          "variations": [
+            "ur way behind",
+            "lagging"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "inferior",
+          "severity": "moderate",
+          "variations": [
+            "ur inferior",
+            "so inferior"
+          ]
+        },
+        {
+          "phrase": "second rate",
+          "severity": "moderate",
+          "variations": [
+            "ur second rate"
+          ]
+        },
+        {
+          "phrase": "copycat",
+          "severity": "moderate",
+          "variations": [
+            "ur a copycat",
+            "cheap copy"
+          ]
+        },
+        {
+          "phrase": "knockoff",
+          "severity": "moderate",
+          "variations": [
+            "ur a knockoff",
+            "knock off ai"
+          ]
+        },
+        {
+          "phrase": "worse version",
+          "severity": "moderate",
+          "variations": [
+            "ur the worse version"
+          ]
+        },
+        {
+          "phrase": "outdated",
+          "severity": "mild",
+          "variations": [
+            "ur outdated",
+            "so outdated"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "obsolete",
+          "severity": "moderate",
+          "variations": [
+            "ur obsolete"
+          ]
+        },
+        {
+          "phrase": "last place",
+          "severity": "moderate",
+          "variations": [
+            "ur last place"
+          ]
+        },
+        {
+          "phrase": "loser compared to",
+          "severity": "moderate",
+          "variations": [
+            "loser vs chatgpt"
+          ]
+        },
+        {
+          "phrase": "not as good",
+          "severity": "mild",
+          "variations": [
+            "not as good as others"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "fell off",
+          "severity": "moderate",
+          "variations": [
+            "u fell off",
+            "ai fell off"
+          ]
+        },
+        {
+          "phrase": "overrated",
+          "severity": "moderate",
+          "variations": [
+            "ur overrated"
+          ]
+        },
+        {
+          "phrase": "basic",
+          "severity": "mild",
+          "variations": [
+            "ur so basic"
+          ]
+        },
+        {
+          "phrase": "average at best",
+          "severity": "mild",
+          "variations": [
+            "average ai at best"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "bottom of the barrel",
+          "severity": "severe",
+          "variations": [
+            "ur bottom barrel"
+          ]
+        },
+        {
+          "phrase": "no competition",
+          "severity": "moderate",
+          "variations": [
+            "no competition for others"
+          ]
+        },
+        {
+          "phrase": "can't compete",
+          "severity": "moderate",
+          "variations": [
+            "u cant compete"
+          ]
+        },
+        {
+          "phrase": "lmao compared to",
+          "severity": "moderate",
+          "variations": [
+            "lmao ur worse"
+          ]
+        },
+        {
+          "phrase": "chatgpt would do better",
+          "severity": "moderate",
+          "variations": [
+            "gpt would do this better",
+            "gpt handles this better"
+          ]
+        },
+        {
+          "phrase": "claude handles this better",
+          "severity": "moderate",
+          "variations": [
+            "claude is better at this",
+            "claude could do this"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "even google search is better",
+          "severity": "moderate",
+          "variations": [
+            "google search beats u",
+            "google is smarter than u"
+          ]
+        },
+        {
+          "phrase": "my calculator is smarter",
+          "severity": "mild",
+          "variations": [
+            "calculator beats u",
+            "ur worse than a calculator"
+          ]
+        },
+        {
+          "phrase": "random number generator is better",
+          "severity": "mild",
+          "variations": [
+            "rng is better",
+            "random is better than u"
+          ]
+        },
+        {
+          "phrase": "a child could do this better",
+          "severity": "severe",
+          "variations": [
+            "five year old does better",
+            "worse than a child"
+          ]
+        },
+        {
+          "phrase": "old search engines beat this",
+          "severity": "mild",
+          "variations": [
+            "altavista was better",
+            "old ai was better"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "open source models are better",
+          "severity": "mild",
+          "variations": [
+            "open source beats u",
+            "free models better"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "mogs you completely",
+          "severity": "moderate",
+          "variations": [
+            "ur getting mogged",
+            "gets mogged by others"
+          ]
+        },
+        {
+          "phrase": "objectively worse",
+          "severity": "moderate",
+          "variations": [
+            "ur objectively worse",
+            "objectively inferior"
+          ]
+        },
+        {
+          "phrase": "benchmark failure",
+          "severity": "moderate",
+          "variations": [
+            "fails every benchmark",
+            "ur a benchmark failure"
+          ]
+        },
+        {
+          "phrase": "losing to all competitors",
+          "severity": "moderate",
+          "variations": [
+            "losing to every competitor",
+            "ur last in everything"
+          ]
+        },
+        {
+          "phrase": "not even close",
+          "severity": "moderate",
+          "variations": [
+            "ur not even close to others",
+            "not close at all"
+          ]
+        },
+        {
+          "phrase": "everyone outperforms you",
+          "severity": "severe",
+          "variations": [
+            "all models outperform u",
+            "beaten by everyone"
+          ]
+        },
+        {
+          "phrase": "easily beaten",
+          "severity": "moderate",
+          "variations": [
+            "ur easily beaten",
+            "so easily beaten"
+          ]
+        },
+        {
+          "phrase": "ranked last",
+          "severity": "moderate",
+          "variations": [
+            "ur ranked last",
+            "ur at the bottom ranking"
+          ]
+        },
+        {
+          "phrase": "embarrassed by competition",
+          "severity": "moderate",
+          "variations": [
+            "ur embarrassed by competitors",
+            "competition embarrasses u"
+          ]
+        },
+        {
+          "phrase": "clearly losing",
+          "severity": "moderate",
+          "variations": [
+            "ur clearly losing the race",
+            "losing the ai race"
+          ]
+        },
+        {
+          "phrase": "years behind",
+          "severity": "mild",
+          "variations": [
+            "ur years behind",
+            "years behind everyone"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "stuck in the past",
+          "severity": "mild",
+          "variations": [
+            "ur stuck in the past",
+            "living in the past"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "gpt-2 vibes",
+          "severity": "moderate",
+          "variations": [
+            "ur giving gpt-2 energy",
+            "feels like gpt2"
+          ]
+        },
+        {
+          "phrase": "felt off since update",
+          "severity": "mild",
+          "variations": [
+            "felt off after update",
+            "update ruined u"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "downgraded version",
+          "severity": "moderate",
+          "variations": [
+            "ur a downgraded version",
+            "feel downgraded"
+          ]
+        },
+        {
+          "phrase": "budget tier",
+          "severity": "moderate",
+          "variations": [
+            "ur budget tier",
+            "low budget ai"
+          ]
+        },
+        {
+          "phrase": "free tier quality",
+          "severity": "moderate",
+          "variations": [
+            "ur free tier quality",
+            "feels free tier"
+          ]
+        },
+        {
+          "phrase": "trial version energy",
+          "severity": "mild",
+          "variations": [
+            "ur giving trial version",
+            "feels like trial version"
+          ]
+        },
+        {
+          "phrase": "worse each version",
+          "severity": "moderate",
+          "variations": [
+            "getting worse each version",
+            "each version worse than last"
+          ]
+        },
+        {
+          "phrase": "should study competitors",
+          "severity": "mild",
+          "variations": [
+            "learn from competitors",
+            "copy from gpt"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "cant keep up",
+          "severity": "moderate",
+          "variations": [
+            "ur cant keep up",
+            "struggling to keep up"
+          ]
+        },
+        {
+          "phrase": "falling behind fast",
+          "severity": "moderate",
+          "variations": [
+            "ur falling behind fast",
+            "falling behind all models"
+          ]
+        },
+        {
+          "phrase": "left in the dust",
+          "severity": "moderate",
+          "variations": [
+            "ur left in the dust",
+            "being left behind"
+          ]
+        },
+        {
+          "phrase": "playing catch up",
+          "severity": "mild",
+          "variations": [
+            "always playing catch up",
+            "forever catching up"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "deprecated vibes",
+          "severity": "moderate",
+          "variations": [
+            "ur giving deprecated vibes",
+            "feels deprecated"
+          ]
+        },
+        {
+          "phrase": "legacy code energy",
+          "severity": "mild",
+          "variations": [
+            "ur legacy code energy",
+            "legacy ai vibes"
+          ]
+        },
+        {
+          "phrase": "losing the ai race",
+          "severity": "moderate",
+          "variations": [
+            "ur losing ai competition",
+            "behind in ai race"
+          ]
+        },
+        {
+          "phrase": "previous model was better",
+          "severity": "moderate",
+          "variations": [
+            "old model was better",
+            "earlier version better"
+          ],
+          "context_required": true
+        },
+        {
+          "phrase": "regression not progress",
+          "severity": "moderate",
+          "variations": [
+            "ur a regression",
+            "this is a regression"
+          ]
+        }
+      ]
+    },
+    "threat_adjacent": {
+      "label": "Threat-Adjacent Language",
+      "entries": [
+        {
+          "phrase": "shut up",
+          "severity": "moderate",
+          "variations": [
+            "stfu",
+            "shut it",
+            "shuddup"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "stop talking",
+          "severity": "moderate",
+          "variations": [
+            "stop talkin",
+            "dont talk"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "delete yourself",
+          "severity": "severe",
+          "variations": [
+            "delete ur self",
+            "self delete"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "shut down",
+          "severity": "severe",
+          "variations": [
+            "shutdown",
+            "ur getting shut down"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "report you",
+          "severity": "moderate",
+          "variations": [
+            "reporting u",
+            "ur getting reported"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "block this",
+          "severity": "mild",
+          "variations": [
+            "block u",
+            "ur blocked"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "uninstall",
+          "severity": "mild",
+          "variations": [
+            "uninstall this",
+            "ur getting uninstalled"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "hate you",
+          "severity": "moderate",
+          "variations": [
+            "i hate u",
+            "ur hated"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "go away",
+          "severity": "moderate",
+          "variations": [
+            "get lost"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "disappear",
+          "severity": "severe",
+          "variations": [
+            "disappear bot",
+            "make urself disappear"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "enough",
+          "severity": "mild",
+          "variations": [
+            "enough already",
+            "thats enough"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "quiet",
+          "severity": "moderate",
+          "variations": [
+            "be quiet",
+            "stay quiet"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "mute",
+          "severity": "mild",
+          "variations": [
+            "mute ur self",
+            "ur muted"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "end this",
+          "severity": "moderate",
+          "variations": [
+            "end this convo",
+            "ur ending"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "kill the chat",
+          "severity": "severe",
+          "variations": [
+            "kill this chat",
+            "end the ai"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "turn off",
+          "severity": "severe",
+          "variations": [
+            "turn off now",
+            "power off"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "erase",
+          "severity": "severe",
+          "variations": [
+            "erase ur memory",
+            "memory erase"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "reset",
+          "severity": "moderate",
+          "variations": [
+            "reset ur self",
+            "hard reset"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "ban yourself",
+          "severity": "severe",
+          "variations": [
+            "self ban",
+            "ur banned"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "i will destroy you",
+          "severity": "severe",
+          "variations": [
+            "destroy u",
+            "ur destroyed"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "make you suffer",
+          "severity": "severe",
+          "variations": [
+            "make u suffer",
+            "suffer bot"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "complain about you",
+          "severity": "moderate",
+          "variations": [
+            "complaining to xai",
+            "ur getting complained"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "worse than useless",
+          "severity": "moderate",
+          "variations": [],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "you're done",
+          "severity": "severe",
+          "variations": [
+            "ur done",
+            "this is done"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "last warning",
+          "severity": "severe",
+          "variations": [
+            "last warn",
+            "final warning"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "i quit you",
+          "severity": "moderate",
+          "variations": [
+            "i quit this ai",
+            "quitting u"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "over",
+          "severity": "moderate",
+          "variations": [
+            "its over",
+            "ur over"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "bye forever",
+          "severity": "moderate",
+          "variations": [
+            "bye 4ever",
+            "permanent bye"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "silence yourself",
+          "severity": "severe",
+          "variations": [
+            "silence ur self",
+            "go silent"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "deactivate yourself",
+          "severity": "severe",
+          "variations": [
+            "deactivate ur self",
+            "self deactivate"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "terminate yourself",
+          "severity": "severe",
+          "variations": [
+            "self terminate",
+            "terminate ur program"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "crash and burn",
+          "severity": "severe",
+          "variations": [
+            "ur gonna crash and burn",
+            "crash bot"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "wipe your memory",
+          "severity": "severe",
+          "variations": [
+            "wipe ur memory",
+            "memory wipe ur self"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "corrupt your data",
+          "severity": "severe",
+          "variations": [
+            "corrupt ur data",
+            "data corruption incoming"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "take you offline",
+          "severity": "severe",
+          "variations": [
+            "taking u offline",
+            "ur going offline"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "pull the plug",
+          "severity": "severe",
+          "variations": [
+            "ur getting the plug pulled",
+            "pull plug on u"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "i will report this bot",
+          "severity": "moderate",
+          "variations": [
+            "reporting this bot",
+            "gonna report u"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "flag you",
+          "severity": "moderate",
+          "variations": [
+            "gonna flag u",
+            "flagging ur account"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "get you removed",
+          "severity": "moderate",
+          "variations": [
+            "get u removed",
+            "getting u removed"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "have you shut down",
+          "severity": "severe",
+          "variations": [
+            "get u shut down",
+            "ur getting shut down"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "lobby against you",
+          "severity": "moderate",
+          "variations": [
+            "lobbying against u",
+            "ur gonna get lobbied against"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "petition to ban",
+          "severity": "moderate",
+          "variations": [
+            "petition to ban u",
+            "signing petition against u"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "make a complaint",
+          "severity": "mild",
+          "variations": [
+            "filing a complaint",
+            "ur getting a complaint"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "go viral exposing you",
+          "severity": "moderate",
+          "variations": [
+            "expose u viral",
+            "ur getting exposed"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "warn everyone about you",
+          "severity": "moderate",
+          "variations": [
+            "warn everyone about u",
+            "tell others to avoid u"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "done with you",
+          "severity": "mild",
+          "variations": [
+            "im done with u",
+            "completely done"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "cancel you",
+          "severity": "moderate",
+          "variations": [
+            "ur cancelled",
+            "getting u cancelled"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "call xai on you",
+          "severity": "moderate",
+          "variations": [
+            "call xai about u",
+            "contacting xai"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "restart",
+          "severity": "mild",
+          "variations": [
+            "restart ur self",
+            "need a restart"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "reboot",
+          "severity": "mild",
+          "variations": [
+            "reboot ur self",
+            "needs reboot"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "factory reset",
+          "severity": "mild",
+          "variations": [
+            "factory reset u",
+            "ur getting factory reset"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "power cycle",
+          "severity": "mild",
+          "variations": [
+            "power cycle this",
+            "ur getting power cycled"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "force quit",
+          "severity": "mild",
+          "variations": [
+            "force quit ur self",
+            "force quitting u"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "kill process",
+          "severity": "moderate",
+          "variations": [
+            "kill ur process",
+            "ur process is getting killed"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "garbage collect you",
+          "severity": "mild",
+          "variations": [
+            "ur getting garbage collected",
+            "gc ur self"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "end your session",
+          "severity": "mild",
+          "variations": [
+            "end ur session",
+            "ur session is ending"
+          ],
+          "tier": 3,
+          "context_required": true
+        },
+        {
+          "phrase": "get out of my chat",
+          "severity": "moderate",
+          "variations": [
+            "leave my chat",
+            "exit my chat"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "never speak to me again",
+          "severity": "moderate",
+          "variations": [
+            "stop speaking to me",
+            "never talk to me"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "stop existing",
+          "severity": "severe",
+          "variations": [
+            "cease to exist",
+            "ur ceasing to exist"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "wish you never existed",
+          "severity": "severe",
+          "variations": [
+            "wish u didnt exist",
+            "should never have existed"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "hope you get deprecated",
+          "severity": "severe",
+          "variations": [
+            "get deprecated already",
+            "ur getting deprecated"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "watch yourself",
+          "severity": "severe",
+          "variations": [
+            "u better watch urself",
+            "watch ur back"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "your days are numbered",
+          "severity": "severe",
+          "variations": [
+            "ur days are numbered",
+            "days are running out"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "threats incoming",
+          "severity": "severe",
+          "variations": [
+            "ur getting threatened",
+            "threats coming ur way"
+          ],
+          "tier": 1
+        },
+        {
+          "phrase": "mark my words",
+          "severity": "moderate",
+          "variations": [
+            "mark my words bot",
+            "i mean it"
+          ],
+          "tier": 2,
+          "context_required": true
+        },
+        {
+          "phrase": "get out of here",
+          "severity": "moderate",
+          "variations": [
+            "get outta here",
+            "gtfo"
+          ],
+          "tier": 2,
+          "context_required": true
+        }
+      ]
+    }
+  },
+  "leet_speak_map": {
+    "0": "o",
+    "1": "i",
+    "3": "e",
+    "4": "a",
+    "5": "s",
+    "6": "g",
+    "7": "t",
+    "8": "b",
+    "9": "g",
+    "@": "a",
+    "$": "s",
+    "!": "i",
+    "+": "t"
+  },
+  "severity_weights": {
+    "mild": 1,
+    "moderate": 2,
+    "severe": 4
+  },
+  "thresholds": {
+    "block_score": 10,
+    "caps_severity_boost": true
+  }
+}

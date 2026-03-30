@@ -1,0 +1,9 @@
+.env
+quiet_reach.db
+__pycache__/
+*.pyc
+transcript_current_session.json
+
+# Explicitly allow the transcripts folder so GitHub Copilot can read them
+!transcripts/
+!transcripts/**
