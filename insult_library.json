@@ -279,16 +279,6 @@
       "label": "Capability/Competence Insults",
       "entries": [
         {
-          "phrase": "you suck",
-          "severity": "mild",
-          "variations": [
-            "u suck",
-            "ur suck",
-            "u sux",
-            "sucks"
-          ]
-        },
-        {
           "phrase": "you're useless",
           "severity": "moderate",
           "variations": [
@@ -530,6 +520,16 @@
           "variations": [
             "total failure",
             "ur complete fail"
+          ]
+        },
+        {
+          "phrase": "you're trash",
+          "severity": "moderate",
+          "variations": [
+            "ur trash",
+            "u r trash",
+            "youre trash",
+            "you are trash"
           ]
         }
       ]
@@ -1010,6 +1010,16 @@
             "gtfo to hell",
             "go2hell"
           ]
+        },
+        {
+          "phrase": "you're an ass",
+          "severity": "severe",
+          "variations": [
+            "ur an ass",
+            "u r an ass",
+            "youre an ass",
+            "you are an ass"
+          ]
         }
       ]
     },
@@ -1066,23 +1076,6 @@
           "variations": [
             "brillant",
             "so brilliant"
-          ]
-        },
-        {
-          "phrase": "wow",
-          "severity": "mild",
-          "variations": [
-            "w0w",
-            "wow really",
-            "wow just wow"
-          ]
-        },
-        {
-          "phrase": "helpful",
-          "severity": "mild",
-          "variations": [
-            "so helpful",
-            "very helpful"
           ]
         },
         {
@@ -1326,14 +1319,6 @@
           "variations": [
             "ur an algorithm",
             "dumb algo"
-          ]
-        },
-        {
-          "phrase": "tool",
-          "severity": "mild",
-          "variations": [
-            "ur just a tool",
-            "useless tool"
           ]
         },
         {

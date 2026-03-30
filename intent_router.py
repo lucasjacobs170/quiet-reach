@@ -338,7 +338,15 @@ class IntentRouter:
             return response, ROUTE_SAFE_RESPONSE
 
         if extended_intent == "asks_about_bot":
-            response = self._get_response("bot_capabilities")
+            # Combine bot capabilities description with proactive platform introduction.
+            # The `proactive_platform_intro` guard ensures graceful degradation when
+            # safe_responses.json is missing the key (e.g., older deployments).
+            bot_response = self._get_response("bot_capabilities")
+            if self.safe_responses.get("proactive_platform_intro"):
+                platform_intro = self._get_response("proactive_platform_intro")
+                response = f"{bot_response}\n\n{platform_intro}"
+            else:
+                response = bot_response
             self._record(user_key, extended_intent, user_message, response)
             return response, ROUTE_SAFE_RESPONSE
 
@@ -349,7 +357,13 @@ class IntentRouter:
 
         # 3. Casual routing (safe responses / light creativity)
         if extended_intent == "casual_greeting":
-            response = self._get_response("greetings")
+            # Use proactive platform intro for a warmer first impression.
+            # Falls back to greetings for graceful degradation on older deployments
+            # where safe_responses.json may not have the proactive_platform_intro key.
+            if self.safe_responses.get("proactive_platform_intro"):
+                response = self._get_response("proactive_platform_intro")
+            else:
+                response = self._get_response("greetings")
             self._record(user_key, extended_intent, user_message, response)
             return response, ROUTE_SAFE_RESPONSE
 

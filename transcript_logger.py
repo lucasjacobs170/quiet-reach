@@ -71,6 +71,7 @@ def _routing_explanation(routing_type: str) -> str:
         "hostile_block":   "Message was blocked due to clear hostility",
         "boundary":        "Boundary response applied for mild frustration/sarcasm",
         "default":         "Fallback unclear-question response used",
+        "platform_info":   "Response came from verified platform/social-media data",
     }.get(routing_type, "Routing type unknown")
 
 
