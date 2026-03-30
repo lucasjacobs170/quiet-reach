@@ -1,0 +1,36 @@
+{
+  "session_metadata": {
+    "session_id": "",
+    "platform": "unknown",
+    "user_id": "",
+    "username": "",
+    "start_time": "",
+    "end_time": "",
+    "total_messages": 0,
+    "total_user_messages": 0,
+    "total_bot_responses": 0,
+    "session_duration_seconds": null
+  },
+  "conversation": [],
+  "summary": {
+    "total_user_messages": 0,
+    "detection_rate_by_severity": {
+      "none": 0,
+      "mild": 0,
+      "moderate": 0,
+      "severe": 0,
+      "threat": 0
+    },
+    "false_positive_estimate": 0.0,
+    "false_negative_estimate": 0.0,
+    "blocking_rate": 0.0,
+    "warnings_issued": 0,
+    "routing_breakdown": {},
+    "intent_breakdown": {},
+    "patterns": [],
+    "pattern_effectiveness": [],
+    "recommendations": [
+      "Detection performance looks healthy. Keep monitoring."
+    ]
+  }
+}
