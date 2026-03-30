@@ -65,9 +65,14 @@ class _MessageRecord:
 @dataclass
 class _UserHistory:
     """Rolling conversation history for a single user."""
+    # Buffer size: keep enough records for both the look-back window AND the
+    # decay window.  The extra +2 provides a small overlap so that a single
+    # call to _apply_decay() always has DECAY_TURNS complete records available
+    # even if look-back and decay windows end at the same position.
     records: deque = field(default_factory=lambda: deque(maxlen=max(LOOK_BACK, DECAY_TURNS) + 2))
     turn_counter: int = 0
     cumulative_score: int = 0  # running total, decayed over time
+    last_decay_turn: int = 0   # turn index when decay was last applied
 
 
 # ---------------------------------------------------------------------------
@@ -203,16 +208,24 @@ class ContextAnalyzer:
         """
         Reduce the cumulative hostility score over time.
 
-        Every DECAY_TURNS messages without hostility, subtract DECAY_AMOUNT
-        from the running score (floor at 0).  This prevents the bot from
-        holding a permanent grudge.
+        Every DECAY_TURNS friendly (score_delta == 0) messages since the last
+        decay event, subtract DECAY_AMOUNT from the running score (floor at 0).
+        Decay fires repeatedly: after each DECAY_TURNS friendly messages the
+        score drops by DECAY_AMOUNT again.  This prevents the bot from holding
+        a permanent grudge while still requiring sustained friendliness to
+        fully reset the score.
         """
-        if not history.records:
+        if not history.records or history.cumulative_score <= 0:
             return
-        recent = list(history.records)[-DECAY_TURNS:]
-        all_friendly = all(r.score_delta == 0 for r in recent)
-        if all_friendly and len(recent) >= DECAY_TURNS:
+
+        # Count friendly messages since the last decay turn
+        friendly_since_decay = sum(
+            1 for r in history.records
+            if r.turn_index > history.last_decay_turn and r.score_delta == 0
+        )
+        if friendly_since_decay >= DECAY_TURNS:
             history.cumulative_score = max(0, history.cumulative_score - DECAY_AMOUNT)
+            history.last_decay_turn = history.turn_counter
 
 
 # ---------------------------------------------------------------------------

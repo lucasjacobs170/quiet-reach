@@ -112,8 +112,9 @@ _NEGATION_WORDS: frozenset = frozenset({
 class _PatternEntry:
     phrase: str
     severity: str
-    category: str        # category label from the library
-    category_key: str    # raw category key (e.g. "threat_adjacent")
+    category: str        # human-readable label from the "label" field (e.g. "Personal Attacks")
+    category_key: str    # raw JSON key used in guardrail logic (e.g. "threat_adjacent",
+                         # "comparative_insults") — do not change without updating guards below
     tokens: list[str]    # phrase + all variations (already lowercased)
     context_required: bool = False  # True → only flag when prior context is hostile
     tier: int = 0        # 0 = non-tiered; 1/2/3 for threat_adjacent entries
@@ -459,6 +460,11 @@ def detect(
                 elif _friendly_context and not _has_secondary_hostility:
                     suppressed = True
                     suppress_reason = "context_required: friendly conversation, no secondary insult"
+                # else: neutral context (no prior history either way) — allow through.
+                # This is intentional: ambiguous phrases in a brand-new conversation
+                # are allowed through rather than suppressed, since we have no friendly
+                # signal to indicate false-positive risk.  The user gets the benefit
+                # of the doubt only after establishing a friendly track record.
 
             # --- Comparative insult guard ---
             if not suppressed and entry.category_key == "comparative_insults":

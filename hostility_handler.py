@@ -766,10 +766,16 @@ def handle_message(
         if not insult_result.detected:
             result = HostilityResult(level=HostilityLevel.NONE)
         else:
-            # Map insult detector severity to HostilityLevel
+            # Map insult detector severity to HostilityLevel.
+            # HostilityLevel has no MODERATE value, so we map:
+            #   mild     → MILD   (soft warning, temporary cooldown)
+            #   moderate → MILD   (same handling — not severe enough to block)
+            #   severe   → SEVERE (hard block)
+            # This preserves the original two-tier boundary behavior while
+            # allowing the expanded library to use a finer-grained severity scale.
             _sev_to_level = {
                 "mild": HostilityLevel.MILD,
-                "moderate": HostilityLevel.SEVERE,
+                "moderate": HostilityLevel.MILD,
                 "severe": HostilityLevel.SEVERE,
             }
             _mapped_level = _sev_to_level.get(insult_result.severity, HostilityLevel.MILD)

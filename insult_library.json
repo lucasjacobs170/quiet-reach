@@ -639,8 +639,7 @@
           "variations": [
             "ur suck",
             "u suck",
-            "you suck so bad",
-            "this sucks"
+            "you suck so bad"
           ]
         },
         {
@@ -1736,14 +1735,6 @@
           "variations": [
             "ur using circular logic",
             "going in circles"
-          ]
-        },
-        {
-          "phrase": "makes no sense",
-          "severity": "mild",
-          "variations": [
-            "ur making no sense",
-            "that makes zero sense"
           ]
         },
         {
