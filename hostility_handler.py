@@ -46,6 +46,12 @@ try:
 except ImportError:
     _COOLDOWN_MGR_AVAILABLE = False
 
+try:
+    from context_analyzer import get_analyzer as _get_context_analyzer
+    _CONTEXT_ANALYZER_AVAILABLE = True
+except ImportError:
+    _CONTEXT_ANALYZER_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # Configuration (inherit from environment or use the same defaults as the bot)
 # ---------------------------------------------------------------------------
@@ -630,8 +636,22 @@ def handle_message(
     if _INSULT_DETECTOR_AVAILABLE and user_key:
         from insult_detector import get_user_score as _get_score
         hostility_score_before = _get_score(user_key)
-        insult_result = _insult_detect(text, user_key=user_key)
+
+        # Provide context analyzer so detect() can apply context-aware guardrails
+        _ctx_analyzer = _get_context_analyzer() if _CONTEXT_ANALYZER_AVAILABLE else None
+        insult_result = _insult_detect(text, user_key=user_key, context_analyzer=_ctx_analyzer)
         hostility_score = insult_result.cumulative_score
+
+        # Record this message's result in the context analyzer for future turns
+        if _CONTEXT_ANALYZER_AVAILABLE and _ctx_analyzer is not None:
+            try:
+                _ctx_analyzer.record(
+                    user_key=user_key,
+                    hostility_level=insult_result.severity if insult_result.detected else "none",
+                    score_delta=insult_result.score_delta,
+                )
+            except Exception:
+                pass
 
         if insult_result.should_block:
             # Severe threshold reached — block immediately without calling Ollama
@@ -662,6 +682,12 @@ def handle_message(
             block_user(user_key, username, platform,
                        reason="insult score threshold exceeded", db_path=db_path)
             _reset_score(user_key)
+            # Reset context analyzer on block
+            if _CONTEXT_ANALYZER_AVAILABLE and _ctx_analyzer is not None:
+                try:
+                    _ctx_analyzer.reset(user_key)
+                except Exception:
+                    pass
             # Set indefinite cooldown for insult-threshold breaches
             if _COOLDOWN_MGR_AVAILABLE:
                 try:
@@ -733,8 +759,26 @@ def handle_message(
     # If the insult detector ran and found NO patterns, default to NONE without
     # calling analyze().  Previously this path called Ollama, which was
     # generating ~50% false positives on innocent messages.
-    if _INSULT_DETECTOR_AVAILABLE and insult_result is not None and not insult_result.detected:
-        result = HostilityResult(level=HostilityLevel.NONE)
+    # If the insult detector DID find patterns (but score is below block threshold),
+    # map severity directly to a HostilityLevel instead of using the old keyword
+    # fallback — this ensures new library entries trigger proper responses.
+    if _INSULT_DETECTOR_AVAILABLE and insult_result is not None:
+        if not insult_result.detected:
+            result = HostilityResult(level=HostilityLevel.NONE)
+        else:
+            # Map insult detector severity to HostilityLevel
+            _sev_to_level = {
+                "mild": HostilityLevel.MILD,
+                "moderate": HostilityLevel.SEVERE,
+                "severe": HostilityLevel.SEVERE,
+            }
+            _mapped_level = _sev_to_level.get(insult_result.severity, HostilityLevel.MILD)
+            result = HostilityResult(
+                level=_mapped_level,
+                confidence=1.0,
+                matched_pattern=insult_result.matched_phrase,
+                via_ollama=False,
+            )
     else:
         result = analyze(text)
 
@@ -800,6 +844,12 @@ def handle_message(
         block_user(user_key, username, platform, reason=result.level.value, db_path=db_path)
         if _INSULT_DETECTOR_AVAILABLE and user_key:
             _reset_score(user_key)
+        # Reset context analyzer on block
+        if user_key and _CONTEXT_ANALYZER_AVAILABLE:
+            try:
+                _get_context_analyzer().reset(user_key)
+            except Exception:
+                pass
         # Also set an indefinite cooldown so unblocked users still have a gate
         if user_key and _COOLDOWN_MGR_AVAILABLE:
             try:
