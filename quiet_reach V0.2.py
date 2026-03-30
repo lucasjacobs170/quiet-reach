@@ -14,6 +14,7 @@ from intent_router import IntentRouter as _IntentRouter
 from personality_manager import get_personality_manager as _get_pm
 from response_variation_engine import get_variation_engine as _get_rve
 from resource_manager import ManagedConnection, cleanup_all, track_task, untrack_task
+from knowledge_base_loader import get_lucas_intro, get_faq_answer
 try:
     import database_manager as _db_manager
     _DB_MANAGER_AVAILABLE = True
@@ -1719,16 +1720,22 @@ def is_single_link_followup(text: str) -> bool:
     return any(p in t for p in phrases)
 
 def build_dm_identity_reply() -> str:
+    """Return a bot-identity response sourced from the safe_responses template."""
+    options = _intent_router.safe_responses.get("bot_capabilities")
+    if options:
+        return random.choice(options)
     return (
         "I’m Quiet Reach — Lucas’s assistant. "
         "I can explain what he does, break down his platforms, or send official links if you want."
     )
 
 def build_dm_lucas_summary_reply(include_why_care: bool = False) -> str:
-    msg = (
-        "Lucas is a content creator. He has live interactive content on Chaturbate, "
-        "premium content on OnlyFans, and updates on X, Instagram, and Discord."
-    )
+    """Return a verified Lucas summary sourced from knowledge_base.json.
+
+    Queries get_faq_answer() for the best FAQ match for "who is Lucas",
+    falling back to get_lucas_intro() when no specific FAQ matches.
+    """
+    msg = get_faq_answer("who is lucas") or get_lucas_intro()
     if include_why_care:
         msg += (
             " If you want live interaction, premium content, or casual updates/community, "
