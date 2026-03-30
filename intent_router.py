@@ -140,7 +140,7 @@ _HOSTILE_HANDLING_KEYWORDS: list[str] = [
     "how do you deal with", "bad people", "trolls",
 ]
 
-_GREETING_KEYWORDS: list[str] = ["hi", "hey", "hello", "sup", "yo", "what's up", "howdy"]
+_GREETING_KEYWORDS: list[str] = ["hi", "hey", "hello", "sup", "yo", "what's up", "howdy", "how are you"]
 _GRATITUDE_KEYWORDS: list[str] = ["thanks", "thank you", "thx", "appreciate", "ty", "cheers"]
 _GOODBYE_KEYWORDS: list[str] = ["bye", "goodbye", "see you", "later", "catch you", "peace", "cya"]
 _HELP_KEYWORDS: list[str] = ["help", "assist", "can you", "need info", "need help"]
@@ -282,6 +282,28 @@ class IntentRouter:
                 ctx_mgr=self._ctx,
             )
 
+        # 0. Platform detection — takes priority over all other routing, including
+        #    hostility checks.  A message mentioning a specific platform always
+        #    returns the relevant link regardless of the classifier's tone label.
+        #    This ensures messages like "how about his onlyfans?" or "i want his
+        #    twitter" are never silently dropped due to a misclassified tone.
+        lowercase_message = user_message.lower()
+        _platform_intent: Optional[str] = None
+        if _matches_any(lowercase_message, self._location_kws) or _matches_any(lowercase_message, self._all_platforms_kws):
+            _platform_intent = "asks_platform_all"
+        elif self._detect_platform(user_message) is not None:
+            _platform_intent = "asks_platform_specific"
+
+        if _platform_intent is not None:
+            if is_group_chat:
+                response = self._get_group_links_redirect()
+            elif _platform_intent == "asks_platform_all":
+                response = self._handle_platform_all_request()
+            else:
+                response = self._handle_platform_specific_request(user_message)
+            self._record(user_key, _platform_intent, user_message, response, topic="links")
+            return response, ROUTE_PLATFORM_INFO
+
         # 1. Hostility routing
         if extended_intent == "clearly_hostile":
             response = self._get_response("firm_boundary")
@@ -338,15 +360,17 @@ class IntentRouter:
             return response, ROUTE_SAFE_RESPONSE
 
         if extended_intent == "asks_about_bot":
-            # Combine bot capabilities description with proactive platform introduction.
-            # The `proactive_platform_intro` guard ensures graceful degradation when
-            # safe_responses.json is missing the key (e.g., older deployments).
-            bot_response = self._get_response("bot_capabilities")
-            if self.safe_responses.get("proactive_platform_intro"):
-                platform_intro = self._get_response("proactive_platform_intro")
-                response = f"{bot_response}\n\n{platform_intro}"
+            # Use dedicated bot_intro template when available; fall back to
+            # bot_capabilities + proactive_platform_intro for older deployments.
+            if self.safe_responses.get("bot_intro"):
+                response = self._get_response("bot_intro")
             else:
-                response = bot_response
+                bot_response = self._get_response("bot_capabilities")
+                if self.safe_responses.get("proactive_platform_intro"):
+                    platform_intro = self._get_response("proactive_platform_intro")
+                    response = f"{bot_response}\n\n{platform_intro}"
+                else:
+                    response = bot_response
             self._record(user_key, extended_intent, user_message, response)
             return response, ROUTE_SAFE_RESPONSE
 
@@ -357,10 +381,12 @@ class IntentRouter:
 
         # 3. Casual routing (safe responses / light creativity)
         if extended_intent == "casual_greeting":
-            # Use proactive platform intro for a warmer first impression.
-            # Falls back to greetings for graceful degradation on older deployments
-            # where safe_responses.json may not have the proactive_platform_intro key.
-            if self.safe_responses.get("proactive_platform_intro"):
+            # Use dedicated friendly_greeting template when available so that
+            # "how are you?" and similar messages receive a natural reply.
+            # Falls back to proactive_platform_intro / greetings for older deployments.
+            if self.safe_responses.get("friendly_greeting"):
+                response = self._get_response("friendly_greeting")
+            elif self.safe_responses.get("proactive_platform_intro"):
                 response = self._get_response("proactive_platform_intro")
             else:
                 response = self._get_response("greetings")
