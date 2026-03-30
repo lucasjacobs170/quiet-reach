@@ -457,14 +457,13 @@ def detect(
                 if _hostile_context or _has_secondary_hostility:
                     # Allow: prior hostility or co-occurring insult present
                     pass
-                elif _friendly_context and not _has_secondary_hostility:
+                else:
+                    # Suppress in all other cases (friendly OR neutral context without
+                    # secondary hostile signals).  Ambiguous patterns like "annoying"
+                    # should never fire in isolation — they require either an established
+                    # hostile history or a co-occurring insult to avoid false positives.
                     suppressed = True
-                    suppress_reason = "context_required: friendly conversation, no secondary insult"
-                # else: neutral context (no prior history either way) — allow through.
-                # This is intentional: ambiguous phrases in a brand-new conversation
-                # are allowed through rather than suppressed, since we have no friendly
-                # signal to indicate false-positive risk.  The user gets the benefit
-                # of the doubt only after establishing a friendly track record.
+                    suppress_reason = "context_required: no hostile context or secondary insult signal"
 
             # --- Comparative insult guard ---
             if not suppressed and entry.category_key == "comparative_insults":

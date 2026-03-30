@@ -162,12 +162,13 @@
         },
         {
           "phrase": "annoying",
-          "severity": "moderate",
+          "severity": "mild",
           "variations": [
             "anoying",
             "annoyin",
             "ur annoying"
-          ]
+          ],
+          "context_required": true
         },
         {
           "phrase": "creepy",
@@ -1279,11 +1280,12 @@
         },
         {
           "phrase": "annoying",
-          "severity": "moderate",
+          "severity": "mild",
           "variations": [
             "anoying",
             "ur annoying as hell"
-          ]
+          ],
+          "context_required": true
         },
         {
           "phrase": "arrogant",
