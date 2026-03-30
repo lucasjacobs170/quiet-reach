@@ -140,7 +140,7 @@ _HOSTILE_HANDLING_KEYWORDS: list[str] = [
     "how do you deal with", "bad people", "trolls",
 ]
 
-_GREETING_KEYWORDS: list[str] = ["hi", "hey", "hello", "sup", "yo", "what's up", "howdy", "how are you", "how r you"]
+_GREETING_KEYWORDS: list[str] = ["hi", "hey", "hello", "sup", "yo", "what's up", "howdy", "how are you"]
 _GRATITUDE_KEYWORDS: list[str] = ["thanks", "thank you", "thx", "appreciate", "ty", "cheers"]
 _GOODBYE_KEYWORDS: list[str] = ["bye", "goodbye", "see you", "later", "catch you", "peace", "cya"]
 _HELP_KEYWORDS: list[str] = ["help", "assist", "can you", "need info", "need help"]
@@ -287,9 +287,9 @@ class IntentRouter:
         #    returns the relevant link regardless of the classifier's tone label.
         #    This ensures messages like "how about his onlyfans?" or "i want his
         #    twitter" are never silently dropped due to a misclassified tone.
-        _t = user_message.lower()
+        lowercase_message = user_message.lower()
         _platform_intent: Optional[str] = None
-        if _matches_any(_t, self._location_kws) or _matches_any(_t, self._all_platforms_kws):
+        if _matches_any(lowercase_message, self._location_kws) or _matches_any(lowercase_message, self._all_platforms_kws):
             _platform_intent = "asks_platform_all"
         elif self._detect_platform(user_message) is not None:
             _platform_intent = "asks_platform_specific"
