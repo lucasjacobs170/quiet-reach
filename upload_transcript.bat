@@ -10,7 +10,8 @@ if errorlevel 1 (
 
 echo.
 echo Committing to Git...
-git add transcripts/session_latest.json transcripts/session_*.json
+git add -f transcripts/
+git status --short transcripts/
 git commit -m "Transcript update: %date% %time%"
 if errorlevel 1 (
     echo.
@@ -22,9 +23,15 @@ echo Pushing to GitHub...
 git push
 if errorlevel 1 (
     echo.
-    echo ERROR: Push failed. Check your git credentials and internet connection.
-    pause
-    exit /b 1
+    echo Push failed. Retrying in 5 seconds...
+    timeout /t 5 /nobreak >nul
+    git push
+    if errorlevel 1 (
+        echo.
+        echo ERROR: Push failed after retry. Check your git credentials and internet connection.
+        pause
+        exit /b 1
+    )
 )
 
 echo.
