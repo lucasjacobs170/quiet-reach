@@ -9,6 +9,13 @@ Features:
     get an extra severity point added to the running score
   - Per-user hostility score tracking across a conversation
   - Blocks engagement when a user's cumulative score exceeds the configured threshold
+  - context_required: ambiguous entries only trigger when conversation context
+    confirms hostility (via ContextAnalyzer) or secondary insult signals are present
+  - Tier system for threat_adjacent: tier 1 always flags, tier 2 needs context,
+    tier 3 needs elevated prior score
+  - Minimum indicator threshold: mild-only messages never escalate alone;
+    escalation requires multiple mild signals or at least one moderate/severe match
+  - Detection mode (strict / smart / fuzzy) loaded from hostility_config.json
 """
 
 from __future__ import annotations
@@ -35,6 +42,34 @@ _SEVERITY_WEIGHTS: dict[str, int] = _LIBRARY.get("severity_weights", {"mild": 1,
 _THRESHOLDS: dict = _LIBRARY.get("thresholds", {"block_score": 10, "caps_severity_boost": True})
 BLOCK_SCORE: int = int(_THRESHOLDS.get("block_score", 10))
 CAPS_BOOST: bool = bool(_THRESHOLDS.get("caps_severity_boost", True))
+
+# ---------------------------------------------------------------------------
+# Load hostility config (mode, tier system, minimum thresholds)
+# ---------------------------------------------------------------------------
+
+_CFG_PATH = os.path.join(os.path.dirname(__file__), "hostility_config.json")
+try:
+    with open(_CFG_PATH, encoding="utf-8") as _cf:
+        _HCFG: dict = json.load(_cf)
+except (FileNotFoundError, json.JSONDecodeError):
+    _HCFG = {}
+
+# Detection mode: "strict" | "smart" | "fuzzy"
+DETECTION_MODE: str = _HCFG.get("mode", "smart")
+
+_TIER_CFG: dict = _HCFG.get("tier_system", {})
+TIER1_ALWAYS_FLAG: bool = bool(_TIER_CFG.get("tier1_always_flag", True))
+TIER2_REQUIRES_CONTEXT: bool = bool(_TIER_CFG.get("tier2_requires_context", True))
+TIER3_IGNORE_UNLESS_ELEVATED: bool = bool(_TIER_CFG.get("tier3_ignore_unless_elevated", True))
+TIER3_ELEVATED_THRESHOLD: int = int(_TIER_CFG.get("tier3_elevated_score_threshold", 3))
+
+_COMP_CFG: dict = _HCFG.get("comparative_insult_guards", {})
+COMPARATIVE_REQUIRES_SECONDARY: bool = bool(_COMP_CFG.get("require_secondary_hostility_marker", True))
+COMPARATIVE_SECONDARY_THRESHOLD: int = int(_COMP_CFG.get("secondary_hostility_score_threshold", 1))
+
+_SCORE_CFG: dict = _HCFG.get("scoring_weights", {})
+_THRESHOLD_CFG: dict = _HCFG.get("thresholds", {})
+MIN_MILD_COUNT_ESCALATE: int = int(_THRESHOLD_CFG.get("mild_escalation_count", 3))
 
 # Fuzzy similarity threshold — tweak to taste (0.80 catches most single-char typos)
 FUZZY_THRESHOLD: float = 0.80
@@ -77,8 +112,12 @@ _NEGATION_WORDS: frozenset = frozenset({
 class _PatternEntry:
     phrase: str
     severity: str
-    category: str       # category label from the library
-    tokens: list[str]   # phrase + all variations (already lowercased)
+    category: str        # human-readable label from the "label" field (e.g. "Personal Attacks")
+    category_key: str    # raw JSON key used in guardrail logic (e.g. "threat_adjacent",
+                         # "comparative_insults") — do not change without updating guards below
+    tokens: list[str]    # phrase + all variations (already lowercased)
+    context_required: bool = False  # True → only flag when prior context is hostile
+    tier: int = 0        # 0 = non-tiered; 1/2/3 for threat_adjacent entries
 
 
 _PATTERNS: list[_PatternEntry] = []
@@ -89,7 +128,15 @@ for _cat_key, _cat_data in _LIBRARY["categories"].items():
         _phrase = _entry["phrase"].lower().strip()
         _variations = [v.lower().strip() for v in _entry.get("variations", [])]
         _tokens = list(dict.fromkeys([_phrase] + _variations))  # deduplicate, preserve order
-        _PATTERNS.append(_PatternEntry(phrase=_phrase, severity=_entry["severity"], category=_cat_label, tokens=_tokens))
+        _PATTERNS.append(_PatternEntry(
+            phrase=_phrase,
+            severity=_entry["severity"],
+            category=_cat_label,
+            category_key=_cat_key,
+            tokens=_tokens,
+            context_required=bool(_entry.get("context_required", False)),
+            tier=int(_entry.get("tier", 0)),
+        ))
 
 # Pre-compile word-boundary regex patterns for every normalised token to avoid
 # recompiling the same pattern on every call to detect().
@@ -121,6 +168,8 @@ class MatchDetail:
     confidence: float
     position_in_text: int   # character offset of the matched token in normalized text
     matched_token: str      # the specific token/variation that matched
+    suppressed: bool = False        # True when context_required guard suppressed this match
+    suppress_reason: str = ""       # human-readable reason for suppression
 
 
 @dataclass
@@ -134,11 +183,13 @@ class InsultDetectionResult:
     cumulative_score: int = 0       # running total for this user after this message
     # Rich fields for transcript logging
     all_matches: list[MatchDetail] = field(default_factory=list)
+    suppressed_matches: list[MatchDetail] = field(default_factory=list)  # matches blocked by context guards
     leet_speak_conversions: list[str] = field(default_factory=list)
     all_caps: bool = False
     all_caps_ratio: float = 0.0
     normalized_text: str = ""
     detection_time_ms: float = 0.0
+    detection_mode: str = ""        # mode used: strict | smart | fuzzy
 
 
 # ---------------------------------------------------------------------------
@@ -289,7 +340,12 @@ def _is_question_context(normalized: str, pattern_token: str) -> bool:
 # Core detection
 # ---------------------------------------------------------------------------
 
-def detect(text: str, user_key: str = "") -> InsultDetectionResult:
+def detect(
+    text: str,
+    user_key: str = "",
+    context_analyzer=None,
+    prior_hostility_score: int = 0,
+) -> InsultDetectionResult:
     """
     Scan *text* for insults from the library.
 
@@ -301,6 +357,13 @@ def detect(text: str, user_key: str = "") -> InsultDetectionResult:
         An opaque identifier for the user (e.g. platform + user ID).
         Used to accumulate per-user hostility scores.  Pass an empty string
         to skip score tracking.
+    context_analyzer : ContextAnalyzer | None
+        Optional ContextAnalyzer instance.  When provided, context_required
+        entries are checked against prior conversation hostility before
+        being included in the detection result.
+    prior_hostility_score : int
+        The user's prior hostility score from the context analyzer (used
+        when context_analyzer is not directly available).
 
     Returns
     -------
@@ -309,67 +372,158 @@ def detect(text: str, user_key: str = "") -> InsultDetectionResult:
     _start = time.monotonic()
 
     if not text or not text.strip():
-        return InsultDetectionResult()
+        return InsultDetectionResult(detection_mode=DETECTION_MODE)
 
     all_caps = _is_all_caps(text.strip())
     caps_ratio = _caps_ratio(text.strip())
     normalized = normalize_text(text)
     leet_conversions = _find_leet_conversions(text)
 
-    best_severity = "none"
-    best_phrase = ""
-    best_token = ""
-    all_matches: list[MatchDetail] = []
+    # Determine context flags from analyzer (or caller-supplied score)
+    _prior_score = prior_hostility_score
+    _hostile_context = False
+    _friendly_context = True
+    if context_analyzer is not None and user_key:
+        try:
+            _prior_score = context_analyzer.get_prior_hostility_score(user_key)
+            _hostile_context = context_analyzer.is_hostile_context(user_key)
+            _friendly_context = context_analyzer.is_friendly_context(user_key)
+        except Exception:
+            pass
+    elif _prior_score > 0:
+        _hostile_context = True
+        _friendly_context = False
+
+    # In strict mode, disable all context guards — flag everything
+    _smart_mode = DETECTION_MODE != "strict"
+
+    # Phase 1: collect all raw token matches (before context filtering)
+    raw_matches: list[tuple[_PatternEntry, MatchDetail]] = []
 
     for entry in _PATTERNS:
         for token in entry.tokens:
             norm_token = normalize_text(token)
             if _token_matches(normalized, norm_token):
-                # Compute confidence: word-boundary exact match = 1.0,
-                # fuzzy fallback = similarity ratio
                 wb_match = _wb_pattern(norm_token).search(normalized)
                 if wb_match:
                     confidence = 1.0
                 else:
                     confidence = _similarity(normalized, norm_token)
 
-                # Skip low-confidence token matches; try the next variation
                 if confidence < MIN_CONFIDENCE:
                     continue
 
-                # Skip token matches that appear in a benign context (question/negation);
-                # try the next variation in case a more explicit one also appears
                 if _is_question_context(normalized, norm_token):
                     continue
 
-                # Find position of matched token in normalized text (best effort)
                 pos = wb_match.start() if wb_match else 0
 
-                all_matches.append(MatchDetail(
+                raw_matches.append((entry, MatchDetail(
                     pattern=entry.phrase,
                     category=entry.category,
                     severity=entry.severity,
                     confidence=round(confidence, 4),
                     position_in_text=pos,
                     matched_token=token,
-                ))
-
-                # Keep the highest-severity match as the primary result
-                if _severity_rank(entry.severity) > _severity_rank(best_severity):
-                    best_severity = entry.severity
-                    best_phrase = entry.phrase
-                    best_token = token
+                )))
                 break  # found a match for this entry; no need to check more tokens
+
+    # Phase 2: count non-context-required matches to determine secondary context
+    # for context_required entries (e.g. "wow" paired with "you suck" → flag)
+    _unconditional_matches = [
+        (e, m) for e, m in raw_matches
+        if not (e.context_required and _smart_mode)
+    ]
+    _has_secondary_hostility = bool(_unconditional_matches)
+    _secondary_score = sum(
+        _SEVERITY_WEIGHTS.get(m.severity, 1) for _, m in _unconditional_matches
+    )
+
+    # Phase 3: apply context guards to produce final accepted/suppressed lists
+    all_matches: list[MatchDetail] = []
+    suppressed_matches: list[MatchDetail] = []
+
+    best_severity = "none"
+    best_phrase = ""
+    best_token = ""
+
+    for entry, md in raw_matches:
+        suppressed = False
+        suppress_reason = ""
+
+        if _smart_mode:
+            # --- context_required guard ---
+            if entry.context_required:
+                if _hostile_context or _has_secondary_hostility:
+                    # Allow: prior hostility or co-occurring insult present
+                    pass
+                elif _friendly_context and not _has_secondary_hostility:
+                    suppressed = True
+                    suppress_reason = "context_required: friendly conversation, no secondary insult"
+                # else: neutral context (no prior history either way) — allow through.
+                # This is intentional: ambiguous phrases in a brand-new conversation
+                # are allowed through rather than suppressed, since we have no friendly
+                # signal to indicate false-positive risk.  The user gets the benefit
+                # of the doubt only after establishing a friendly track record.
+
+            # --- Comparative insult guard ---
+            if not suppressed and entry.category_key == "comparative_insults":
+                if COMPARATIVE_REQUIRES_SECONDARY and not _has_secondary_hostility:
+                    if _secondary_score <= COMPARATIVE_SECONDARY_THRESHOLD:
+                        suppressed = True
+                        suppress_reason = "comparative_insult: no secondary hostility marker"
+
+            # --- Tier system for threat_adjacent ---
+            if not suppressed and entry.tier > 0:
+                if entry.tier == 1:
+                    pass  # Always flag tier 1
+                elif entry.tier == 2:
+                    if TIER2_REQUIRES_CONTEXT and not _hostile_context and not _has_secondary_hostility:
+                        suppressed = True
+                        suppress_reason = "tier2_threat: no hostile context or secondary signal"
+                elif entry.tier == 3:
+                    if TIER3_IGNORE_UNLESS_ELEVATED and _prior_score < TIER3_ELEVATED_THRESHOLD:
+                        suppressed = True
+                        suppress_reason = f"tier3_tech_term: prior score {_prior_score} below threshold {TIER3_ELEVATED_THRESHOLD}"
+
+        if suppressed:
+            md.suppressed = True
+            md.suppress_reason = suppress_reason
+            suppressed_matches.append(md)
+        else:
+            all_matches.append(md)
+            if _severity_rank(entry.severity) > _severity_rank(best_severity):
+                best_severity = entry.severity
+                best_phrase = entry.phrase
+                best_token = md.matched_token
+
+    # Phase 4: minimum indicator threshold
+    # In smart mode: mild-only messages never escalate unless 3+ mild matches
+    if _smart_mode and best_severity == "mild":
+        mild_count = sum(1 for m in all_matches if m.severity == "mild")
+        if mild_count < MIN_MILD_COUNT_ESCALATE:
+            # Downgrade to no detection — not enough signals
+            # Move all mild matches to suppressed list
+            for m in all_matches:
+                m.suppressed = True
+                m.suppress_reason = f"min_indicator_threshold: only {mild_count} mild match(es), need {MIN_MILD_COUNT_ESCALATE}"
+                suppressed_matches.append(m)
+            all_matches = []
+            best_severity = "none"
+            best_phrase = ""
+            best_token = ""
 
     detection_time_ms = (time.monotonic() - _start) * 1000
 
     if best_severity == "none":
         return InsultDetectionResult(
+            suppressed_matches=suppressed_matches,
             all_caps=all_caps,
             all_caps_ratio=caps_ratio,
             normalized_text=normalized,
             leet_speak_conversions=leet_conversions,
             detection_time_ms=round(detection_time_ms, 3),
+            detection_mode=DETECTION_MODE,
         )
 
     # Compute base score delta
@@ -397,11 +551,13 @@ def detect(text: str, user_key: str = "") -> InsultDetectionResult:
         should_block=should_block,
         cumulative_score=cumulative,
         all_matches=all_matches,
+        suppressed_matches=suppressed_matches,
         leet_speak_conversions=leet_conversions,
         all_caps=all_caps,
         all_caps_ratio=caps_ratio,
         normalized_text=normalized,
         detection_time_ms=round(detection_time_ms, 3),
+        detection_mode=DETECTION_MODE,
     )
 
 
