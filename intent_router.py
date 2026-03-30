@@ -24,6 +24,11 @@ from typing import Optional
 import requests
 
 from intent_classifier import IntentClassifier
+from knowledge_base_loader import (
+    get_lucas_intro,
+    get_faq_answer,
+    get_all_platforms_formatted,
+)
 
 try:
     from conversation_context import ConversationContextManager
@@ -125,6 +130,12 @@ _LUCAS_INFO_KEYWORDS: list[str] = [
     "lucas", "tell me about", "about lucas", "does lucas", "lucas do",
     "content", "stream", "show", "game", "ranch", "woods", "ocean",
     "surf", "jenga", "darts", "hottub", "shower", "onlyfans", "chaturbate",
+    # Activity / frequency queries
+    "how active", "how often", "how much", "how frequently", "activity",
+    "when does he", "when is he", "frequency",
+    # Contact / reach queries
+    "contact", "reach him", "reach lucas", "talk to him", "message him",
+    "how do i reach", "how can i reach", "how to contact",
 ]
 
 _BOT_CAPABILITIES_KEYWORDS: list[str] = [
@@ -498,30 +509,16 @@ class IntentRouter:
     # ------------------------------------------------------------------
 
     def _answer_about_lucas(self, user_message: str) -> str:
-        """Return a verified answer about Lucas based on the user's question."""
-        t = user_message.lower()
-        t_words = set(re.findall(r"[a-z]+", t))
+        """Return a verified answer about Lucas based on the user's question.
 
-        best_faq = None
-        best_overlap = 0
-
-        for faq in self.knowledge_base.get("faqs", []):
-            if not faq.get("critical"):
-                continue
-            q_words = set(re.findall(r"[a-z]+", faq["question"].lower()))
-            # Require at least 2 meaningful words in common (ignore short stop words)
-            meaningful_overlap = len(
-                t_words & q_words - {"a", "an", "the", "is", "his", "he", "do", "does"}
-            )
-            if meaningful_overlap > best_overlap:
-                best_overlap = meaningful_overlap
-                best_faq = faq
-
-        if best_faq and best_overlap >= 2:
-            return best_faq["answer"]
-
-        # Fall back to general description
-        return self.knowledge_base["who_is_lucas"]["description"]
+        Delegates to knowledge_base_loader.get_faq_answer() for FAQ matching,
+        then falls back to knowledge_base_loader.get_lucas_intro() so that all
+        responses are sourced from the single verified knowledge-base file.
+        """
+        answer = get_faq_answer(user_message)
+        if answer:
+            return answer
+        return get_lucas_intro()
 
     def _get_group_links_redirect(self) -> str:
         """
@@ -539,19 +536,12 @@ class IntentRouter:
         return random.choice(redirects)
 
     def _get_links(self) -> str:
-        """Return all verified platform links as a formatted string."""
-        platforms = self.knowledge_base["platforms"]["primary"]
-        contact   = self.knowledge_base["platforms"]["contact"]
+        """Return all verified platform links as a formatted string.
 
-        lines = ["Here's where you can find Lucas:\n"]
-        for p in platforms:
-            lines.append(f"🔗 {p['name']}: {p['url']}")
-
-        lines.append("\n💬 Contact Lucas:")
-        lines.append(f"Telegram: {contact['telegram']}")
-        lines.append(f"Discord: {contact['discord']}")
-
-        return "\n".join(lines)
+        Delegates to knowledge_base_loader.get_all_platforms_formatted() so that
+        the link list is always sourced from the single verified knowledge-base file.
+        """
+        return get_all_platforms_formatted()
 
     def _handle_socials_request(self) -> str:
         """
