@@ -1,40 +1,55 @@
 @echo off
-echo Generating transcript...
-python unified_transcript_builder.py --generate --output transcripts/session_latest.json
+setlocal enabledelayedexpansion
+cd /d "%~dp0"
+
+echo.
+echo ========================================
+echo   TRANSCRIPT UPLOAD TOOL
+echo ========================================
+echo.
+echo Step 1: Generating transcript...
+python unified_transcript_builder.py --generate
 if errorlevel 1 (
-    echo.
-    echo ERROR: Transcript generation failed. Make sure transcript_current_session.json exists.
-    pause
-    exit /b 1
+echo.
+echo ERROR: Transcript generation failed.
+echo Make sure transcript_current_session.json exists in this directory.
+echo.
+pause
+exit /b 1
 )
 
 echo.
-echo Committing to Git...
-git add -f transcripts/
-git status --short transcripts/
-git commit -m "Transcript update: %date% %time%"
+echo Step 2: Preparing to upload...
+git add transcripts/
+git status transcripts/
+
+echo.
+echo Step 3: Committing changes...
+for /f "tokens=2-4 delims=/ " %%a in ('date /t') do (set mydate=%%c%%a%%b)
+for /f "tokens=1-2 delims=/:" %%a in ('time /t') do (set mytime=%%a%%b)
+git commit -m "Transcript upload: %mydate% %mytime%"
+
+echo.
+echo Step 4: Pushing to GitHub...
+git push origin main
 if errorlevel 1 (
-    echo.
-    echo NOTE: Nothing new to commit, or git commit failed.
+echo.
+echo Retry push in 3 seconds...
+timeout /t 3 /nobreak >nul
+git push origin main
+if errorlevel 1 (
+echo.
+echo ERROR: Push failed. Check your internet and git credentials.
+echo.
+pause
+exit /b 1
+)
 )
 
 echo.
-echo Pushing to GitHub...
-git push
-if errorlevel 1 (
-    echo.
-    echo Push failed. Retrying in 5 seconds...
-    timeout /t 5 /nobreak >nul
-    git push
-    if errorlevel 1 (
-        echo.
-        echo ERROR: Push failed after retry. Check your git credentials and internet connection.
-        pause
-        exit /b 1
-    )
-)
-
+echo ========================================
+echo   SUCCESS! Transcript uploaded to GitHub
+echo   Location: transcripts/session_latest.json
+echo ========================================
 echo.
-echo Done!
-echo Transcript uploaded to: transcripts/session_latest.json
 pause
