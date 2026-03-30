@@ -1,0 +1,1597 @@
+{
+  "platform_aliases": {
+    "instagram": ["instagram", "insta", "ig"],
+    "onlyfans":  ["onlyfans", "only fans", "onlyfan"],
+    "chaturbate": ["chaturbate", "cb"],
+    "x":         ["x", "twitter", "x account", "x.com"],
+    "telegram":  ["telegram"],
+    "discord":   ["discord"]
+  },
+
+  "categories": {
+
+    "asks_for_platform_links": {
+      "label": "Platform Link Requests",
+      "description": "User wants a specific platform link or profile URL",
+      "patterns": [
+        {
+          "pattern": "send me his *",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "send me his instagram",
+            "send me his discord",
+            "send me his onlyfans",
+            "send me his chaturbate",
+            "send me his telegram",
+            "send me his x",
+            "send me his twitter",
+            "send me his ig"
+          ]
+        },
+        {
+          "pattern": "give me his *",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "give me his instagram",
+            "give me his discord",
+            "give me his onlyfans",
+            "give me his telegram",
+            "give me his x",
+            "give me his twitter",
+            "give me his ig"
+          ]
+        },
+        {
+          "pattern": "what's his * link",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "what's his instagram link",
+            "what's his onlyfans link",
+            "what's his discord link",
+            "what's his telegram link",
+            "what's his chaturbate link",
+            "what's his twitter link",
+            "whats his ig link"
+          ]
+        },
+        {
+          "pattern": "what is his * link",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "what is his instagram link",
+            "what is his onlyfans link",
+            "what is his discord link",
+            "what is his telegram link",
+            "what is his chaturbate link",
+            "what is his twitter link"
+          ]
+        },
+        {
+          "pattern": "his * link",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "his instagram link",
+            "his onlyfans link",
+            "his discord link",
+            "his telegram link",
+            "his chaturbate link",
+            "his twitter link",
+            "his x link"
+          ]
+        },
+        {
+          "pattern": "his * profile",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "his instagram profile",
+            "his onlyfans profile",
+            "his discord profile",
+            "his telegram profile",
+            "his chaturbate profile",
+            "his twitter profile"
+          ]
+        },
+        {
+          "pattern": "link to his *",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "link to his instagram",
+            "link to his onlyfans",
+            "link to his discord",
+            "link to his telegram",
+            "link to his chaturbate",
+            "link to his twitter"
+          ]
+        },
+        {
+          "pattern": "his * url",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "his instagram url",
+            "his onlyfans url",
+            "his discord url",
+            "his telegram url",
+            "his chaturbate url",
+            "his twitter url"
+          ]
+        },
+        {
+          "pattern": "his * account",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "his instagram account",
+            "his onlyfans account",
+            "his discord account",
+            "his telegram account",
+            "his chaturbate account",
+            "his twitter account",
+            "his x account"
+          ]
+        },
+        {
+          "pattern": "his * handle",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "his instagram handle",
+            "his telegram handle",
+            "his twitter handle",
+            "his x handle",
+            "what's his instagram handle",
+            "whats his x handle"
+          ]
+        },
+        {
+          "pattern": "can i get his *",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "can i get his instagram",
+            "can i get his onlyfans",
+            "can i get his discord",
+            "can i get his telegram",
+            "can i get his chaturbate",
+            "can i get his twitter"
+          ]
+        },
+        {
+          "pattern": "drop his * link",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "drop his instagram link",
+            "drop his onlyfans link",
+            "drop his discord link",
+            "drop his telegram link",
+            "drop his chaturbate link",
+            "drop his twitter link"
+          ]
+        },
+        {
+          "pattern": "drop his *",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "drop his instagram",
+            "drop his onlyfans",
+            "drop his discord link",
+            "drop his telegram",
+            "drop his chaturbate",
+            "drop his twitter"
+          ]
+        },
+        {
+          "pattern": "send me the * link",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "send me the instagram link",
+            "send me the onlyfans link",
+            "send me the discord link",
+            "send me the telegram link",
+            "send me the chaturbate link",
+            "send me the twitter link"
+          ]
+        },
+        {
+          "pattern": "give me the * link",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "give me the instagram link",
+            "give me the onlyfans link",
+            "give me the discord link",
+            "give me the telegram link",
+            "give me the chaturbate link",
+            "give me the twitter link"
+          ]
+        },
+        {
+          "pattern": "what is his *",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "what is his instagram",
+            "what is his onlyfans",
+            "what is his discord",
+            "what is his telegram",
+            "what is his chaturbate",
+            "what is his twitter",
+            "what is his x"
+          ]
+        },
+        {
+          "pattern": "whats his *",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "whats his instagram",
+            "whats his onlyfans",
+            "whats his discord",
+            "whats his telegram",
+            "whats his chaturbate",
+            "whats his twitter",
+            "whats his x"
+          ]
+        },
+        {
+          "pattern": "i need his *",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "i need his instagram",
+            "i need his onlyfans",
+            "i need his discord link",
+            "i need his telegram",
+            "i need his chaturbate",
+            "i need his twitter"
+          ]
+        },
+        {
+          "pattern": "share his * link",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "share his instagram link",
+            "share his onlyfans link",
+            "share his discord link",
+            "share his telegram link",
+            "share his chaturbate link",
+            "share his twitter link"
+          ]
+        },
+        {
+          "pattern": "hook me up with his *",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "hook me up with his instagram",
+            "hook me up with his onlyfans",
+            "hook me up with his discord",
+            "hook me up with his telegram",
+            "hook me up with his chaturbate",
+            "hook me up with his twitter"
+          ]
+        },
+        {
+          "pattern": "his * please",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "his instagram please",
+            "his onlyfans please",
+            "his discord please",
+            "his telegram please",
+            "his chaturbate please",
+            "his twitter please",
+            "his x please"
+          ]
+        },
+        {
+          "pattern": "send * link",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "send instagram link",
+            "send onlyfans link",
+            "send discord link",
+            "send telegram link",
+            "send chaturbate link",
+            "send twitter link"
+          ]
+        },
+        {
+          "pattern": "what * does he use",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "what instagram does he use",
+            "what discord does he use",
+            "what telegram does he use",
+            "does he use discord",
+            "does he use telegram",
+            "does he use twitter"
+          ]
+        },
+        {
+          "pattern": "does lucas use *",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "does lucas use instagram",
+            "does lucas use discord",
+            "does lucas use telegram",
+            "does lucas use twitter",
+            "does lucas use chaturbate",
+            "does lucas use onlyfans",
+            "does he use telegram"
+          ]
+        },
+        {
+          "pattern": "is lucas on *",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "is lucas on instagram",
+            "is lucas on discord",
+            "is lucas on telegram",
+            "is lucas on twitter",
+            "is he on chaturbate",
+            "is he on onlyfans",
+            "is he on telegram"
+          ]
+        },
+        {
+          "pattern": "his * username",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "his instagram username",
+            "his twitter username",
+            "his x username",
+            "his telegram username",
+            "his discord username",
+            "his chaturbate username"
+          ]
+        },
+        {
+          "pattern": "send me his * handle",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "send me his instagram handle",
+            "send me his twitter handle",
+            "send me his x handle",
+            "send me his telegram handle",
+            "send me his discord handle"
+          ]
+        },
+        {
+          "pattern": "his * page",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "his instagram page",
+            "his onlyfans page",
+            "his discord page",
+            "his telegram page",
+            "his chaturbate page",
+            "his twitter page"
+          ]
+        },
+        {
+          "pattern": "send me his * account",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "send me his instagram account",
+            "send me his discord account",
+            "send me his telegram account",
+            "send me his twitter account",
+            "send me his x account"
+          ]
+        },
+        {
+          "pattern": "give me his * account",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "give me his instagram account",
+            "give me his discord account",
+            "give me his telegram account",
+            "give me his twitter account",
+            "give me his x account"
+          ]
+        }
+      ]
+    },
+
+    "asks_for_all_socials": {
+      "label": "All Socials / All Platforms Requests",
+      "description": "User wants a list of all platforms or social media links",
+      "patterns": [
+        {
+          "pattern": "what social media does lucas have",
+          "confidence_boost": 0.35,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "what social media does lucas have?",
+            "what social media does he have?",
+            "what socials does lucas have",
+            "what socials does he have",
+            "does lucas have social media",
+            "what social media is lucas on",
+            "what social media is he on"
+          ]
+        },
+        {
+          "pattern": "what are his socials",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "what are his socials?",
+            "what are lucas's socials",
+            "what are lucas socials",
+            "what r his socials",
+            "wats his socials",
+            "his socials?"
+          ]
+        },
+        {
+          "pattern": "show me all his links",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "show me all his links",
+            "give me all his links",
+            "send me all his links",
+            "drop all his links",
+            "all his links please"
+          ]
+        },
+        {
+          "pattern": "give me all his platforms",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "give me all his platforms",
+            "show me all his platforms",
+            "send me all his platforms",
+            "list all his platforms",
+            "what platforms does he have"
+          ]
+        },
+        {
+          "pattern": "where can i find lucas online",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "where can i find lucas online?",
+            "where can i find him online",
+            "where is lucas online",
+            "where is he online",
+            "where to find him online"
+          ]
+        },
+        {
+          "pattern": "what platforms is he on",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "what platforms is he on?",
+            "what platforms does he use",
+            "what platforms is lucas on",
+            "which platforms is he on",
+            "which platforms does lucas use"
+          ]
+        },
+        {
+          "pattern": "what sites is he on",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "what sites is he on?",
+            "what websites is he on",
+            "what sites does lucas use",
+            "which websites is he on",
+            "what site is he on"
+          ]
+        },
+        {
+          "pattern": "all his socials",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "all his socials",
+            "all of his socials",
+            "all his social media",
+            "all of his social media",
+            "all his profiles"
+          ]
+        },
+        {
+          "pattern": "all his platforms",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "all his platforms",
+            "all of his platforms",
+            "all platforms he uses",
+            "every platform he's on",
+            "all the platforms"
+          ]
+        },
+        {
+          "pattern": "does he have social media",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "does he have social media?",
+            "does lucas have social media",
+            "does he have any social media",
+            "does lucas have socials",
+            "is he on social media"
+          ]
+        },
+        {
+          "pattern": "his online presence",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "what is his online presence",
+            "what's his online presence",
+            "his online presence?",
+            "tell me about his online presence",
+            "where is his online presence"
+          ]
+        },
+        {
+          "pattern": "where to find him",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "where to find him?",
+            "where do i find him",
+            "how do i find him",
+            "how to find lucas",
+            "where to find lucas"
+          ]
+        },
+        {
+          "pattern": "everywhere he is",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "everywhere he is",
+            "everywhere he posts",
+            "everywhere lucas is",
+            "everywhere i can find him",
+            "all the places he's at"
+          ]
+        },
+        {
+          "pattern": "send me all his socials",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "send me all his socials",
+            "send his socials",
+            "drop all his socials",
+            "gimme all his socials",
+            "can you send his socials"
+          ]
+        },
+        {
+          "pattern": "what are all his links",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "what are all his links?",
+            "what are lucas's links",
+            "what are his links",
+            "give me his links",
+            "send me his links"
+          ]
+        },
+        {
+          "pattern": "how many platforms does lucas have",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "how many platforms does lucas have?",
+            "how many platforms does he have",
+            "how many socials does he have",
+            "what all platforms is he on",
+            "which platforms is lucas on"
+          ]
+        },
+        {
+          "pattern": "list his platforms",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "list his platforms",
+            "list all his platforms",
+            "list his socials",
+            "list all platforms",
+            "can you list his links"
+          ]
+        },
+        {
+          "pattern": "does he have any other platforms",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "does he have any other platforms?",
+            "is he anywhere else",
+            "where else can i find him",
+            "any other platforms",
+            "is he on any other platforms"
+          ]
+        },
+        {
+          "pattern": "what social media platforms does lucas use",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "what social media platforms does lucas use?",
+            "what social media platforms does he use",
+            "which social media platforms does he use",
+            "what social platforms does lucas use",
+            "what social apps does he use"
+          ]
+        },
+        {
+          "pattern": "give me every link",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "give me every link",
+            "send every link",
+            "all the links please",
+            "every link please",
+            "all links"
+          ]
+        }
+      ]
+    },
+
+    "asks_for_lucas_information": {
+      "label": "Lucas Identity and Bio Requests",
+      "description": "User wants to know who Lucas is, what he does, or general info",
+      "patterns": [
+        {
+          "pattern": "who is lucas",
+          "confidence_boost": 0.35,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "who is lucas?",
+            "who is lucas jacobs",
+            "who is lucas jacobs?",
+            "who's lucas",
+            "who's lucas jacobs",
+            "whos lucas"
+          ]
+        },
+        {
+          "pattern": "who is he",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "who is he?",
+            "who's he",
+            "whos he",
+            "who exactly is he",
+            "who is this guy"
+          ]
+        },
+        {
+          "pattern": "tell me about lucas",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "tell me about lucas",
+            "tell me about lucas jacobs",
+            "can you tell me about lucas",
+            "what can you tell me about lucas",
+            "tell me more about lucas",
+            "give me info on lucas"
+          ]
+        },
+        {
+          "pattern": "what does lucas do",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "what does lucas do?",
+            "what does lucas do for a living",
+            "what does lucas do online",
+            "what does he do for a living",
+            "what does he do?",
+            "what does he do online"
+          ]
+        },
+        {
+          "pattern": "what is lucas about",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "what is lucas about?",
+            "what's lucas about",
+            "what's he about",
+            "what is he about",
+            "what is this account about"
+          ]
+        },
+        {
+          "pattern": "lucas bio",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "lucas bio",
+            "lucas's bio",
+            "what is lucas's bio",
+            "give me lucas's bio",
+            "what's in lucas's bio"
+          ]
+        },
+        {
+          "pattern": "lucas background",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "lucas background",
+            "lucas's background",
+            "what is lucas's background",
+            "tell me about lucas's background",
+            "what's his background"
+          ]
+        },
+        {
+          "pattern": "is lucas a content creator",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "is lucas a content creator?",
+            "is he a content creator",
+            "what kind of creator is he",
+            "what type of creator is lucas",
+            "is lucas a streamer"
+          ]
+        },
+        {
+          "pattern": "what content does he make",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "what content does he make?",
+            "what content does lucas make",
+            "what does he create",
+            "what kind of content does he make",
+            "what kind of content does lucas make"
+          ]
+        },
+        {
+          "pattern": "where is lucas from",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "where is lucas from?",
+            "where is he from",
+            "where does lucas live",
+            "where does he live",
+            "what country is lucas from"
+          ]
+        },
+        {
+          "pattern": "how old is lucas",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "how old is lucas?",
+            "how old is he",
+            "what is lucas's age",
+            "how old is lucas jacobs",
+            "what age is lucas"
+          ]
+        },
+        {
+          "pattern": "tell me more about him",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "tell me more about him",
+            "tell me more about lucas",
+            "can you tell me more",
+            "more info on lucas",
+            "i want to know more about lucas"
+          ]
+        },
+        {
+          "pattern": "what's lucas like",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "what's lucas like?",
+            "what is lucas like",
+            "what's he like",
+            "what is he like",
+            "describe lucas"
+          ]
+        },
+        {
+          "pattern": "who's this guy",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "who's this guy?",
+            "who is this guy",
+            "who's this person",
+            "who is this person",
+            "who are we talking about"
+          ]
+        },
+        {
+          "pattern": "what does lucas look like",
+          "confidence_boost": 0.15,
+          "priority": 4,
+          "entity_type": null,
+          "variations": [
+            "what does lucas look like?",
+            "what does he look like",
+            "what's lucas's appearance",
+            "describe what he looks like",
+            "what does he look like physically"
+          ]
+        },
+        {
+          "pattern": "tell me about him",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "tell me about him",
+            "can you tell me about him",
+            "give me info on him",
+            "info on lucas",
+            "what do you know about lucas"
+          ]
+        },
+        {
+          "pattern": "what do you know about lucas",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "what do you know about lucas?",
+            "what do you know about him",
+            "what can you tell me",
+            "what info do you have on lucas",
+            "what information do you have on lucas"
+          ]
+        },
+        {
+          "pattern": "give me info on lucas",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "give me info on lucas",
+            "give me information on lucas",
+            "give me details on lucas",
+            "give info about lucas",
+            "tell me the info on lucas"
+          ]
+        },
+        {
+          "pattern": "who runs this account",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "who runs this account?",
+            "who owns this account",
+            "who is behind this",
+            "who made this bot",
+            "who is this for"
+          ]
+        },
+        {
+          "pattern": "what does lucas do for fun",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "what does lucas do for fun?",
+            "what are lucas's hobbies",
+            "what does he do in his free time",
+            "what are his hobbies",
+            "what is lucas into"
+          ]
+        }
+      ]
+    },
+
+    "asks_for_contact_information": {
+      "label": "Contact Information Requests",
+      "description": "User wants to know how to contact or reach Lucas",
+      "patterns": [
+        {
+          "pattern": "how can i contact lucas",
+          "confidence_boost": 0.35,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "how can i contact lucas?",
+            "how do i contact lucas",
+            "how do i contact him",
+            "how can i contact him",
+            "how to contact lucas"
+          ]
+        },
+        {
+          "pattern": "how can i reach lucas",
+          "confidence_boost": 0.35,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "how can i reach lucas?",
+            "how do i reach lucas",
+            "how do i reach him",
+            "how can i reach him",
+            "how to reach lucas"
+          ]
+        },
+        {
+          "pattern": "how can i message lucas",
+          "confidence_boost": 0.35,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "how can i message lucas?",
+            "how do i message lucas",
+            "how do i message him",
+            "how can i dm lucas",
+            "how do i dm him"
+          ]
+        },
+        {
+          "pattern": "how do i get in touch with lucas",
+          "confidence_boost": 0.35,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "how do i get in touch with lucas?",
+            "how can i get in touch with lucas",
+            "how do i get in touch with him",
+            "how to get in touch with lucas",
+            "how do i reach out to lucas"
+          ]
+        },
+        {
+          "pattern": "best way to contact lucas",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "best way to contact lucas",
+            "best way to reach lucas",
+            "what's the best way to contact lucas",
+            "whats the best way to message him",
+            "best way to dm lucas"
+          ]
+        },
+        {
+          "pattern": "can i contact lucas",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "can i contact lucas?",
+            "can i message lucas",
+            "can i reach lucas",
+            "can i dm lucas",
+            "can i reach out to lucas"
+          ]
+        },
+        {
+          "pattern": "contact lucas",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "contact lucas",
+            "contact him",
+            "reach lucas",
+            "reach out to lucas",
+            "message lucas directly"
+          ]
+        },
+        {
+          "pattern": "how do i talk to lucas",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "how do i talk to lucas?",
+            "how can i talk to lucas",
+            "how do i speak to lucas",
+            "how can i speak to him",
+            "how do i communicate with lucas"
+          ]
+        },
+        {
+          "pattern": "how do i reach out to lucas",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "how do i reach out to lucas?",
+            "how can i reach out to him",
+            "how to reach out to lucas",
+            "where do i reach out to lucas",
+            "i want to reach out to lucas"
+          ]
+        },
+        {
+          "pattern": "i want to contact lucas",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "i want to contact lucas",
+            "i want to message lucas",
+            "i want to reach lucas",
+            "i'd like to contact lucas",
+            "i need to contact lucas"
+          ]
+        },
+        {
+          "pattern": "how do i dm lucas",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": null,
+          "variations": [
+            "how do i dm lucas?",
+            "how do i dm him",
+            "how can i dm lucas",
+            "can i dm lucas",
+            "how do you dm him"
+          ]
+        },
+        {
+          "pattern": "where can i reach lucas",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "where can i reach lucas?",
+            "where can i contact lucas",
+            "where can i message lucas",
+            "where do i contact him",
+            "where do i reach him"
+          ]
+        },
+        {
+          "pattern": "is there a way to contact lucas",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "is there a way to contact lucas?",
+            "is there a way to message him",
+            "is there a way to reach lucas",
+            "any way to contact lucas",
+            "any way i can message lucas"
+          ]
+        },
+        {
+          "pattern": "does lucas respond to messages",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "does lucas respond to messages?",
+            "does he respond to dms",
+            "does he reply to messages",
+            "does lucas respond to fans",
+            "does lucas reply"
+          ]
+        },
+        {
+          "pattern": "how do i follow lucas",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "how do i follow lucas?",
+            "how do i follow him",
+            "where do i follow lucas",
+            "how can i follow lucas",
+            "i want to follow lucas"
+          ]
+        }
+      ]
+    },
+
+    "asks_for_platform_specific_content": {
+      "label": "Platform-Specific Content Queries",
+      "description": "User wants to know about content on a specific platform",
+      "patterns": [
+        {
+          "pattern": "what does he do on *",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "what does he do on chaturbate?",
+            "what does he do on onlyfans?",
+            "what does he do on instagram?",
+            "what does he do on discord?",
+            "what does he do on telegram?",
+            "what does he do on twitter?",
+            "what does he stream on chaturbate"
+          ]
+        },
+        {
+          "pattern": "what does lucas do on *",
+          "confidence_boost": 0.30,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "what does lucas do on chaturbate?",
+            "what does lucas do on onlyfans?",
+            "what does lucas do on instagram",
+            "what does lucas do on discord",
+            "what does lucas do on telegram",
+            "what does lucas post on twitter"
+          ]
+        },
+        {
+          "pattern": "what content is on his *",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "what content is on his onlyfans?",
+            "what content is on his chaturbate?",
+            "what content is on his instagram",
+            "what content is on his discord",
+            "what content is on his telegram"
+          ]
+        },
+        {
+          "pattern": "what's on his *",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "what's on his onlyfans?",
+            "what's on his chaturbate?",
+            "what's on his instagram?",
+            "what's on his discord",
+            "what's on his telegram"
+          ]
+        },
+        {
+          "pattern": "what does he post on *",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "what does he post on instagram?",
+            "what does he post on twitter?",
+            "what does he post on onlyfans",
+            "what does he post on chaturbate",
+            "what does he post on telegram"
+          ]
+        },
+        {
+          "pattern": "tell me about his *",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "tell me about his onlyfans",
+            "tell me about his chaturbate",
+            "tell me about his instagram",
+            "tell me about his discord",
+            "tell me about his telegram"
+          ]
+        },
+        {
+          "pattern": "what's his * about",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "what's his onlyfans about?",
+            "what's his chaturbate about?",
+            "what's his instagram about",
+            "what's his discord about",
+            "what's his telegram about"
+          ]
+        },
+        {
+          "pattern": "what can i find on his *",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "what can i find on his onlyfans?",
+            "what can i find on his chaturbate?",
+            "what can i find on his instagram",
+            "what can i find on his discord",
+            "what can i find on his telegram"
+          ]
+        },
+        {
+          "pattern": "is * free",
+          "confidence_boost": 0.15,
+          "priority": 4,
+          "entity_type": "platform",
+          "variations": [
+            "is his onlyfans free?",
+            "is his chaturbate free",
+            "is the onlyfans free",
+            "is chaturbate free",
+            "is his instagram free"
+          ]
+        },
+        {
+          "pattern": "what does he stream on *",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "platform",
+          "variations": [
+            "what does he stream on chaturbate?",
+            "what does he stream on twitch",
+            "what does he stream on discord",
+            "what kind of streams does he do on chaturbate",
+            "what does he go live with on chaturbate"
+          ]
+        },
+        {
+          "pattern": "what kind of content on *",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "what kind of content on his onlyfans?",
+            "what kind of content on chaturbate",
+            "what kind of content is on his page",
+            "what type of content is on his onlyfans",
+            "what kind of stuff does he post on instagram"
+          ]
+        },
+        {
+          "pattern": "what does he share on *",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "what does he share on instagram?",
+            "what does he share on twitter",
+            "what does he share on telegram",
+            "what does he share on discord",
+            "what does he share on chaturbate"
+          ]
+        },
+        {
+          "pattern": "what's on his * page",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "what's on his onlyfans page?",
+            "what's on his chaturbate page?",
+            "what's on his instagram page",
+            "what's on his discord page",
+            "what's on his telegram page"
+          ]
+        },
+        {
+          "pattern": "does he show * on *",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "platform",
+          "variations": [
+            "does he show his face on chaturbate?",
+            "does he show content on onlyfans",
+            "does he go live on chaturbate",
+            "does he post on onlyfans often",
+            "does he stream on chaturbate regularly"
+          ]
+        },
+        {
+          "pattern": "is * worth it",
+          "confidence_boost": 0.15,
+          "priority": 4,
+          "entity_type": "platform",
+          "variations": [
+            "is his onlyfans worth it?",
+            "is his chaturbate worth it",
+            "is his discord worth joining",
+            "is it worth subscribing to his onlyfans",
+            "is his telegram worth it"
+          ]
+        }
+      ]
+    },
+
+    "bot_meta_and_greetings": {
+      "label": "Bot Metadata and Greetings",
+      "description": "Greetings, bot capability questions, and meta-questions about the assistant",
+      "patterns": [
+        {
+          "pattern": "hi",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "hi",
+            "hi!",
+            "hi there",
+            "hi bot",
+            "hi there!"
+          ]
+        },
+        {
+          "pattern": "hello",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "hello",
+            "hello!",
+            "hello there",
+            "hello bot",
+            "hellooo"
+          ]
+        },
+        {
+          "pattern": "hey",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": null,
+          "variations": [
+            "hey",
+            "hey!",
+            "hey there",
+            "hey bot",
+            "heyyy"
+          ]
+        },
+        {
+          "pattern": "what can you do",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "bot_capabilities",
+          "variations": [
+            "what can you do?",
+            "what can you do for me",
+            "what are you able to do",
+            "what can this bot do",
+            "what are you capable of"
+          ]
+        },
+        {
+          "pattern": "what do you do",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "bot_capabilities",
+          "variations": [
+            "what do you do?",
+            "what exactly do you do",
+            "what is your purpose",
+            "what's your purpose",
+            "what are you for"
+          ]
+        },
+        {
+          "pattern": "are you a bot",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "bot_capabilities",
+          "variations": [
+            "are you a bot?",
+            "are you a real person",
+            "are you automated",
+            "is this a bot",
+            "am i talking to a bot"
+          ]
+        },
+        {
+          "pattern": "who are you",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "bot_capabilities",
+          "variations": [
+            "who are you?",
+            "who exactly are you",
+            "who am i talking to",
+            "who or what are you",
+            "what are you"
+          ]
+        },
+        {
+          "pattern": "how do you work",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": "bot_capabilities",
+          "variations": [
+            "how do you work?",
+            "how does this work",
+            "how does this bot work",
+            "how are you programmed",
+            "how were you made"
+          ]
+        },
+        {
+          "pattern": "can you help me",
+          "confidence_boost": 0.15,
+          "priority": 4,
+          "entity_type": null,
+          "variations": [
+            "can you help me?",
+            "can you help",
+            "i need help",
+            "please help",
+            "help me"
+          ]
+        },
+        {
+          "pattern": "what are your capabilities",
+          "confidence_boost": 0.25,
+          "priority": 2,
+          "entity_type": "bot_capabilities",
+          "variations": [
+            "what are your capabilities?",
+            "list your capabilities",
+            "what features do you have",
+            "what are all the things you can do",
+            "what can this assistant do"
+          ]
+        },
+        {
+          "pattern": "hey there",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "hey there!",
+            "hey there bot",
+            "hey there friend",
+            "hey there 👋",
+            "heyy there"
+          ]
+        },
+        {
+          "pattern": "yo",
+          "confidence_boost": 0.15,
+          "priority": 4,
+          "entity_type": null,
+          "variations": [
+            "yo",
+            "yo!",
+            "yo bot",
+            "yo what up",
+            "yoo"
+          ]
+        },
+        {
+          "pattern": "sup",
+          "confidence_boost": 0.15,
+          "priority": 4,
+          "entity_type": null,
+          "variations": [
+            "sup",
+            "sup!",
+            "sup bot",
+            "sup?",
+            "what's up"
+          ]
+        },
+        {
+          "pattern": "good morning",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "good morning",
+            "good morning!",
+            "gm",
+            "morning",
+            "good morning bot"
+          ]
+        },
+        {
+          "pattern": "how are you",
+          "confidence_boost": 0.20,
+          "priority": 3,
+          "entity_type": null,
+          "variations": [
+            "how are you?",
+            "how are you doing",
+            "how are you doing?",
+            "how's it going",
+            "how r u"
+          ]
+        }
+      ]
+    }
+  }
+}

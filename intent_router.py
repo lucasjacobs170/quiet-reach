@@ -48,6 +48,12 @@ try:
 except ImportError:
     _PM_AVAILABLE = False
 
+try:
+    from question_detector import QuestionDetector as _QuestionDetector
+    _QUESTION_DETECTOR_AVAILABLE = True
+except ImportError:
+    _QUESTION_DETECTOR_AVAILABLE = False
+
 # ---------------------------------------------------------------------------
 # Routing type constants
 # ---------------------------------------------------------------------------
@@ -251,6 +257,11 @@ class IntentRouter:
         # Social-engineering detector (stateless helper)
         self._se_detector = SocialEngineeringDetector() if _SE_DETECTOR_AVAILABLE else None
 
+        # Question pattern detector — pre-detects natural-language questions
+        # before the intent classifier, boosting confidence for queries that
+        # keyword matching alone tends to miss (e.g. "send me his x").
+        self._question_detector = _QuestionDetector() if _QUESTION_DETECTOR_AVAILABLE else None
+
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
@@ -300,10 +311,56 @@ class IntentRouter:
         #    twitter" are never silently dropped due to a misclassified tone.
         lowercase_message = user_message.lower()
         _platform_intent: Optional[str] = None
+        _pattern_platform: Optional[dict] = None  # platform dict resolved from QuestionDetector
         if _matches_any(lowercase_message, self._location_kws) or _matches_any(lowercase_message, self._all_platforms_kws):
             _platform_intent = "asks_platform_all"
         elif self._detect_platform(user_message) is not None:
             _platform_intent = "asks_platform_specific"
+
+        # Pattern detection — runs after keyword-based detection to catch
+        # natural-language queries that keyword/regex matching misses.
+        # Example: "send me his x" is not caught by _detect_platform because
+        # "x" alone is too short for a safe regex match.
+        if self._question_detector and _platform_intent is None:
+            _pattern_result = self._question_detector.detect_intent(user_message)
+            _p_intent = _pattern_result.get("intent", "")
+            if _p_intent:
+                _p_entities = _pattern_result.get("entities", {})
+                _p_boost = _pattern_result.get("confidence_boost", 0.20)
+                _p_pattern = _pattern_result.get("matched_pattern", "")
+                _confidence = min(0.99, _confidence + _p_boost)
+                print(
+                    f"[QuestionDetector] pattern={_p_pattern!r} intent={_p_intent} "
+                    f"entities={_p_entities} boost={_p_boost:.2f}"
+                )
+
+                if _p_intent in ("asks_for_platform_links", "asks_for_platform_specific_content"):
+                    _p_platform_id = _p_entities.get("platform", "")
+                    if _p_platform_id:
+                        # Try the entity-based platform lookup as a fallback to _detect_platform
+                        _pattern_platform = self._find_platform_by_id(_p_platform_id)
+                        if _pattern_platform:
+                            _platform_intent = "asks_platform_specific"
+                        else:
+                            # Platform id from pattern doesn't match known platforms → all
+                            _platform_intent = "asks_platform_all"
+                    else:
+                        _platform_intent = "asks_platform_all"
+
+                elif _p_intent == "asks_for_all_socials":
+                    _platform_intent = "asks_platform_all"
+
+                elif _p_intent in ("asks_for_lucas_information", "asks_for_contact_information"):
+                    if extended_intent not in ("clearly_hostile", "mildly_frustrated", "sarcastic_cutting"):
+                        extended_intent = "asks_about_lucas"
+
+                elif _p_intent == "bot_meta_and_greetings":
+                    if _p_entities.get("type") == "bot_capabilities":
+                        if extended_intent not in ("clearly_hostile", "mildly_frustrated", "sarcastic_cutting"):
+                            extended_intent = "asks_about_bot"
+                    elif extended_intent not in ("clearly_hostile", "mildly_frustrated", "sarcastic_cutting"):
+                        if extended_intent == "small_talk":
+                            extended_intent = "casual_greeting"
 
         if _platform_intent is not None:
             if is_group_chat:
@@ -311,7 +368,7 @@ class IntentRouter:
             elif _platform_intent == "asks_platform_all":
                 response = self._handle_platform_all_request()
             else:
-                response = self._handle_platform_specific_request(user_message)
+                response = self._handle_platform_specific_request(user_message, _pattern_platform)
             self._record(user_key, _platform_intent, user_message, response, topic="links")
             return response, ROUTE_PLATFORM_INFO
 
@@ -627,6 +684,21 @@ class IntentRouter:
                 return platform
         return None
 
+    def _find_platform_by_id(self, platform_id: str) -> Optional[dict]:
+        """
+        Find a platform entry in platform_keywords.json by its ``id`` field.
+
+        Used as a fallback when QuestionDetector has extracted a platform entity
+        (e.g. ``"x"``) that does not appear in the pre-compiled regex patterns
+        because the alias is too short or ambiguous for safe regex matching.
+
+        Returns the platform dict if found, or ``None``.
+        """
+        for p in self.platform_keywords.get("platforms", []):
+            if p.get("id") == platform_id:
+                return p
+        return None
+
     def _format_platform_entry(self, platform: dict) -> str:
         """Return a single formatted line for a platform (emoji + name + description + link)."""
         emoji = platform.get("emoji", "🔗")
@@ -673,14 +745,25 @@ class IntentRouter:
         lines.append(f"\n{followup}")
         return "\n".join(lines)
 
-    def _handle_platform_specific_request(self, user_message: str) -> str:
+    def _handle_platform_specific_request(self, user_message: str, platform: Optional[dict] = None) -> str:
         """
         Return information about the specific platform mentioned in *user_message*.
+
+        Parameters
+        ----------
+        user_message : str
+            Raw message from the user.
+        platform : dict, optional
+            Pre-resolved platform dict from QuestionDetector entity lookup.
+            When provided, skips the regex-based detection step.  This allows
+            handling aliases like "x" that are intentionally excluded from the
+            regex to avoid false positives.
 
         Falls back to _handle_platform_all_request() when no specific platform
         can be identified.
         """
-        platform = self._detect_platform(user_message)
+        if platform is None:
+            platform = self._detect_platform(user_message)
         if not platform:
             return self._handle_platform_all_request()
 
