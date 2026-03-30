@@ -1,0 +1,8 @@
+.env
+quiet_reach.db
+__pycache__/
+*.pyc
+transcript_current_session.json
+
+# Allow transcripts folder but ignore large session backups if needed
+# transcripts/ is intentionally tracked so GitHub Copilot can read them

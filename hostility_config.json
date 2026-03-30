@@ -1,0 +1,44 @@
+{
+  "mode": "smart",
+  "_mode_description": {
+    "strict": "Flag every pattern match regardless of context — highest sensitivity, highest false-positive rate.",
+    "smart": "Context-aware: ambiguous entries require secondary signals before flagging (recommended).",
+    "fuzzy": "Loose matching: lower thresholds, flag broader patterns including low-confidence matches."
+  },
+  "thresholds": {
+    "block_score": 10,
+    "mild_escalation_count": 3,
+    "moderate_requires_context": true,
+    "severe_always_flag": true,
+    "caps_severity_boost": true,
+    "min_word_count_mild": 3
+  },
+  "context_window": {
+    "look_back_messages": 3,
+    "hostile_history_lower_threshold": true,
+    "friendly_history_raise_threshold": true,
+    "hostility_decay_turns": 5,
+    "hostility_decay_amount": 1
+  },
+  "tier_system": {
+    "tier1_always_flag": true,
+    "tier2_requires_context": true,
+    "tier3_ignore_unless_elevated": true,
+    "tier3_elevated_score_threshold": 3
+  },
+  "comparative_insult_guards": {
+    "require_secondary_hostility_marker": true,
+    "secondary_hostility_score_threshold": 1
+  },
+  "scoring_weights": {
+    "mild": 1,
+    "moderate": 2,
+    "severe": 4,
+    "context_required_suppressed_weight": 0
+  },
+  "logging": {
+    "log_suppressed_detections": true,
+    "log_false_positive_estimate": true,
+    "log_trigger_reason": true
+  }
+}

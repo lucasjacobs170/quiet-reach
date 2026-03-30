@@ -1,0 +1,127 @@
+{
+  "metadata": {
+    "creator": "Lucas Jacobs",
+    "verified": true,
+    "last_updated": "2026-03-28",
+    "note": "This is the source of truth. Everything here is verified."
+  },
+
+  "who_is_lucas": {
+    "description": "Lucas is a high energy content creator on Chaturbate and OnlyFans. He lives in the woods and helps maintain a ranch and enjoys having fun while doing so. He loves the ocean and used to surf.",
+    "verified": true,
+    "critical": true
+  },
+
+  "platforms": {
+    "primary": [
+      {
+        "name": "Chaturbate",
+        "url": "https://chaturbate.com/b/lucas_jacobs/",
+        "frequency": "active several days a week",
+        "content_type": "live game shows, wheel games, Mega Jenga, darts, hottub nights, shower shows"
+      },
+      {
+        "name": "OnlyFans (Free)",
+        "url": "https://onlyfans.com/lucas_jacobs_free",
+        "frequency": "active daily",
+        "content_type": "outdoor content, goofy shenanigans"
+      },
+      {
+        "name": "OnlyFans (Paid)",
+        "url": "https://onlyfans.com/lucasjacobs170",
+        "frequency": "active daily",
+        "content_type": "outdoor strips, naked walk arounds, wood chopping, adult content"
+      },
+      {
+        "name": "X (Twitter)",
+        "url": "https://x.com/lucasjacobs170",
+        "frequency": "active daily",
+        "content_type": "updates, links, engagement"
+      },
+      {
+        "name": "Instagram",
+        "url": "https://www.instagram.com/lucas_jacobs17/?hl=en",
+        "frequency": "active",
+        "content_type": "photos, updates"
+      },
+      {
+        "name": "Discord",
+        "url": "https://discord.gg/yAvVewhD3c",
+        "frequency": "active daily",
+        "content_type": "community, direct contact"
+      }
+    ],
+    "contact": {
+      "telegram": "@LucasJacobs17",
+      "discord": "https://discord.gg/yAvVewhD3c"
+    },
+    "verified": true,
+    "critical": true
+  },
+
+  "chaturbate_content": {
+    "type": "live game shows",
+    "games": ["wheel games", "Mega Jenga", "darts"],
+    "special_events": ["hottub nights", "shower shows"],
+    "frequency": "several days a week",
+    "verified": true
+  },
+
+  "onlyfans_content": {
+    "free_tier": {
+      "content": "outdoor content, goofy shenanigans, general updates",
+      "url": "https://onlyfans.com/lucas_jacobs_free"
+    },
+    "paid_tier": {
+      "content": "outdoor strips, naked walk arounds, wood chopping, adult content",
+      "url": "https://onlyfans.com/lucasjacobs170"
+    },
+    "verified": true
+  },
+
+  "personality": {
+    "energy_level": "high",
+    "interests": ["ocean", "surfing", "ranch life", "fun", "games"],
+    "lifestyle": "lives in woods, maintains ranch, outdoor activities",
+    "verified": true
+  },
+
+  "faqs": [
+    {
+      "question": "Who is Lucas?",
+      "answer": "Lucas is a high energy content creator on Chaturbate and OnlyFans. He lives in the woods and helps maintain a ranch and enjoys having fun while doing so. He loves the ocean and used to surf.",
+      "verified": true,
+      "critical": true
+    },
+    {
+      "question": "What does Lucas do on Chaturbate?",
+      "answer": "He hosts game shows with wheel games, Mega Jenga, darts, and also does hottub nights and shower shows. He's active several days a week.",
+      "verified": true,
+      "critical": true
+    },
+    {
+      "question": "What's on his OnlyFans?",
+      "answer": "Lucas creates outdoor content including strips, naked walk arounds, wood chopping, and goofy shenanigans. He has both free and paid tiers.",
+      "verified": true,
+      "critical": true
+    },
+    {
+      "question": "How active is Lucas?",
+      "answer": "He's active daily on X and Discord, and several days a week on Chaturbate. Check his socials for the latest updates!",
+      "verified": true,
+      "critical": true
+    },
+    {
+      "question": "How do I contact Lucas?",
+      "answer": "You can reach Lucas on Telegram @LucasJacobs17, or join his Discord: https://discord.gg/yAvVewhD3c",
+      "verified": true,
+      "critical": true
+    },
+    {
+      "question": "Where can I follow Lucas?",
+      "answer": "Lucas is on Chaturbate, OnlyFans (free and paid), X, Instagram, and Discord. Here are all the links: [platforms section above]",
+      "verified": true,
+      "critical": true
+    }
+  ]
+}
