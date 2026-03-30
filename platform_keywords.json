@@ -1,0 +1,64 @@
+{
+  "platforms": [
+    {
+      "id": "onlyfans",
+      "display_name": "OnlyFans",
+      "emoji": "🔥",
+      "keywords": ["onlyfans", "only fans"],
+      "description": "Exclusive content — outdoor adventures, strips, and adult content (free & paid tiers!)",
+      "free_url": "https://onlyfans.com/lucas_jacobs_free",
+      "paid_url": "https://onlyfans.com/lucasjacobs170"
+    },
+    {
+      "id": "chaturbate",
+      "display_name": "Chaturbate",
+      "emoji": "🎮",
+      "keywords": ["chaturbate", "cb"],
+      "description": "Live game shows — Mega Jenga, darts, hottub nights & more",
+      "url": "https://chaturbate.com/b/lucas_jacobs/"
+    },
+    {
+      "id": "instagram",
+      "display_name": "Instagram",
+      "emoji": "📸",
+      "keywords": ["instagram", "insta", "ig"],
+      "description": "Daily photos and updates",
+      "url": "https://www.instagram.com/lucas_jacobs17/?hl=en"
+    },
+    {
+      "id": "x",
+      "display_name": "X (Twitter)",
+      "emoji": "𝕏",
+      "keywords": ["twitter", "x account", "on x"],
+      "description": "Casual posts & announcements, active daily",
+      "url": "https://x.com/lucasjacobs170"
+    },
+    {
+      "id": "telegram",
+      "display_name": "Telegram",
+      "emoji": "💌",
+      "keywords": ["telegram"],
+      "description": "Direct DMs & latest updates",
+      "url": "@LucasJacobs17",
+      "is_handle": true
+    },
+    {
+      "id": "discord",
+      "display_name": "Discord",
+      "emoji": "🎙️",
+      "keywords": ["discord"],
+      "description": "Community server — hang out & get direct contact with Lucas",
+      "url": "https://discord.gg/yAvVewhD3c"
+    }
+  ],
+  "location_keywords": [
+    "where can i find", "where is he", "where do i find", "find him",
+    "how do i find", "anywhere else", "where can you be found",
+    "where to find", "where can he be found", "find you"
+  ],
+  "all_platforms_keywords": [
+    "all platforms", "all links", "all socials", "everywhere", "all of them",
+    "all your links", "all his links", "what platforms", "what sites",
+    "which platforms", "every platform", "social media", "is he on"
+  ]
+}

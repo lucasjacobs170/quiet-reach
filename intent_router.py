@@ -53,6 +53,7 @@ ROUTE_CREATIVE       = "creative"
 ROUTE_HOSTILE_BLOCK  = "hostile_block"
 ROUTE_BOUNDARY       = "boundary"
 ROUTE_DEFAULT        = "default"
+ROUTE_PLATFORM_INFO  = "platform_info"
 
 # ---------------------------------------------------------------------------
 # Ollama configuration (for generating contextual replies)
@@ -87,20 +88,22 @@ PROACTIVE_LINK_COUNT_THRESHOLD: int = 2
 # ---------------------------------------------------------------------------
 
 INTENT_CATEGORIES: dict[str, str] = {
-    "clearly_hostile":      "Direct insults, attacks",
-    "mildly_frustrated":    "Annoyed but not attacking",
-    "sarcastic_cutting":    "Sarcastic/sharp but not pure attack",
-    "asks_about_lucas":     "Questions about who Lucas is, what he does",
-    "asks_for_links":       "Wants all platform links",
-    "asks_for_socials":     "Wants social media (Instagram + X) links only",
-    "asks_for_help":        "Wants bot to help with something",
-    "asks_about_bot":       "Questions about the bot's personality, capabilities, or nature",
-    "asks_hostile_handling":"How does the bot handle mean/hostile people?",
-    "casual_greeting":      "Hi, hello, hey",
-    "casual_gratitude":     "Thanks, appreciate it",
-    "casual_goodbye":       "Bye, see you, catch you",
-    "small_talk":           "General conversation, observations",
-    "unclear":              "Can't determine intent",
+    "clearly_hostile":        "Direct insults, attacks",
+    "mildly_frustrated":      "Annoyed but not attacking",
+    "sarcastic_cutting":      "Sarcastic/sharp but not pure attack",
+    "asks_about_lucas":       "Questions about who Lucas is, what he does",
+    "asks_for_links":         "Wants all platform links",
+    "asks_for_socials":       "Wants social media (Instagram + X) links only",
+    "asks_platform_all":      "Wants all platforms with descriptions (location/social-intent queries)",
+    "asks_platform_specific": "Asks about a specific named platform",
+    "asks_for_help":          "Wants bot to help with something",
+    "asks_about_bot":         "Questions about the bot's personality, capabilities, or nature",
+    "asks_hostile_handling":  "How does the bot handle mean/hostile people?",
+    "casual_greeting":        "Hi, hello, hey",
+    "casual_gratitude":       "Thanks, appreciate it",
+    "casual_goodbye":         "Bye, see you, catch you",
+    "small_talk":             "General conversation, observations",
+    "unclear":                "Can't determine intent",
 }
 
 # Keywords used to widen intent detection beyond the base classifier categories
@@ -142,6 +145,22 @@ _GRATITUDE_KEYWORDS: list[str] = ["thanks", "thank you", "thx", "appreciate", "t
 _GOODBYE_KEYWORDS: list[str] = ["bye", "goodbye", "see you", "later", "catch you", "peace", "cya"]
 _HELP_KEYWORDS: list[str] = ["help", "assist", "can you", "need info", "need help"]
 
+# Location-intent keywords — multi-word phrases that signal the user wants to
+# know WHERE to find Lucas across platforms.
+_LOCATION_KEYWORDS: list[str] = [
+    "where can i find", "where is he", "where do i find", "find him",
+    "how do i find", "anywhere else", "where can you be found",
+    "where to find", "where can he be found", "find you",
+]
+
+# "All platforms" keywords — user wants a comprehensive list of all platforms
+# with descriptions rather than a bare link dump.
+_ALL_PLATFORMS_KEYWORDS: list[str] = [
+    "all platforms", "all links", "all socials", "everywhere", "all of them",
+    "all your links", "all his links", "what platforms", "what sites",
+    "which platforms", "every platform", "social media", "is he on",
+]
+
 
 # ---------------------------------------------------------------------------
 # IntentRouter
@@ -176,6 +195,13 @@ class IntentRouter:
         self.knowledge_base: dict = _load_json(kb_path, "knowledge_base.json")
         self.safe_responses: dict = _load_json(sr_path, "safe_responses.json")
         self.creative_mode: dict = _load_json(cm_path, "creative_mode.json")
+
+        # Platform keywords — optional; gracefully degraded when missing
+        pk_path = os.path.join(base_dir, "platform_keywords.json")
+        try:
+            self.platform_keywords: dict = _load_json(pk_path, "platform_keywords.json")
+        except (FileNotFoundError, ValueError):
+            self.platform_keywords = {}
 
         # Optional conversation-context manager (injected or sourced from module singleton)
         if context_manager is not None:
@@ -243,6 +269,22 @@ class IntentRouter:
             return response, ROUTE_BOUNDARY
 
         # 2. Information routing (verified facts only)
+        if extended_intent == "asks_platform_all":
+            if is_group_chat:
+                response = self._get_group_links_redirect()
+            else:
+                response = self._handle_platform_all_request()
+            self._record(user_key, extended_intent, user_message, response, topic="links")
+            return response, ROUTE_PLATFORM_INFO
+
+        if extended_intent == "asks_platform_specific":
+            if is_group_chat:
+                response = self._get_group_links_redirect()
+            else:
+                response = self._handle_platform_specific_request(user_message)
+            self._record(user_key, extended_intent, user_message, response, topic="links")
+            return response, ROUTE_PLATFORM_INFO
+
         if extended_intent == "asks_about_lucas":
             response = self._answer_about_lucas(user_message)
             response = self._apply_personality(response, topic="lucas_info")
@@ -327,7 +369,7 @@ class IntentRouter:
             "response": response_text,
             "routing_type": routing_type,
             "source": {
-                "verified_facts":   routing_type == ROUTE_KNOWLEDGE_BASE,
+                "verified_facts":   routing_type in (ROUTE_KNOWLEDGE_BASE, ROUTE_PLATFORM_INFO),
                 "safe_response":    routing_type == ROUTE_SAFE_RESPONSE,
                 "creative":         routing_type == ROUTE_CREATIVE,
                 "hostile":          routing_type in (ROUTE_HOSTILE_BLOCK, ROUTE_BOUNDARY),
@@ -354,6 +396,19 @@ class IntentRouter:
 
         # Neutral → inspect content for a more specific intent
         t = message.lower()
+
+        # Location queries — multi-word phrases signalling "where to find Lucas"
+        # These take priority so "find him" etc. always returns full platform info.
+        if _matches_any(t, _LOCATION_KEYWORDS):
+            return "asks_platform_all"
+
+        # All-platforms / comprehensive social-media queries
+        if _matches_any(t, _ALL_PLATFORMS_KEYWORDS):
+            return "asks_platform_all"
+
+        # Specific platform name mentioned → platform-specific response
+        if self._detect_platform(t) is not None:
+            return "asks_platform_specific"
 
         # Social-only keywords checked first (before general link keywords)
         # so "socials"/"social media" returns Instagram + X, not the full list.
@@ -504,6 +559,101 @@ class IntentRouter:
 
         return links
 
+    def _detect_platform(self, text: str) -> Optional[dict]:
+        """
+        Return the first platform entry from platform_keywords.json whose keywords
+        appear in *text*, or None if no platform is recognised.
+        """
+        for platform in self.platform_keywords.get("platforms", []):
+            for kw in platform.get("keywords", []):
+                if " " in kw:
+                    if kw in text:
+                        return platform
+                else:
+                    if re.search(r"\b" + re.escape(kw) + r"\b", text):
+                        return platform
+        return None
+
+    def _format_platform_entry(self, platform: dict) -> str:
+        """Return a single formatted line for a platform (emoji + name + description + link)."""
+        emoji = platform.get("emoji", "🔗")
+        name  = platform["display_name"]
+        desc  = platform.get("description", "")
+
+        if platform.get("is_handle"):
+            link_part = platform["url"]
+        elif "free_url" in platform and "paid_url" in platform:
+            link_part = (
+                f"Free: {platform['free_url']}  |  Paid: {platform['paid_url']}"
+            )
+        else:
+            link_part = platform.get("url", "")
+
+        return f"{emoji} **{name}**: {desc} — {link_part}"
+
+    def _handle_platform_all_request(self) -> str:
+        """
+        Return all platforms with descriptions, used for location and
+        comprehensive social-media queries.
+        """
+        platforms = self.platform_keywords.get("platforms", [])
+        if not platforms:
+            # Graceful fallback when platform_keywords.json is absent
+            return self._get_links()
+
+        intro = random.choice(
+            self.safe_responses.get(
+                "platform_all_intro",
+                ["You can find Lucas on these platforms! Here's what he offers on each:\n"],
+            )
+        )
+        lines = [intro]
+        for p in platforms:
+            lines.append(self._format_platform_entry(p))
+
+        followup = random.choice(
+            self.safe_responses.get(
+                "platform_followup",
+                ["Curious about a specific platform? Just ask and I'll tell you more! 😊"],
+            )
+        )
+        lines.append(f"\n{followup}")
+        return "\n".join(lines)
+
+    def _handle_platform_specific_request(self, user_message: str) -> str:
+        """
+        Return information about the specific platform mentioned in *user_message*.
+
+        Falls back to _handle_platform_all_request() when no specific platform
+        can be identified.
+        """
+        platform = self._detect_platform(user_message.lower())
+        if not platform:
+            return self._handle_platform_all_request()
+
+        emoji = platform.get("emoji", "🔗")
+        name  = platform["display_name"]
+        desc  = platform.get("description", "")
+
+        if platform.get("is_handle"):
+            link_text = f"You can reach Lucas on Telegram at {platform['url']} 💌"
+        elif "free_url" in platform and "paid_url" in platform:
+            link_text = (
+                f"Free tier: {platform['free_url']}\n"
+                f"Paid tier: {platform['paid_url']}"
+            )
+        else:
+            link_text = platform.get("url", "")
+
+        lines = [
+            f"{emoji} **{name}** — {desc}",
+            "",
+            link_text,
+            "",
+            "Want links to his other platforms too? Just ask! 🙌",
+        ]
+        return "\n".join(lines)
+
     def _handle_small_talk(self, user_message: str, user_key: str = "") -> str:
         """Handle small talk with light, grounded creativity.
 
@@ -647,6 +797,7 @@ def _hallucination_risk(routing_type: str) -> str:
         ROUTE_KNOWLEDGE_BASE: "low",
         ROUTE_SAFE_RESPONSE:  "low",
         ROUTE_CREATIVE:       "low",
+        ROUTE_PLATFORM_INFO:  "low",
         ROUTE_HOSTILE_BLOCK:  "none",
         ROUTE_BOUNDARY:       "none",
         ROUTE_DEFAULT:        "prevented",
