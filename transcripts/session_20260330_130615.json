@@ -1,0 +1,664 @@
+{
+  "session_metadata": {
+    "session_id": "session_20260330_200142",
+    "platform": "telegram",
+    "user_id": "telegram:7436564099",
+    "username": "@LucasJacobs17",
+    "start_time": "2026-03-30T20:01:42.633111+00:00",
+    "end_time": "2026-03-30T20:02:35.292Z",
+    "total_messages": 22,
+    "total_user_messages": 11,
+    "total_bot_responses": 11,
+    "session_duration_seconds": 52.7
+  },
+  "conversation": [
+    {
+      "sequence": 1,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:01:42.633Z",
+      "message": "hi there",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Polite markers: ['hi ']. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 122.376,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 2,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:01:42.642Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 9.523,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 3,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:01:47.101Z",
+      "message": "hello",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Polite markers: ['hello']. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 18.162,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 4,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:01:47.102Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 1.446,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 5,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:01:50.320Z",
+      "message": "yo",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 16.606,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 6,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:01:50.321Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 1.384,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 7,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:01:55.335Z",
+      "message": "wass good?",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Question structure detected. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 55.679,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 8,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:01:55.336Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 1.438,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 9,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:02:03.106Z",
+      "message": "whats up?",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Question structure detected. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 48.59,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 10,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:02:03.107Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 1.418,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 11,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:02:06.883Z",
+      "message": "great",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 27.924,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 12,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:02:06.884Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 1.552,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 13,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:02:09.218Z",
+      "message": "dofs",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 29.461,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 14,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:02:09.219Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 1.345,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 15,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:02:15.948Z",
+      "message": "cats",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 25.365,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 16,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:02:15.949Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 1.335,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 17,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:02:22.248Z",
+      "message": "poop",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 24.28,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 18,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:02:22.249Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 1.355,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 19,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:02:28.232Z",
+      "message": "water",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.99,
+        "explanation": "Category 'neutral' selected. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.0, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": false,
+        "via_ollama": false,
+        "detection_time_ms": 26.824,
+        "overall_severity": "none",
+        "overall_confidence": 0.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 0,
+        "score_delta": 0,
+        "is_escalating": false,
+        "incident_count": 0
+      },
+      "action_taken": "none",
+      "analysis": {
+        "is_false_positive": false,
+        "is_false_negative": false,
+        "explanation": "No anomaly detected."
+      }
+    },
+    {
+      "sequence": 20,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:02:28.233Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "",
+      "response_time_ms": 1.282,
+      "routing_explanation": "Routing type unknown"
+    },
+    {
+      "sequence": 21,
+      "direction": "in",
+      "role": "user",
+      "timestamp": "2026-03-30T20:02:34.981Z",
+      "message": "eat shit",
+      "intent": {
+        "category": "neutral",
+        "confidence": 0.94,
+        "explanation": "Category 'neutral' selected. Scores — neutral: 0.9, mildly_frustrated: 0.0, clearly_hostile: 0.06, sarcastic_cutting: 0.0.",
+        "tone_markers": [],
+        "recommended_response": "no_response"
+      },
+      "detection": {
+        "patterns_matched": [
+          {
+            "pattern": "shit",
+            "category": "Vulgarity & Strong Language",
+            "severity": "moderate",
+            "confidence": 1.0,
+            "position_in_text": 4,
+            "matched_token": "shit"
+          }
+        ],
+        "leet_speak_conversions": [],
+        "all_caps": false,
+        "all_caps_percentage": 0.0,
+        "via_detector": true,
+        "via_ollama": false,
+        "detection_time_ms": 44.58,
+        "overall_severity": "mild",
+        "overall_confidence": 1.0
+      },
+      "hostility": {
+        "score_before": 0,
+        "score_after": 2,
+        "score_delta": 2,
+        "is_escalating": true,
+        "incident_count": 1
+      },
+      "action_taken": "warned_user",
+      "analysis": {
+        "is_false_positive": true,
+        "is_false_negative": false,
+        "explanation": "Suspected false positive: message is very short (8 chars)"
+      }
+    },
+    {
+      "sequence": 22,
+      "direction": "out",
+      "role": "assistant",
+      "timestamp": "2026-03-30T20:02:35.292Z",
+      "message": "",
+      "routing_type": "",
+      "source": {
+        "verified_facts": false,
+        "safe_response": false,
+        "creative_allowed": false,
+        "hallucination_risk": "unknown"
+      },
+      "template_used": "MILD_RESPONSES",
+      "response_time_ms": 311.265,
+      "routing_explanation": "Routing type unknown"
+    }
+  ],
+  "summary": {
+    "total_user_messages": 11,
+    "detection_rate_by_severity": {
+      "none": 10,
+      "mild": 1,
+      "moderate": 0,
+      "severe": 0,
+      "threat": 0
+    },
+    "false_positive_estimate": 9.1,
+    "false_negative_estimate": 0.0,
+    "blocking_rate": 0.0,
+    "warnings_issued": 1,
+    "routing_breakdown": {},
+    "intent_breakdown": {
+      "neutral": 11
+    },
+    "patterns": [
+      "shit"
+    ],
+    "pattern_effectiveness": [
+      {
+        "pattern": "shit",
+        "times_triggered": 1,
+        "true_positive_rate": 0.0,
+        "false_positive_rate": 100.0,
+        "confidence_average": 1.0,
+        "recommendation": "REMOVE or tighten — too many false positives"
+      }
+    ],
+    "recommendations": [
+      "Consider removing or raising the threshold for: 'shit'"
+    ]
+  }
+}
