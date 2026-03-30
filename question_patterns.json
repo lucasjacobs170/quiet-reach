@@ -441,6 +441,70 @@
             "give me his twitter account",
             "give me his x account"
           ]
+        },
+        {
+          "pattern": "he has *",
+          "confidence_boost": 0.3,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "he has onlyfans",
+            "he has discord",
+            "he has instagram",
+            "he has twitter",
+            "he has x",
+            "he has telegram",
+            "he has chaturbate",
+            "ooo he has onlyfans",
+            "oooo he has discord",
+            "oh he has instagram"
+          ]
+        },
+        {
+          "pattern": "does he have *",
+          "confidence_boost": 0.3,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "does he have onlyfans",
+            "does he have discord",
+            "does he have instagram",
+            "does he have twitter",
+            "does he have x",
+            "does he have telegram",
+            "does he have chaturbate",
+            "does he have a discord"
+          ]
+        },
+        {
+          "pattern": "does he use *",
+          "confidence_boost": 0.3,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "does he use onlyfans",
+            "does he use discord",
+            "does he use instagram",
+            "does he use twitter",
+            "does he use x",
+            "does he use telegram",
+            "does he use chaturbate"
+          ]
+        },
+        {
+          "pattern": "is he on *",
+          "confidence_boost": 0.3,
+          "priority": 1,
+          "entity_type": "platform",
+          "variations": [
+            "is he on onlyfans",
+            "is he on discord",
+            "is he on instagram",
+            "is he on twitter",
+            "is he on x",
+            "is he on telegram",
+            "is he on chaturbate"
+          ]
         }
       ]
     },

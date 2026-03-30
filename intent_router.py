@@ -312,10 +312,14 @@ class IntentRouter:
         lowercase_message = user_message.lower()
         _platform_intent: Optional[str] = None
         _pattern_platform: Optional[dict] = None  # platform dict resolved from QuestionDetector
-        if _matches_any(lowercase_message, self._location_kws) or _matches_any(lowercase_message, self._all_platforms_kws):
-            _platform_intent = "asks_platform_all"
-        elif self._detect_platform(user_message) is not None:
+        # Check for a specific platform mention first so that messages like
+        # "is he on discord?" are NOT swallowed by a generic all-platforms keyword
+        # (e.g. "is he on" inside _all_platforms_kws).  Specific platform detection
+        # always takes precedence over all-platform keywords.
+        if self._detect_platform(user_message) is not None:
             _platform_intent = "asks_platform_specific"
+        elif _matches_any(lowercase_message, self._location_kws) or _matches_any(lowercase_message, self._all_platforms_kws):
+            _platform_intent = "asks_platform_all"
 
         # Pattern detection — runs after keyword-based detection to catch
         # natural-language queries that keyword/regex matching misses.
