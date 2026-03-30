@@ -14,6 +14,16 @@ from intent_router import IntentRouter as _IntentRouter
 from personality_manager import get_personality_manager as _get_pm
 from response_variation_engine import get_variation_engine as _get_rve
 from resource_manager import ManagedConnection, cleanup_all, track_task, untrack_task
+try:
+    import database_manager as _db_manager
+    _DB_MANAGER_AVAILABLE = True
+except ImportError:
+    _DB_MANAGER_AVAILABLE = False
+try:
+    import hostility_cooldown_manager as _cooldown_mgr
+    _COOLDOWN_MGR_AVAILABLE = True
+except ImportError:
+    _COOLDOWN_MGR_AVAILABLE = False
 
 _intent_router = _IntentRouter()
 
@@ -495,6 +505,26 @@ def setup_database():
     # Set up hostility handler tables in the same DB
     hostility_handler.DB_PATH = DB_PATH
     hostility_handler.setup_hostility_db(DB_PATH)
+    # Run centralized schema initialization — ensures conversation_log and all
+    # other tables exist before the bot starts processing any messages.
+    if _DB_MANAGER_AVAILABLE:
+        try:
+            _db_manager.initialize(DB_PATH)
+        except Exception as _dm_exc:
+            print(f"⚠️ database_manager.initialize failed: {_dm_exc}")
+    # Propagate the DB path to the conversation-context singleton so that
+    # per-user history is persisted across restarts.
+    os.environ.setdefault("QUIET_REACH_DB_PATH", DB_PATH)
+    try:
+        from conversation_context import get_context_manager as _get_ctx
+        _ctx_mgr = _get_ctx()
+        if hasattr(_ctx_mgr, '_db_path') and _ctx_mgr._db_path is None:
+            _ctx_mgr._db_path = DB_PATH
+    except Exception:
+        pass
+    # Propagate the DB path to the cooldown manager
+    if _COOLDOWN_MGR_AVAILABLE:
+        _cooldown_mgr.DB_PATH = DB_PATH
 
 # ============================================================
 # 📣 PROMO SCHEDULING HELPERS (PT window, stored as UTC)
@@ -3788,6 +3818,29 @@ async def on_message(message):
         await server_reply(message, text, mention_author=False)
         return
 
+    # ==========================
+    # ⏱️ COOLDOWN MANAGEMENT (owner-only)
+    # ==========================
+    if raw.startswith("!uncooldown "):
+        if message.author.id != OWNER_ID:
+            return
+        if _COOLDOWN_MGR_AVAILABLE:
+            target = (message.content or "").strip().split(maxsplit=1)
+            if len(target) < 2:
+                await server_reply(message, "Usage: `!uncooldown <user_key_or_id>`", mention_author=False)
+                return
+            uid = target[1].strip()
+            if uid.isdigit():
+                uid = f"discord:{uid}"
+            removed = _cooldown_mgr.clear_cooldown(uid, db_path=DB_PATH)
+            if removed:
+                await server_reply(message, f"✅ Cooldown cleared: `{uid}`", mention_author=False)
+            else:
+                await server_reply(message, f"⚠️ `{uid}` had no active cooldown.", mention_author=False)
+        else:
+            await server_reply(message, "⚠️ Cooldown manager not available.", mention_author=False)
+        return
+
     # If someone replies "yes" to a bot message in an NSFW channel, treat it as DM consent
     try:
         if hasattr(message.channel, "is_nsfw") and message.channel.is_nsfw():
@@ -5058,6 +5111,35 @@ async def telegram_listblocked_cmd(update: Update, context: ContextTypes.DEFAULT
     except Exception as e:
         log(f"❌ Telegram /listblocked error: {e}")
 
+
+async def telegram_uncooldown_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Owner-only: /uncooldown <user_key_or_id> — clear a hostility cooldown."""
+    try:
+        if not update.message:
+            return
+        user = update.effective_user
+        owner_tg_id = os.getenv("TELEGRAM_OWNER_ID", "")
+        if owner_tg_id and str(getattr(user, "id", "")) != owner_tg_id:
+            await update.message.reply_text("🚫 Not authorised.")
+            return
+        if not _COOLDOWN_MGR_AVAILABLE:
+            await update.message.reply_text("⚠️ Cooldown manager not available.")
+            return
+        args = getattr(context, "args", []) or []
+        if not args:
+            await update.message.reply_text("Usage: /uncooldown <user_key_or_id>")
+            return
+        uid = args[0].strip()
+        if uid.isdigit():
+            uid = f"telegram:{uid}"
+        removed = _cooldown_mgr.clear_cooldown(uid, db_path=DB_PATH)
+        if removed:
+            await update.message.reply_text(f"✅ Cooldown cleared: {uid}")
+        else:
+            await update.message.reply_text(f"⚠️ {uid} had no active cooldown.")
+    except Exception as e:
+        log(f"❌ Telegram /uncooldown error: {e}")
+
 async def telegram_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         if not update.message:
@@ -6061,6 +6143,7 @@ class QuietReachUI:
                     telegram_app.add_handler(CommandHandler("start", telegram_start_cmd))
                     telegram_app.add_handler(CommandHandler("unblock", telegram_unblock_cmd))
                     telegram_app.add_handler(CommandHandler("listblocked", telegram_listblocked_cmd))
+                    telegram_app.add_handler(CommandHandler("uncooldown", telegram_uncooldown_cmd))
                     telegram_app.add_handler(
                         MessageHandler(filters.TEXT & ~filters.COMMAND, telegram_text_handler)
                     )
