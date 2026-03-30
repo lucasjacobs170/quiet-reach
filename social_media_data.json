@@ -4,67 +4,87 @@
       "id": "onlyfans",
       "display_name": "OnlyFans",
       "emoji": "🔥",
-      "keywords": ["onlyfans", "only fans"],
       "description": "Exclusive content — outdoor adventures, strips, and adult content (free & paid tiers!)",
       "free_url": "https://onlyfans.com/lucas_jacobs_free",
-      "paid_url": "https://onlyfans.com/lucasjacobs170"
+      "paid_url": "https://onlyfans.com/lucasjacobs170",
+      "keywords": ["onlyfans", "only fans", "onlyfan", "of"]
     },
     {
       "id": "chaturbate",
       "display_name": "Chaturbate",
       "emoji": "🎮",
-      "keywords": ["chaturbate", "cb"],
       "description": "Live game shows — Mega Jenga, darts, hottub nights & more",
-      "url": "https://chaturbate.com/b/lucas_jacobs/"
+      "url": "https://chaturbate.com/b/lucas_jacobs/",
+      "keywords": ["chaturbate", "cb"]
     },
     {
       "id": "instagram",
       "display_name": "Instagram",
       "emoji": "📸",
-      "keywords": ["instagram", "insta", "ig"],
       "description": "Daily photos and updates",
-      "url": "https://www.instagram.com/lucas_jacobs17/?hl=en"
+      "url": "https://www.instagram.com/lucas_jacobs17/?hl=en",
+      "keywords": ["instagram", "insta", "ig"]
     },
     {
       "id": "x",
       "display_name": "X (Twitter)",
       "emoji": "𝕏",
-      "keywords": ["twitter", "x account", "on x"],
       "description": "Casual posts & announcements, active daily",
-      "url": "https://x.com/lucasjacobs170"
+      "url": "https://x.com/lucasjacobs170",
+      "keywords": ["twitter", "x account"]
     },
     {
       "id": "telegram",
       "display_name": "Telegram",
       "emoji": "💌",
-      "keywords": ["telegram"],
       "description": "Direct DMs & latest updates",
       "url": "@LucasJacobs17",
-      "is_handle": true
+      "is_handle": true,
+      "keywords": ["telegram"]
     },
     {
       "id": "discord",
       "display_name": "Discord",
       "emoji": "🎙️",
-      "keywords": ["discord"],
       "description": "Community server — hang out & get direct contact with Lucas",
-      "url": "https://discord.gg/yAvVewhD3c"
+      "url": "https://discord.gg/yAvVewhD3c",
+      "keywords": ["discord"]
     }
   ],
-  "location_keywords": [
-    "where can i find", "where is he", "where do i find", "find him",
-    "how do i find", "anywhere else", "where can you be found",
-    "where to find", "where can he be found", "find you"
+  "social_query_patterns": [
+    "what is his *",
+    "what's his *",
+    "whats his *",
+    "does he have *",
+    "does he use *",
+    "is he on *",
+    "is lucas on *",
+    "does lucas have *",
+    "does lucas use *",
+    "his * link",
+    "his * page",
+    "his * account",
+    "his * handle",
+    "his * profile",
+    "his * url",
+    "his * username",
+    "send me his *",
+    "give me his *",
+    "drop his *",
+    "i need his *",
+    "can i get his *",
+    "hook me up with his *",
+    "his * please",
+    "link to his *",
+    "what * does he use",
+    "share his * link",
+    "send me the * link",
+    "give me the * link"
   ],
-  "all_platforms_keywords": [
+  "all_platforms_triggers": [
     "all platforms", "all links", "all socials", "everywhere", "all of them",
     "all your links", "all his links", "what platforms", "what sites",
     "which platforms", "every platform", "social media", "is he on",
     "does he have any social", "what social media", "his socials"
-  ],
-  "social_query_prefixes": [
-    "what is his", "what's his", "whats his", "does he have",
-    "does he use", "is he on", "is lucas on", "does lucas have",
-    "does lucas use", "his socials"
   ]
 }
