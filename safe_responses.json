@@ -150,6 +150,20 @@
     "Hey! Good to see you back. What do you need?",
     "Welcome back — what are you looking for today?",
     "Hey again! What can I do for you? 🙌"
+  ],
+
+  "platform_all_intro": [
+    "You can find Lucas on these platforms! Here's what he offers on each:\n",
+    "Lucas is active on multiple platforms — here's the full rundown:\n",
+    "Great question! Here's everywhere you can find Lucas and what to expect:\n",
+    "Here's where Lucas hangs out online and what's on each platform:\n"
+  ],
+
+  "platform_followup": [
+    "Curious about a specific platform? Just ask and I'll tell you more! 😊",
+    "Want to know more about any of these? Just say which one! 🙌",
+    "Got questions about any of these platforms? I'm here! ⚡",
+    "Let me know which platform interests you and I'll give you the details!"
   ]
 }
 
