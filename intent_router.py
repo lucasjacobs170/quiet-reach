@@ -196,12 +196,37 @@ class IntentRouter:
         self.safe_responses: dict = _load_json(sr_path, "safe_responses.json")
         self.creative_mode: dict = _load_json(cm_path, "creative_mode.json")
 
-        # Platform keywords — optional; gracefully degraded when missing
+        # Platform keywords — optional; gracefully degraded when missing.
+        # When the file is absent the bot falls back to the legacy _get_links()
+        # method for platform queries; keyword lists fall back to the module-level
+        # defaults defined below this class.
         pk_path = os.path.join(base_dir, "platform_keywords.json")
         try:
             self.platform_keywords: dict = _load_json(pk_path, "platform_keywords.json")
         except (FileNotFoundError, ValueError):
             self.platform_keywords = {}
+
+        # Keyword lists loaded from JSON so platform_keywords.json is the single
+        # source of truth; module-level constants serve only as fallback defaults.
+        self._location_kws: list[str] = self.platform_keywords.get(
+            "location_keywords", _LOCATION_KEYWORDS
+        )
+        self._all_platforms_kws: list[str] = self.platform_keywords.get(
+            "all_platforms_keywords", _ALL_PLATFORMS_KEYWORDS
+        )
+
+        # Pre-compile per-platform regex patterns once at init for efficiency.
+        self._platform_patterns: list[tuple[dict, re.Pattern]] = []
+        for p in self.platform_keywords.get("platforms", []):
+            parts = []
+            for kw in p.get("keywords", []):
+                if " " in kw:
+                    parts.append(re.escape(kw))
+                else:
+                    parts.append(r"\b" + re.escape(kw) + r"\b")
+            if parts:
+                pattern = re.compile("|".join(parts))
+                self._platform_patterns.append((p, pattern))
 
         # Optional conversation-context manager (injected or sourced from module singleton)
         if context_manager is not None:
@@ -399,15 +424,15 @@ class IntentRouter:
 
         # Location queries — multi-word phrases signalling "where to find Lucas"
         # These take priority so "find him" etc. always returns full platform info.
-        if _matches_any(t, _LOCATION_KEYWORDS):
+        if _matches_any(t, self._location_kws):
             return "asks_platform_all"
 
         # All-platforms / comprehensive social-media queries
-        if _matches_any(t, _ALL_PLATFORMS_KEYWORDS):
+        if _matches_any(t, self._all_platforms_kws):
             return "asks_platform_all"
 
         # Specific platform name mentioned → platform-specific response
-        if self._detect_platform(t) is not None:
+        if self._detect_platform(message) is not None:
             return "asks_platform_specific"
 
         # Social-only keywords checked first (before general link keywords)
@@ -561,17 +586,15 @@ class IntentRouter:
 
     def _detect_platform(self, text: str) -> Optional[dict]:
         """
-        Return the first platform entry from platform_keywords.json whose keywords
-        appear in *text*, or None if no platform is recognised.
+        Return the first platform entry whose keywords appear in *text*, or None.
+
+        *text* is lowercased internally so callers do not need to pre-normalise.
+        Uses pre-compiled regex patterns built during __init__ for efficiency.
         """
-        for platform in self.platform_keywords.get("platforms", []):
-            for kw in platform.get("keywords", []):
-                if " " in kw:
-                    if kw in text:
-                        return platform
-                else:
-                    if re.search(r"\b" + re.escape(kw) + r"\b", text):
-                        return platform
+        t = text.lower()
+        for platform, pattern in self._platform_patterns:
+            if pattern.search(t):
+                return platform
         return None
 
     def _format_platform_entry(self, platform: dict) -> str:
@@ -627,7 +650,7 @@ class IntentRouter:
         Falls back to _handle_platform_all_request() when no specific platform
         can be identified.
         """
-        platform = self._detect_platform(user_message.lower())
+        platform = self._detect_platform(user_message)
         if not platform:
             return self._handle_platform_all_request()
 
