@@ -822,6 +822,10 @@ async def classify_reply_with_ai(user_message: str) -> str:
     if looks_like_question(msg) or "about lucas" in msg or "who is lucas" in msg:
         return "other"
 
+    # If the message mentions a platform, it is an info/link request — not a yes/no
+    if _intent_router._detect_platform(msg) is not None:
+        return "other"
+
     # quick keyword fallback first (no model call)
     if any(has_keyword(msg, w) for w in get_keywords("yes")):
         return "yes"
@@ -2887,11 +2891,19 @@ async def handle_dm_reply(message):
         await send_logged(message.channel, guild_id="", content=link_reply, is_dm=1)
         return
     
-    # If they are asking for info about Lucas, answer with AI (KB-grounded)
-    if looks_like_question(content) or ("lucas" in content_lower):
+    # Route info requests through AI → intent_router.
+    # Condition covers: questions ("?"), Lucas topics, and any message that
+    # mentions a platform keyword (e.g. "okay how about his chaturbate").
+    # This prevents platform messages from falling through to the yes/no
+    # promo classifier and being silently misrouted.
+    if (
+        looks_like_question(content)
+        or ("lucas" in content_lower)
+        or (_intent_router._detect_platform(content) is not None)
+    ):
         reply = await generate_ai_reply(content)
         if not reply:
-            reply, _rt = _intent_router.route_message(content)
+            reply, _rt = _intent_router.route_message(content, user_key=f"discord:{user_id}")
         reply = _get_pm().overlay_personality(reply, topic="lucas_info")
         reply = maybe_add_dm_cta(user_id, reply)
         await send_logged(message.channel, guild_id="", content=reply, is_dm=1)
