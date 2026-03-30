@@ -187,6 +187,10 @@ _KEYWORD_LIBRARY: dict[HostilityLevel, list[str]] = {
         "obvious scam",
         "stop trying to scam",
         "you're a scam",
+        "you're an ass",
+        "ur an ass",
+        "youre an ass",
+        "you are an ass",
     ],
     HostilityLevel.THREAT: [
         "i will kill",
@@ -439,14 +443,29 @@ def classify_with_keywords(text: str) -> HostilityResult:
     """
     Fast keyword-based hostility classification using whole-word matching.
     Returns HostilityLevel.NONE if nothing matches.
+
+    Mild patterns require at least 3 words in the message to avoid false
+    positives on very short or context-free messages.
     """
     t = (text or "").lower().strip()
     if not t:
         return HostilityResult(level=HostilityLevel.NONE)
 
+    word_count = len(t.split())
+
     for pattern, level in _FLAT_PATTERNS:
         # Use pre-compiled word-boundary patterns to avoid substring false positives
         if _KW_REGEX_CACHE[pattern].search(t):
+            # Require at least 3 words before flagging MILD hostility.
+            # 3 words was chosen because most mild patterns (e.g. "shut up",
+            # "annoying", "go away") commonly appear in 1-2 word messages that
+            # lack enough context to confirm hostile intent — a 3-word minimum
+            # greatly reduces false positives while still catching genuine rudeness
+            # in sentences like "please just shut up already".
+            # SEVERE and THREAT patterns are never gated by word count since
+            # phrases like "fuck you" are unambiguous in any context.
+            if level == HostilityLevel.MILD and word_count < 3:
+                continue
             return HostilityResult(
                 level=level,
                 confidence=0.9,

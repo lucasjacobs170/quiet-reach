@@ -1915,9 +1915,14 @@ def is_direct_platform_access_request(text: str) -> bool:
         "give me the",
         "i want his",
         "i want the",
+        "i want to see his",
+        "i want to see the",
+        "i'd like to see his",
         "i would like to see his",
         "let me see his",
         "can i see his",
+        "i wanna see his",
+        "want to check out his",
     ]
     return any(p in t for p in phrases)
 
@@ -2859,11 +2864,13 @@ async def handle_dm_reply(message):
         await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
         return
     
-    # Platform vibe questions (don’t just re-drop links)
+    # Platform vibe questions — provide info AND the link so users don't need to ask twice
     if is_platform_info_question(content):
         key = platform_key_from_text(content_lower)
         if key and key in PLATFORM_INFO:
-            msg = (PLATFORM_INFO[key] + "\n\nIf you want the official link(s) too, just say “send the link”.").strip()
+            link_msg = build_single_link_message(key)
+            remember_dm_link_context(user_id, [key])
+            msg = f"{PLATFORM_INFO[key]}\n\n{link_msg}"
             await send_logged(message.channel, guild_id="", content=msg, is_dm=1)
             return
 
@@ -4722,10 +4729,14 @@ async def handle_telegram_private_text(update: Update, context: ContextTypes.DEF
         if info:
             set_platform_context(user_key, requested_key)
             set_dm_pending_action(user_key, "platform_context", {"keys": [requested_key]})
+            # Include the official link alongside the description so users
+            # don't need to ask a second time for the link.
+            link_msg = build_single_link_message(requested_key)
+            remember_dm_link_context(user_key, [requested_key])
             await telegram_reply_logged(
                 update,
                 context,
-                f"{info}\n\nIf you want the official link too, just say `send the link`."
+                f"{info}\n\n{link_msg}"
             )
             return
 
